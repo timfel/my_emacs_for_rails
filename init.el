@@ -1,3 +1,58 @@
+
+;; Standard copy'n'paste
+(cua-mode 1)
+
+;; Always force spaces
+(setq-default indent-tabs-mode nil)
+
+;; Some useful shortcuts
+(global-set-key "\C-l" 'goto-line)
+
+;; stops me killing emacs by accident!
+(setq confirm-kill-emacs 'yes-or-no-p)
+
+;; C/C++/Java Options
+(setq-default c-basic-offset 4)
+
+;; Auxtex Options
+(require 'reftex)
+(setq-default TeX-master nil)
+(add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+(add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+(add-hook 'LaTeX-mode-hook 'reftex-mode)
+(add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+(setq reftex-plug-into-AUCTeX t)
+(setq TeX-auto-save t)
+(setq TeX-save-query nil)
+(setq TeX-parse-self t)
+(setq-default TeX-master nil)
+
+;; Flyspell options
+(require 'ispell)
+(add-to-list 'ispell-dictionary-alist
+             '("de"
+               "[a-zA-Z\304\326\334\344\366\337\374]"
+               "[^a-zA-Z\304\326\334\344\366\337\374]"
+               "[']" t ("-C" "-d" "de_DE") "~latin1" iso-8859-15))
+(setq ispell-program-name "aspell")
+(setq ispell-list-command "list")
+(setq ispell-extra-args '("--sug-mode=fast"))
+(setq flyspell-issue-message-flag nil)
+(add-hook 'LaTeX-mode-hook 'flyspell-mode)
+(add-hook 'c++-mode-hook 'flyspell-prog-mode)
+(add-hook 'c-mode-hook 'flyspell-prog-mode)
+(defun fd-switch-dictionary()
+  (interactive)
+  (let* ((dic ispell-current-dictionary)
+         (change (if (string= dic "de") "english" "de")))
+    (ispell-change-dictionary change)
+    (message "Dictionary switched from %s to %s" dic change)
+    ))
+(global-set-key (kbd "<f8>") 'fd-switch-dictionary)
+
+;; Start the emacs server
+(server-start)
+
 ;(setq locale-coding-system 'utf-8)
 ;(set-terminal-coding-system 'utf-8)
 ;(set-keyboard-coding-system 'utf-8)
@@ -5,7 +60,7 @@
 ;(prefer-coding-system 'utf-8)
 ;'(buffer-encoding (quote utf-8))
 '(recentf-mode t)
-'(transient-mark-mode t)
+;'(transient-mark-mode t)
 
 ;(set-default-font "Bitstream Vera Sans Mono-10")
 ;(set-fontset-font (frame-parameter nil 'font)
@@ -27,7 +82,7 @@
 (setq inhibit-startup-screen t)
 (setq initial-scratch-message nil)
 
-(setq default-frame-alist '((font . "inconsolata")))
+;; (setq default-frame-alist '((font . "inconsolata")))
 
 ;; Get back font antialiasing
 (push '(font-backend xft x) default-frame-alist)
@@ -39,10 +94,10 @@
 (setq default-directory "~/")
 
 ;; Get rid of toolbar, scrollbar, menubar
-(progn
-  (tool-bar-mode)
+;(progn
+;  (tool-bar-mode)
 ;  (menu-bar-mode)
-  (scroll-bar-mode))
+;  (scroll-bar-mode))
 
 (add-to-list 'load-path "~/.emacs.d/plugins/textmate")
 (require 'textmate)
@@ -137,16 +192,15 @@ LIST defaults to all existing live buffers."
 (add-hook 'window-setup-hook 'maximize-frame t)
 (add-hook 'window-setup-hook 'ecb-redraw-layout t)
 
-(set-background-color "#2b2b2b")
-(set-foreground-color "white")
-(set-face-background 'modeline "DarkRed")
-(set-face-foreground 'modeline "white")
+;(set-background-color "#2b2b2b")
+;(set-foreground-color "white")
+;(set-face-background 'modeline "DarkRed")
+;(set-face-foreground 'modeline "white")
 ;; color-theme
 ;(add-to-list  'load-path "~/.emacs.d/plugins/color-theme")
 ;(require 'color-theme)
-;    (color-theme-initialize)
-;    (color-theme-arjen)
-
+;(color-theme-initialize)
+;(color-theme-arjen)
 
 (mouse-wheel-mode t)
 ;; wheel mouse
@@ -168,11 +222,13 @@ LIST defaults to all existing live buffers."
 ;; See cedet/common/cedet.info for configuration details.
 (load-file "~/.emacs.d/plugins/cedet/common/cedet.el")
 ; Enable EDE (Project Management) features
-;(global-ede-mode 1)
+(global-ede-mode 1)
 ;; * This enables the database and idle reparse engines
-;(semantic-load-enable-minimum-features)
-;(setq semantic-load-turn-everything-on t)
-
+(semantic-load-enable-minimum-features)
+(semantic-load-enable-code-helpers)
+(setq semantic-load-turn-everything-on t)
+;(global-set-key "\C-c/" 'Semantic-ia-complete-symbol)
+;(global-set-key "\C-c?" 'semantic-ia-complete-symbol-menu)
 
 ;; ecb
 (add-to-list 'load-path "~/.emacs.d/plugins/ecb")
@@ -195,6 +251,51 @@ LIST defaults to all existing live buffers."
 (add-to-list 'load-path "~/.emacs.d/plugins/find-recursive")
 (require 'find-recursive)
 
+;; Tabbar
+(require 'tabbar)
+(tabbar-mode t)
+(dolist (func '(tabbar-mode tabbar-forward-tab tabbar-forward-group tabbar-backward-tab tabbar-backward-group))
+  (autoload func "tabbar" "Tabs at the top of buffers and easy control-tab navigation"))
+
+(defmacro defun-prefix-alt (name on-no-prefix on-prefix &optional do-always)
+  `(defun ,name (arg)
+     (interactive "P")
+     ,do-always
+     (if (equal nil arg)
+         ,on-no-prefix
+       ,on-prefix)))
+
+(defun-prefix-alt shk-tabbar-next (tabbar-forward-tab) (tabbar-forward-group) (tabbar-mode 1))
+(defun-prefix-alt shk-tabbar-prev (tabbar-backward-tab) (tabbar-backward-group) (tabbar-mode 1))
+(global-set-key [(backtab)] 'shk-tabbar-next)
+(global-set-key "\C-c<left>" 'shk-tabbar-prev)
+;; add a buffer modification state indicator in the tab label,
+;; and place a space around the label to make it looks less crowd
+(defadvice tabbar-buffer-tab-label (after fixup_tab_label_space_and_flag activate)
+  (setq ad-return-value
+        (if (and (buffer-modified-p (tabbar-tab-value tab))
+                 (buffer-file-name (tabbar-tab-value tab)))
+            (concat " + " (concat ad-return-value " "))
+          (concat " " (concat ad-return-value " ")))))
+
+;; called each time the modification state of the buffer changed
+(defun ztl-modification-state-change ()
+  (tabbar-set-template tabbar-current-tabset nil)
+  (tabbar-display-update))
+;; first-change-hook is called BEFORE the change is made
+(defun ztl-on-buffer-modification ()
+  (set-buffer-modified-p t)
+  (ztl-modification-state-change))
+(add-hook 'after-save-hook 'ztl-modification-state-change)
+;; this doesn't work for revert, I don't know
+;;(add-hook 'after-revert-hook 'ztl-modification-state-change)
+(add-hook 'first-change-hook 'ztl-on-buffer-modification)
+(custom-set-faces
+  ;; custom-set-faces was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ )
 
 ;; anything
 (add-to-list 'load-path "~/.emacs.d/plugins/anything")
@@ -220,11 +321,9 @@ LIST defaults to all existing live buffers."
 (require 'ido)
 (ido-mode t)
 
-
 ;; tabkey2
-;(load "~/.emacs.d/plugins/nxhtml/util/tabkey2.el")
-
-
+(load "~/.emacs.d/tabkey2.el")
+(tabkey2-mode 1)
 
 ;; DTD mode
 (autoload 'dtd-mode "tdtd" "Major mode for SGML and XML DTDs." t)
