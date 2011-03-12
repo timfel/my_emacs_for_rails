@@ -101,7 +101,6 @@
 (require 'redo)
 (global-set-key [(control -)] 'redo)
 
-
 ;; show ascii table
 ;; optained from http://www.chrislott.org/geek/emacs/dotemacs.html
 (defun ascii-table ()
@@ -645,6 +644,12 @@ makes)."
              (lambda ()
                (setq ac-omni-completion-sources '(("\\.\\=" ac-source-rcodetools)))));)
 
+;; emacs-project-mode
+(add-to-list 'load-path "~/.emacs.d/plugins/emacs-project-mode")
+(require 'project-mode)
+(project-mode 1)
+(project-mode-menu)
+(global-set-key "\C-t" 'project-fuzzy-search)
 
 ;; ri
 ;(load "~/.emacs.d/plugins/ri/ri.el")
