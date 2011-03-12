@@ -1,15 +1,8 @@
-
-;; Standard copy'n'paste
-(cua-mode 1)
-
-;; Always force spaces
-(setq-default indent-tabs-mode nil)
-
-;; Some useful shortcuts
-(global-set-key "\C-l" 'goto-line)
-
 ;; stops me killing emacs by accident!
 (setq confirm-kill-emacs 'yes-or-no-p)
+
+;; move deleted files to trash
+(setq delete-by-moving-to-trash t)
 
 ;; C/C++/Java Options
 (setq-default c-basic-offset 4)
@@ -674,3 +667,11 @@ makes)."
   ;; If there is more than one, they won't work right.
  )
 
+;; Standard copy'n'paste
+(cua-mode 1)
+
+;; Always force spaces
+(setq-default indent-tabs-mode nil)
+
+;; Some useful shortcuts
+(global-set-key "\C-l" 'goto-line)
