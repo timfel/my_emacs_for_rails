@@ -23,11 +23,16 @@
 (defcustom project-menu-string "Project"
   "The string that appears in the menu.")
 
-(defcustom project-search-exclusion-regexes-default '("\\.svn" "\\.jar$" "\\.class$" "\\.exe$" "\\.png$"
-                                                      "\\.gif$" "\\.jpg$" "\\.jpeg$" "\\.ico$" "\\.log$"
+(defcustom project-search-exclusion-regexes-default '("\\.hg" "\\.git" "\\.svn"
+                                                      "\\.jar$" "\\.class$"
+                                                      "\\.png$" "\\.gif$" "\\.jpg$" "\\.jpeg$" "\\.ico$"
+                                                      "\\.log$" "log/" "tmp/" "db/cachestore"
+                                                      "doc/" "public/.*\\.js$"
+                                                      "\\.sql$"
                                                       "\\.rtf$" "\\.bin$" "\\.tar$" "\\.tgz$" "\\.gz$"
                                                       "\\.bz2$" "\\.zip$" "\\.rar$" "\\.cab$" "\\.msi$"
-                                                      "\\.o$" "\\.a$" "\\.dll$" "\\.pdf$" "\\.tmp$"
+                                                      "\\.o$" "\\.a$" "\\.dll$"  "\\.exe$"
+                                                      "\\.pdf$" "\\.tmp$"
                                                       "\\.war$" "\\bTAGS\\b")
   "File paths that match these regexes will be excluded from any type of search"
   :group 'project)
