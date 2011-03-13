@@ -125,7 +125,7 @@ The form must be like the following:
 ;;; Interactive commands
 
 (defun project-new (project-name search-path)
-  (interactive "MNew Project Name: 
+  (interactive "MNew Project Name:
 DAdd a search directory to project: ")
   (when (project-find project-name)
     (error "A project by that name already exists. Project not created."))
@@ -316,7 +316,7 @@ DAdd a search directory to project: ")
   (end-of-line)
   (let ((file-path (buffer-substring-no-properties (region-beginning) (region-end))))
     (when file-path
-      (find-file file-path))))    
+      (find-file file-path))))
 
 (defun project-edit-path-cache nil
   (interactive)
@@ -961,7 +961,7 @@ DAdd a search directory to project: ")
         global-map
         [menu-bar projmenu projref projtref]
         '("Refresh Project Tags" . project-tags-refresh))
-      
+
       (define-key
         global-map
         [menu-bar projmenu projref projpcref]
@@ -971,7 +971,7 @@ DAdd a search directory to project: ")
         global-map
         [menu-bar projmenu projref projrefall]
         '("Refresh All" . project-refresh))
-      
+
       ;; Project info
       (define-key
         global-map
@@ -998,7 +998,7 @@ DAdd a search directory to project: ")
         global-map
         [menu-bar projmenu projloadall]
         '("Load All Projects" . project-load-all))
-      
+
       (define-key
         global-map
         [menu-bar projmenu  projload]
