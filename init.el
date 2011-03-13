@@ -412,6 +412,7 @@ t)
 (add-hook 'ruby-mode-hook 'turn-on-font-lock)
 (add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
 (add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
+(add-to-list 'auto-mode-alist '("^Gemfile$" . ruby-mode))
 
 ;; ruby-block
 (add-to-list 'load-path "~/.emacs.d/plugins/ruby-block")
@@ -430,7 +431,8 @@ t)
 (add-to-list 'load-path "~/.emacs.d/plugins/yaml-mode")
 (require 'yaml-mode)
 (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
-
+(add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
+(add-to-list 'auto-mode-alist '("^Gemfile.lock$" . yaml-mode))
 
 ;; rdebug
 (add-to-list 'load-path "~/.emacs.d/plugins/rdebug")
@@ -587,7 +589,9 @@ makes)."
 (require 'rhtml-mode)
 (add-hook 'rhtml-mode-hook
   (lambda () (rinari-launch)))
-
+(add-to-list 'auto-mode-alist '("\\.html.erb$" . rhtml-mode))
+(add-to-list 'auto-mode-alist '("\\.html.rb$" . rhtml-mode))
+(add-to-list 'auto-mode-alist '("\\.rhtml$" . rhtml-mode))
 (add-hook 'rhtml-mode
           (let ((original-command (lookup-key rhtml-mode-map [tab])))
             `(lambda ()
