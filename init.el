@@ -44,7 +44,7 @@
 (global-set-key (kbd "<f8>") 'fd-switch-dictionary)
 
 ;; Start the emacs server
-(server-start)
+;; (server-start)
 
 ;(setq locale-coding-system 'utf-8)
 ;(set-terminal-coding-system 'utf-8)
