@@ -448,6 +448,10 @@ t)
 ;(autoload 'ri (expand-file-name "~/.emacs.d/plugins/ri-emacs/ri-ruby.el") nil t)
 (load "~/.emacs.d/plugins/ri-emacs/ri-ruby.el")
 
+;; rsense
+(setq rsense-home (expand-file-name "~/.emacs.d/plugins/rsense"))
+(add-to-list 'load-path (concat rsense-home "/etc"))
+(require 'rsense)
 
 ;; ruby-mode-hook
 (add-hook 'ruby-mode-hook
@@ -468,10 +472,11 @@ t)
 ;           (local-set-key 'f1 'ri)
            (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
 ;           (local-set-key 'f4 'ri-ruby-show-args)
+           (if (project-current)
+               (rsense-open-project (project-default-directory (project-current))))
            (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
            (local-set-key (kbd "<return>") 'newline-and-indent)
 ))
-
 
 ;; nxhtml
 ;(setq *nxhtml-autostart-file* (expand-file-name "~/.emacs.d/plugins/nxhtml/autostart.el"))
@@ -649,6 +654,8 @@ makes)."
 
    (add-hook 'ruby-mode-hook
              (lambda ()
+               (setq ac-sources (append '(ac-source-rsense-method ac-source-rsense-constant) ac-sources))
+               (setq ac-sources (append ac-sources '(ac-source-words-in-same-mode-buffers)))
                (setq ac-omni-completion-sources '(("\\.\\=" ac-source-rcodetools)))));)
 
 ;; emacs-project-mode
