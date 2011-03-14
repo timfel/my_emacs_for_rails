@@ -239,6 +239,7 @@ LIST defaults to all existing live buffers."
  '(ecb-source-path (quote (("~/Devel/projects" "Dev")
                            ("~/Documents/HPI/10WS/" "Uni")
                            ("~/Finnlabs/Finnlabs/" "Finn"))))
+ '(ecb-compile-window-height 8)
  '(ecb-compile-window-temporally-enlarge (quote both))
  '(ecb-compile-window-width (quote edit-window))
  '(ecb-layout-name "left8")
