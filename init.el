@@ -177,6 +177,8 @@ LIST defaults to all existing live buffers."
 ;)
 ;(toggle-fullscreen)
 
+;; Commenting blocks
+(global-set-key [(control /)] 'comment-or-uncomment-region-or-line)
 
 ;; maxframe
 (add-to-list  'load-path "~/.emacs.d/plugins/maxframe")
