@@ -94,7 +94,7 @@
 
 (add-to-list 'load-path "~/.emacs.d/plugins/textmate")
 (require 'textmate)
-(textmate-mode)
+(textmate-mode 1)
 
 ;; redo
 (add-to-list  'load-path "~/.emacs.d/plugins/redo")
