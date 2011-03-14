@@ -14,6 +14,9 @@
 (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
 (add-hook 'LaTeX-mode-hook 'reftex-mode)
 (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+(add-hook 'LaTeX-mode-hook
+          (lambda ()
+            (local-set-key "\M-i" 'ispell-word)))
 (setq reftex-plug-into-AUCTeX t)
 (setq TeX-auto-save t)
 (setq TeX-save-query nil)
