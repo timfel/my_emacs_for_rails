@@ -232,11 +232,13 @@ LIST defaults to all existing live buffers."
 (setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
 (ecb-activate)
 (custom-set-variables
-  ;; custom-set-variables was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
- '(ecb-compile-window-height 8)
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ecb-source-path (quote (("~/Devel/projects" "Dev")
+                           ("~/Documents/HPI/10WS/" "Uni")
+                           ("~/Finnlabs/Finnlabs/" "Finn"))))
  '(ecb-compile-window-temporally-enlarge (quote both))
  '(ecb-compile-window-width (quote edit-window))
  '(ecb-layout-name "left8")
