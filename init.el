@@ -127,7 +127,7 @@
 ;; Centering code stolen from somewhere and restolen from
 ;; http://www.chrislott.org/geek/emacs/dotemacs.html
 ;; centers the screen around a line...
-(global-set-key [(control l)]  'centerer)
+(global-set-key "\C-cc"  'centerer)
 (defun centerer ()
    "Repositions current line: once middle, twice top, thrice bottom"
    (interactive)
