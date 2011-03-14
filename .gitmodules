@@ -1,3 +1,6 @@
 [submodule "plugins/emacs-project-mode"]
 	path = plugins/emacs-project-mode
 	url = git://github.com/timfel/emacs-project-mode.git
+[submodule "plugins/rsense"]
+	path = plugins/rsense
+	url = git://github.com/m2ym/rsense.git
