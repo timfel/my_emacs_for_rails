@@ -236,8 +236,14 @@ LIST defaults to all existing live buffers."
   ;; If you edit it by hand, you could mess it up, so be careful.
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
+ '(ecb-compile-window-height 8)
+ '(ecb-compile-window-temporally-enlarge (quote both))
+ '(ecb-compile-window-width (quote edit-window))
+ '(ecb-layout-name "left8")
  '(ecb-layout-window-sizes (quote (("left8" (ecb-directories-buffer-name 0.23671497584541062 . 0.29310344827586204) (ecb-sources-buffer-name 0.23671497584541062 . 0.22413793103448276) (ecb-methods-buffer-name 0.23671497584541062 . 0.25862068965517243) (ecb-history-buffer-name 0.23671497584541062 . 0.20689655172413793)))))
- '(ecb-options-version "2.40"))
+ '(ecb-options-version "2.40")
+ '(ecb-tree-indent 2)
+ '(ecb-windows-width 0.2))
 ;; resize the windows on emacs and run ecb-store-window-sizes
 ; '(show-paren-mode t))
 
@@ -679,12 +685,7 @@ makes)."
 ;(kill-buffer "*Compile-Log*")
 ;(kill-buffer "*Messages*")
 
-(custom-set-faces
-  ;; custom-set-faces was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
- )
+
 
 ;; Standard copy'n'paste
 (cua-mode 1)
