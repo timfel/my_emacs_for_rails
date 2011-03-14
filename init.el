@@ -191,10 +191,11 @@ LIST defaults to all existing live buffers."
 ;(set-face-background 'modeline "DarkRed")
 ;(set-face-foreground 'modeline "white")
 ;; color-theme
-;(add-to-list  'load-path "~/.emacs.d/plugins/color-theme")
-;(require 'color-theme)
-;(color-theme-initialize)
-;(color-theme-arjen)
+(add-to-list  'load-path "~/.emacs.d/plugins/color-theme")
+(require 'color-theme)
+(color-theme-initialize)
+(require 'color-theme-github)
+(color-theme-github)
 
 (mouse-wheel-mode t)
 ;; wheel mouse
