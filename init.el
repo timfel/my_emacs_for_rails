@@ -331,7 +331,6 @@ LIST defaults to all existing live buffers."
 
 ;; tabkey2
 (load "~/.emacs.d/tabkey2.el")
-(tabkey2-mode 1)
 
 ;; DTD mode
 (autoload 'dtd-mode "tdtd" "Major mode for SGML and XML DTDs." t)
@@ -418,6 +417,7 @@ LIST defaults to all existing live buffers."
   (lambda ()
     (setq imenu-create-index-function 'javascript-imenu-create-index)
     (local-set-key (kbd "<return>") 'newline-and-indent)
+    (setq javascript-indent-level 2)
   )
 t)
 
@@ -582,7 +582,6 @@ makes)."
              (if (and (not (null buffer-file-name)) (file-writable-p buffer-file-name))
                  (flymake-mode))
              ))
-
 
 ;; Rinari
 (add-to-list 'load-path "~/.emacs.d/plugins/rinari")
