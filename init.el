@@ -90,10 +90,10 @@
 (setq default-directory "~/")
 
 ;; Get rid of toolbar, scrollbar, menubar
-;(progn
-;  (tool-bar-mode)
-;  (menu-bar-mode)
-;  (scroll-bar-mode))
+(progn
+  (tool-bar-mode nil)
+  ;; (menu-bar-mode)
+  (scroll-bar-mode nil))
 
 (add-to-list 'load-path "~/.emacs.d/plugins/textmate")
 (require 'textmate)
