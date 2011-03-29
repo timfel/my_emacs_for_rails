@@ -49,10 +49,9 @@
 ;; Start the emacs server
 (setq server-use-tcp t) ;; Use TCP mode, my socket is often unavailable
 (setq server-host "127.0.0.1")
-(condition-case nil
+(if (functionp 'server-running-p)
     (if (not (server-running-p)) ;; Server might be running
-        (server-start))
-  (error nil)) ;; If this throws an error, we're in daemon mode
+        (server-start)))
 
 ;(setq locale-coding-system 'utf-8)
 ;(set-terminal-coding-system 'utf-8)
@@ -238,9 +237,11 @@ LIST defaults to all existing live buffers."
 (require 'ecb)
 (setq ecb-tip-of-the-day nil)
 (setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
-(condition-case nil
-    (ecb-activate)
-  (error nil)) ;; On small displays and in daemon mode, this errors out
+(if window-system
+    (if (>= (window-height) 16)
+        (ecb-activate)
+      (message "Not activating ECB, window height to small"))
+  (message "Not activating ECB, not using a window system"))
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
