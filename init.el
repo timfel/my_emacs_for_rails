@@ -47,7 +47,10 @@
 (global-set-key (kbd "<f8>") 'fd-switch-dictionary)
 
 ;; Start the emacs server
-;; (server-start)
+(setq server-use-tcp t)
+(setq server-host "127.0.0.1")
+(if (not (server-running-p))
+    (server-start))
 
 ;(setq locale-coding-system 'utf-8)
 ;(set-terminal-coding-system 'utf-8)
