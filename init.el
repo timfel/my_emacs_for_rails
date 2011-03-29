@@ -167,6 +167,7 @@ LIST defaults to all existing live buffers."
                    (format "Buffer %s has been edited. Kill? " name))
                   (kill-buffer buffer))
             (kill-buffer buffer))))))
+(global-set-key "\C-x\C-ka" 'kill-all-but-active-buffers)
 
 ;; fullscreen
 ;(defun toggle-fullscreen ()
