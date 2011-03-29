@@ -703,3 +703,7 @@ makes)."
 
 ;; Some useful shortcuts
 (global-set-key "\C-l" 'goto-line)
+
+;; Fix clipboard
+(setq x-select-enable-clipboard t)
+(setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
