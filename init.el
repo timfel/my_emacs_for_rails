@@ -676,6 +676,7 @@ makes)."
 (require 'project-mode)
 (project-mode 1)
 (project-mode-menu)
+(project-load-all)
 (global-set-key "\C-t" 'project-fuzzy-search)
 
 ;; ri
