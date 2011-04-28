@@ -60,7 +60,7 @@
 ;(prefer-coding-system 'utf-8)
 ;'(buffer-encoding (quote utf-8))
 '(recentf-mode t)
-;'(transient-mark-mode t)
+;; '(transient-mark-mode t)
 
 ;(set-default-font "Bitstream Vera Sans Mono-10")
 ;(set-fontset-font (frame-parameter nil 'font)
@@ -520,14 +520,25 @@ t)
 (set-face-background 'flymake-errline "red4")
 (set-face-background 'flymake-warnline "dark slate blue")
 
-;; Feature request: have flymake create its temp files in the system temp file directory instead of in the same directory as the file. When using it with Ruby on Rails and autotest, autotest sees the temp file and tries to do something with it and dies, forcing me to restart it, thus killing the magic of autotest. Putting flymake’s temp files elsewhere seems like the easiest way to dodge this.
+;; Feature request: have flymake create its temp files in the system
+;; temp file directory instead of in the same directory as the
+;; file. When using it with Ruby on Rails and autotest, autotest sees
+;; the temp file and tries to do something with it and dies, forcing
+;; me to restart it, thus killing the magic of autotest. Putting
+;; flymake’s temp files elsewhere seems like the easiest way to dodge
+;; this.
 ;;
-;; I second the above request. I know there are workarounds for autotest, but it seems like we don’t want to find work arounds for every new web framework, we want to get flymake working in a way that won’t conflict with any other tools.
+;; I second the above request. I know there are workarounds for
+;; autotest, but it seems like we don’t want to find work arounds for
+;; every new web framework, we want to get flymake working in a way
+;; that won’t conflict with any other tools.
 ;;
-;; It is easy to patch your autotest to ignore flymake files. I have submitted a patch which hopefully will be included in future releases. For more info see: Emacs, flymake and autotest: the fix
+;; It is easy to patch your autotest to ignore flymake files. I have
+;; submitted a patch which hopefully will be included in future
+;; releases. For more info see: Emacs, flymake and autotest: the fix
 ;;
-;; Here is a suggestion for a solution (100% untested). Replace flymake-create-temp-inplace above with
-
+;; Here is a suggestion for a solution (100% untested). Replace
+;; flymake-create-temp-inplace above with
 (defun flymake-create-temp-intemp (file-name prefix)
   "Return file name in temporary directory for checking FILE-NAME.
 This is a replacement for `flymake-create-temp-inplace'. The
@@ -554,7 +565,6 @@ makes)."
          )
     (flymake-log 3 "create-temp-intemp: file=%s temp=%s" file-name temp-name)
     temp-name))
-
 
 ;; Invoke ruby with '-c' to get syntax checking
 (defun flymake-ruby-init ()
