@@ -719,3 +719,15 @@ makes)."
 ;; Fix clipboard
 (setq x-select-enable-clipboard t)
 (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
+
+;; support for opening files via ssh
+(require 'tramp)
+
+;; Org-mode
+(setq org-hide-leading-stars t)
+(setq org-agenda-files '())
+(add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
+(setq org-agenda-files (append (file-expand-wildcards
+                                (expand-file-name "~/Documents/HPI/11SS/*"))
+                               org-agenda-files))
+(setq org-insert-mode-line-in-empty-file t)
