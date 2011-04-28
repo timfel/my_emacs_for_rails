@@ -333,8 +333,8 @@ LIST defaults to all existing live buffers."
 (ido-mode t)
 
 ;; tabkey2
-(load "~/.emacs.d/tabkey2.el")
-(tabkey2-mode nil)
+;; (load "~/.emacs.d/tabkey2.el")
+;; (tabkey2-mode nil)
 
 ;; DTD mode
 (autoload 'dtd-mode "tdtd" "Major mode for SGML and XML DTDs." t)
