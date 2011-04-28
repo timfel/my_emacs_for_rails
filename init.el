@@ -492,6 +492,8 @@ t)
            (if (project-current)
                (rsense-open-project (project-default-directory (project-current))))
            (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
+           ;; Always force spaces
+           (setq-default indent-tabs-mode nil)
            (local-set-key (kbd "<return>") 'newline-and-indent)
 ))
 
@@ -710,9 +712,6 @@ makes)."
 
 ;; Standard copy'n'paste
 (cua-mode 1)
-
-;; Always force spaces
-(setq-default indent-tabs-mode nil)
 
 ;; Some useful shortcuts
 (global-set-key "\C-l" 'goto-line)
