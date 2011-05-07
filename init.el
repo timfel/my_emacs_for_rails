@@ -695,13 +695,13 @@ makes)."
 ;; Standard copy'n'paste
 (cua-mode 1)
 
-;; Some useful shortcuts
-(global-set-key "\C-l" 'goto-line)
+;; some useful shortcuts
+(global-set-key "\C-cl" 'goto-line)
 
 (defun word-count nil "Count words in buffer" (interactive)
   (shell-command-on-region (region-beginning) (region-end) "wc -w"))
 
-;; Fix clipboard
+;; fix clipboard
 (setq x-select-enable-clipboard t)
 (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
 
