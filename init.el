@@ -130,24 +130,6 @@
   (interactive)
   (insert (format-time-string "%a %Y-%m-%d - %l:%M %p")))
 
-
-;; Centering code stolen from somewhere and restolen from
-;; http://www.chrislott.org/geek/emacs/dotemacs.html
-;; centers the screen around a line...
-(global-set-key "\C-cc"  'centerer)
-(defun centerer ()
-   "Repositions current line: once middle, twice top, thrice bottom"
-   (interactive)
-   (cond ((eq last-command 'centerer2)  ; 3 times pressed = bottom
-          (recenter -1))
-         ((eq last-command 'centerer1)  ; 2 times pressed = top
-          (recenter 0)
-          (setq this-command 'centerer2))
-         (t                             ; 1 time pressed = middle
-          (recenter)
-          (setq this-command 'centerer1))))
-
-
 ;; Kills some live buffers, leaves some emacs work buffers and the currently active tab
 (defun kill-all-but-active-buffers (&optional list)
   "For each buffer in LIST, kill it silently if unmodified. Otherwise ask.
