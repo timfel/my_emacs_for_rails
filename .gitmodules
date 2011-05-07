@@ -4,3 +4,6 @@
 [submodule "plugins/rsense"]
 	path = plugins/rsense
 	url = git://github.com/m2ym/rsense.git
+[submodule "plugins/coffee-mode"]
+	path = plugins/coffee-mode
+	url = https://github.com/defunkt/coffee-mode.git
