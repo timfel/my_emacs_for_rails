@@ -713,3 +713,16 @@ makes)."
                                 (expand-file-name "~/Documents/HPI/11SS/*"))
                                org-agenda-files))
 (setq org-insert-mode-line-in-empty-file t)
+
+;; Coffee mode
+(add-to-list  'load-path "~/.emacs.d/plugins/coffee-mode")
+(require 'coffee-mode)
+(add-to-list 'auto-mode-alist '("\\.coffee$" . coffee-mode))
+(add-to-list 'auto-mode-alist '("Cakefile" . coffee-mode))
+(defun coffee-custom ()
+  "coffee-mode-hook"
+  (set (make-local-variable 'tab-width) 2)
+
+  (define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer))
+(add-hook 'coffee-mode-hook
+          '(lambda() (coffee-custom)))
