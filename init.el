@@ -698,6 +698,9 @@ makes)."
 ;; Some useful shortcuts
 (global-set-key "\C-l" 'goto-line)
 
+(defun word-count nil "Count words in buffer" (interactive)
+  (shell-command-on-region (region-beginning) (region-end) "wc -w"))
+
 ;; Fix clipboard
 (setq x-select-enable-clipboard t)
 (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
