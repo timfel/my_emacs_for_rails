@@ -227,6 +227,7 @@ LIST defaults to all existing live buffers."
  '(ecb-source-path (quote (("~/Devel/projects" "Dev")
                            ("~/Documents/HPI/10WS/" "Uni")
                            ("~/Finnlabs/Finnlabs/" "Finn"))))
+ '(TeX-view-program-selection (quote (((output-dvi style-pstricks) "xdg-open") (output-dvi "xdg-open") (output-pdf "xdg-open") (output-html "xdg-open"))))
  '(ecb-compilation-buffer-names (quote (("*Calculator*") ("*vc*") ("*vc-diff*") ("*Apropos*") ("*Occur*") ("*shell*") ("\\*[cC]ompilation.*\\*" . t) ("\\*i?grep.*\\*" . t) ("*JDEE Compile Server*") ("*Help*") ("*Completions*") ("*Backtrace*") ("*Compile-log*") ("*bsh*") ("*Messages*") ("*Buffer List*"))))
  '(ecb-compile-window-height 8)
  '(ecb-compile-window-temporally-enlarge (quote both))
