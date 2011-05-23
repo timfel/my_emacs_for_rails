@@ -1,3 +1,68 @@
+(add-to-list 'load-path "~/.emacs.d/el-get/el-get")
+
+(unless (require 'el-get nil t)
+  (url-retrieve
+   "https://github.com/dimitri/el-get/raw/master/el-get-install.el"
+   (lambda (s)
+     (end-of-buffer)
+     (eval-print-last-sexp))))
+
+;; autotest 
+
+(setq el-get-sources
+      '(
+	cssh el-get switch-window vkill
+	     google-maps xcscope anything auto-complete
+	     
+	     ;; auto-complete-clang auto-complete-etags auto-complete-extensions
+	     
+	     autopair cedet color-theme coffee-mode haml-mode
+	     maxframe nxhtml rhtml-mode rinari ri-emacs
+	     rspec-mode ruby-block sass-mode sudo-save yaml-mode
+	     
+	     ;; yasnippet
+
+	     ;; (:name emacs-textmate
+	     ;;    :after (lambda () (textmate-mode 1)))
+
+	     (:name magit
+		    :after (lambda () (global-set-key (kbd "C-x C-z") 'magit-status)))
+	     ;; magit-hub
+
+	     auctex
+	     (:name reftex 
+		    :after (lambda ()
+			     (setq-default TeX-master nil)
+			     (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+			     (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+			     (add-hook 'LaTeX-mode-hook 'reftex-mode)
+			     (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+			     (add-hook 'LaTeX-mode-hook
+				       (lambda ()
+					 (local-set-key "\M-i" 'ispell-word)))
+			     (setq reftex-plug-into-AUCTeX t)
+			     (setq TeX-auto-save t)
+			     (setq TeX-save-query nil)
+			     (setq TeX-parse-self t)
+			     (setq-default TeX-master nil)))
+
+	     ;; (:name emacs-project-mode
+	     ;; 	    :type git
+	     ;; 	    :url "http://github.com/timfel/emacs-project-mode.git"
+	     ;; 	    :info "."
+	     ;; 	    :after (lambda ()
+	     ;; 		     (require 'project-mode)
+	     ;; 		     (project-mode 1)
+	     ;; 		     (project-mode-menu)
+	     ;; 		     (project-load-all)
+	     ;; 		     (global-set-key "\C-t" 'project-fuzzy-search)))
+
+	     ;; (:name dictionary-el    :type apt-get)
+	     ;; (:name emacs-goodies-el :type apt-get)
+	     ))
+
+(el-get 'sync)
+
 ;; stops me killing emacs by accident!
 (setq confirm-kill-emacs 'yes-or-no-p)
 
@@ -6,22 +71,6 @@
 
 ;; C/C++/Java Options
 (setq-default c-basic-offset 4)
-
-;; Auxtex Options
-(require 'reftex)
-(setq-default TeX-master nil)
-(add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-(add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-(add-hook 'LaTeX-mode-hook 'reftex-mode)
-(add-hook 'LaTeX-mode-hook 'auto-fill-mode)
-(add-hook 'LaTeX-mode-hook
-          (lambda ()
-            (local-set-key "\M-i" 'ispell-word)))
-(setq reftex-plug-into-AUCTeX t)
-(setq TeX-auto-save t)
-(setq TeX-save-query nil)
-(setq TeX-parse-self t)
-(setq-default TeX-master nil)
 
 ;; Flyspell options
 (require 'ispell)
