@@ -15,8 +15,15 @@
 	     google-maps xcscope anything auto-complete
 	     
 	     ;; auto-complete-clang auto-complete-etags auto-complete-extensions
-	     
-	     autopair cedet color-theme coffee-mode haml-mode
+	     ;; cedet/common/cedet.info
+	     color-theme
+	     (:name color-theme-github
+		    :type git
+		    :url "https://github.com/dudleyf/color-theme-github.git"
+		    :info "Color theme GitHub"
+		    :post-init (lambda () ((color-theme-github))))
+
+	     autopair coffee-mode haml-mode
 	     maxframe nxhtml rhtml-mode rinari ri-emacs
 	     rspec-mode ruby-block sass-mode sudo-save yaml-mode
 	     
@@ -27,7 +34,7 @@
 
 	     (:name magit
 		    :after (lambda () (global-set-key (kbd "C-x C-z") 'magit-status)))
-	     ;; magit-hub
+	     magithub
 
 	     auctex
 	     (:name reftex 
@@ -224,11 +231,11 @@ LIST defaults to all existing live buffers."
 ;(set-face-background 'modeline "DarkRed")
 ;(set-face-foreground 'modeline "white")
 ;; color-theme
-(add-to-list  'load-path "~/.emacs.d/plugins/color-theme")
-(require 'color-theme)
-(color-theme-initialize)
-(require 'color-theme-github)
-(color-theme-github)
+;; (add-to-list  'load-path "~/.emacs.d/plugins/color-theme")
+;; (require 'color-theme)
+;; (color-theme-initialize)
+;; (require 'color-theme-github)
+;; (color-theme-github)
 
 (mouse-wheel-mode t)
 ;; wheel mouse
