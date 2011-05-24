@@ -18,9 +18,32 @@
 (setq el-get-sources
       '(cssh el-get switch-window vkill yasnippet
 	     google-maps xcscope anything auto-complete
+
+	     (:name redo+
+		    :type http
+		    :url "http://www.emacswiki.org/emacs/download/redo%2b.el"
+		    :load "redo%2b.el"
+		    :post-init (lambda () (global-set-key [(control -)] 'redo)))
+
+	     (:name ecb
+		    :load-path "."
+		    :features ecb
+	     	    :post-init (lambda () (progn
+					    (global-ede-mode 1)
+					    (semantic-mode t)
+					    (setq semantic-load-turn-everything-on t)
+					    (setq ecb-tip-of-the-day nil)
+					    (setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
+					    (if window-system
+						(if (>= (window-height) 16)
+						    (progn
+						      (ecb-activate)
+						      (add-hook 'window-setup-hook 'ecb-redraw-layout t))
+						  (message "Not activating ECB, window height to small"))
+					      (message "Not activating ECB, not using a window system")))))
 	     
 	     ;; auto-complete-clang auto-complete-etags auto-complete-extensions
-	     ;; cedet/common/cedet.info
+	     
 	     color-theme
 	     (:name color-theme-github
 		    :type git
@@ -28,15 +51,18 @@
 		    :info "Color theme GitHub"
 		    :load "color-theme-github.el"
 		    :post-init (lambda () (color-theme-github)))
+	     (:name color-theme-solarized
+		    :type git 
+		    :url "https://github.com/sellout/emacs-color-theme-solarized.git"
+		    :info "The emacs port of the solarized color scheme"
+		    :load "color-theme-solarized.el"
+		    :post-init (lambda () (color-theme-solarized-light)))
 
 	     (:name coffee-mode
-		    :post-init (lambda () (progn
-					    (add-to-list 'auto-mode-alist '("\\.coffee$" . coffee-mode))
-					    (add-to-list 'auto-mode-alist '("Cakefile" . coffee-mode))
-					    (add-hook 'coffee-mode-hook
-						      '(lambda() (progn
-								   (set (make-local-variable 'tab-width) 2)
-								   (define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer)))))))
+		    :post-init (lambda () (add-hook 'coffee-mode-hook
+						    '(lambda() (progn
+								 (set (make-local-variable 'tab-width) 2)
+								 (define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer))))))
 	     
 	     autopair haml-mode
 	     nxhtml
@@ -44,21 +70,20 @@
              sass-mode sudo-save
 
 	     (:name yaml-mode
-		    :after (lambda () (progn
+		    :post-init (lambda () (progn
 					(add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
 					(add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
 					(add-to-list 'auto-mode-alist '("^Gemfile.lock$" . yaml-mode)))))
 
 	     (:name maxframe
-		    :after (lambda () (progn 
-					(add-hook 'window-setup-hook 'maximize-frame t)
-					(add-hook 'window-setup-hook 'ecb-redraw-layout t))))
+		    :features maxframe
+		    :post-init (lambda () (add-hook 'window-setup-hook 'maximize-frame t)))
 
 	     (:name rinari 
-		    :after (lambda () (setq rinari-tags-file-name "TAGS")))
+		    :post-init (lambda () (setq rinari-tags-file-name "TAGS")))
 
 	     (:name ri-emacs
-		    :after (lambda () (setq ri-ruby-script (expand-file-name (concat el-get-dir "/ri-emacs/ri-emacs.rb")))))
+		    :post-init (lambda () (setq ri-ruby-script (expand-file-name (concat el-get-dir "/ri-emacs/ri-emacs.rb")))))
 
 	     (:name rhtml-mode
 		    :post-init (lambda () (progn
@@ -76,77 +101,75 @@
 					(add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
 					(add-to-list 'auto-mode-alist '("^Gemfile$" . ruby-mode)))))
 	     ruby-electric 
-	     
-	     (:name rsense 
-		    :type git 
+
+	     (:name rsense
+		    :type git
 		    :url "git://github.com/m2ym/rsense.git"
-		    :info "Ruby sense"
-		    :after (lambda () (progn
-					(setq rsense-home (expand-file-name (concat el-get-dir "/rsense")))
-					(add-to-list 'load-path (concat rsense-home "/etc"))
-					(require 'rsense))))
+		    :prepare (lambda () (setq rsense-home (expand-file-name (concat el-get-dir "/rsense"))))
+		    :features rsense
+		    :load-path "etc")
 
 	     (:name js2-mode
-		    :after (lambda () (progn 
-					(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
-					(add-hook 'js2-mode-hook
-						  (lambda () (progn
-							       (setq imenu-create-index-function 'javascript-imenu-create-index)
-							       (local-set-key (kbd "<return>") 'newline-and-indent)
-							       (setq javascript-indent-level 2)))
-						  t))))
+		    :post-init (lambda () (progn 
+					    (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+					    (add-hook 'js2-mode-hook
+						      (lambda () (progn
+								   (setq imenu-create-index-function 'javascript-imenu-create-index)
+								   (local-set-key (kbd "<return>") 'newline-and-indent)
+								   (setq javascript-indent-level 2)))
+						      t))))
 
 	     (:name textmate
 		    :type git 
 		    :url "git://github.com/defunkt/textmate.el.git"
 		    :load "textmate.el"
-		    :after (lambda () (textmate-mode 1)))
+		    :post-init (lambda () (textmate-mode 1)))
 
 	     (:name magit
-		    :after (lambda () (global-set-key (kbd "C-x C-z") 'magit-status)))
+		    :post-init (lambda () (global-set-key (kbd "C-x C-z") 'magit-status)))
 	     magithub
 
 	     auctex
 	     (:name reftex 
-		    :after (lambda () (progn
-					(setq-default TeX-master nil)
-					(add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-					(add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-					(add-hook 'LaTeX-mode-hook 'reftex-mode)
-					(add-hook 'LaTeX-mode-hook 'auto-fill-mode)
-					(add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
-					(setq reftex-plug-into-AUCTeX t)
-					(setq TeX-auto-save t)
-					(setq TeX-save-query nil)
-					(setq TeX-parse-self t)
-					(setq-default TeX-master nil))))
+		    :post-init (lambda () (progn
+					    (setq-default TeX-master nil)
+					    (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+					    (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+					    (add-hook 'LaTeX-mode-hook 'reftex-mode)
+					    (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+					    (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+					    (setq reftex-plug-into-AUCTeX t)
+					    (setq TeX-auto-save t)
+					    (setq TeX-save-query nil)
+					    (setq TeX-parse-self t)
+					    (setq-default TeX-master nil))))
 
 	     (:name project-mode
 		    :type git
 		    :url "http://github.com/timfel/emacs-project-mode.git"
-		    :load "project-mode.el"
-		    :info "."
-		    :after (lambda () (progn
-					(project-mode 1)
-					(project-mode-menu)
-					(project-load-all)
-					(global-set-key "\C-t" 'project-fuzzy-search))))
+		    :load-path "."
+		    :features project-mode
+		    :post-init (lambda () (progn
+					    (project-mode 1)
+					    (project-mode-menu)
+					    (project-load-all)
+					    (global-set-key "\C-t" 'project-fuzzy-search))))
 
 	     ;; (:name dictionary-el    :type apt-get)
 	     ;; (:name emacs-goodies-el :type apt-get)
 
 	     (:name org-mode
-		    :after (lambda () (progn
-					(setq org-hide-leading-stars t)
-					(setq org-agenda-files '())
-					(add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
-					(setq org-agenda-files (append (file-expand-wildcards
-									(expand-file-name "~/Documents/HPI/11SS/*"))
-								       org-agenda-files))
-					(setq org-insert-mode-line-in-empty-file t))))
+		    :post-init (lambda () (progn
+					    (setq org-hide-leading-stars t)
+					    (setq org-agenda-files '())
+					    (add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
+					    (setq org-agenda-files (append (file-expand-wildcards
+									    (expand-file-name "~/Documents/HPI/11SS/*"))
+									   org-agenda-files))
+					    (setq org-insert-mode-line-in-empty-file t))))
 	     ))
 
-(el-get 'sync)
+(el-get)
 
 ;; stops me killing emacs by accident!
 (setq confirm-kill-emacs 'yes-or-no-p)
@@ -217,11 +240,6 @@
   (tool-bar-mode nil)
   ;; (menu-bar-mode)
   (scroll-bar-mode nil))
-
-;; redo
-(add-to-list  'load-path "~/.emacs.d/plugins/redo")
-(require 'redo)
-(global-set-key [(control -)] 'redo)
 
 ;; show ascii table
 ;; optained from http://www.chrislott.org/geek/emacs/dotemacs.html
@@ -294,29 +312,6 @@ LIST defaults to all existing live buffers."
 					;(global-set-key [C-mouse-5] 'up-a-lot)
 
 
-;; cedet
-;; See cedet/common/cedet.info for configuration details.
-(load-file "~/.emacs.d/plugins/cedet/common/cedet.el")
-					; Enable EDE (Project Management) features
-(global-ede-mode 1)
-;; * This enables the database and idle reparse engines
-(semantic-load-enable-minimum-features)
-(semantic-load-enable-code-helpers)
-(setq semantic-load-turn-everything-on t)
-					;(global-set-key "\C-c/" 'Semantic-ia-complete-symbol)
-					;(global-set-key "\C-c?" 'semantic-ia-complete-symbol-menu)
-
-;; ecb
-(add-to-list 'load-path "~/.emacs.d/plugins/ecb")
-(require 'ecb)
-(setq ecb-tip-of-the-day nil)
-(setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
-(if window-system
-    (if (>= (window-height) 16)
-	(ecb-activate)
-      (message "Not activating ECB, window height to small"))
-  (message "Not activating ECB, not using a window system"))
-
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -336,10 +331,6 @@ LIST defaults to all existing live buffers."
  '(ecb-tree-indent 2)
  '(ecb-windows-width 0.2))
 ;; resize the windows on emacs and run ecb-store-window-sizes
-
-;; find-recursive
-(add-to-list 'load-path "~/.emacs.d/plugins/find-recursive")
-(require 'find-recursive)
 
 ;; Tabbar
 (require 'tabbar)
