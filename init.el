@@ -131,6 +131,7 @@
                     :features (magit magit-svn)
                     :post-init (lambda () (global-set-key (kbd "C-x C-z") 'magit-status)))
              magithub
+             gist
 
              auctex
              (:name reftex
