@@ -13,161 +13,164 @@
      (end-of-buffer)
      (eval-print-last-sexp))))
 
-;; autotest 
+;; autotest
 
 (setq el-get-sources
       '(cssh el-get switch-window vkill yasnippet
-	     google-maps xcscope anything auto-complete
+             google-maps xcscope anything auto-complete
 
-	     (:name redo+
-		    :type http
-		    :url "http://www.emacswiki.org/emacs/download/redo%2b.el"
-		    :load "redo%2b.el"
-		    :post-init (lambda () (global-set-key [(control -)] 'redo)))
+             (:name redo+
+                    :type http
+                    :url "http://www.emacswiki.org/emacs/download/redo%2b.el"
+                    :load "redo%2b.el"
+                    :post-init (lambda () (global-set-key [(control -)] 'redo)))
 
-	     (:name ecb
-		    :load-path "."
-		    :features ecb
-	     	    :post-init (lambda () (progn
-					    (global-ede-mode 1)
-					    (semantic-mode t)
-					    (setq semantic-load-turn-everything-on t)
-					    (setq ecb-tip-of-the-day nil)
-					    (setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
-					    (if window-system
-						(if (>= (window-height) 16)
-						    (progn
-						      (ecb-activate)
-						      (add-hook 'window-setup-hook 'ecb-redraw-layout t))
-						  (message "Not activating ECB, window height to small"))
-					      (message "Not activating ECB, not using a window system")))))
-	     
-	     ;; auto-complete-clang auto-complete-etags auto-complete-extensions
-	     
-	     color-theme
-	     (:name color-theme-github
-		    :type git
-		    :url "https://github.com/dudleyf/color-theme-github.git"
-		    :info "Color theme GitHub"
-		    :load "color-theme-github.el"
-		    :post-init (lambda () (color-theme-github)))
-	     (:name color-theme-solarized
-		    :type git 
-		    :url "https://github.com/sellout/emacs-color-theme-solarized.git"
-		    :info "The emacs port of the solarized color scheme"
-		    :load "color-theme-solarized.el"
-		    :post-init (lambda () (color-theme-solarized-light)))
+             (:name ecb
+                    :load-path "."
+                    :features ecb
+                    :post-init (lambda () (progn
+                                            (global-ede-mode 1)
+                                            (semantic-mode t)
+                                            (setq semantic-load-turn-everything-on t)
+                                            (setq ecb-tip-of-the-day nil)
+                                            (setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
+                                            (if window-system
+                                                (if (>= (window-height) 16)
+                                                    (progn
+                                                      (ecb-activate)
+                                                      (add-hook 'window-setup-hook 'ecb-redraw-layout t))
+                                                  (message "Not activating ECB, window height to small"))
+                                              (message "Not activating ECB, not using a window system")))))
 
-	     (:name coffee-mode
-		    :post-init (lambda () (add-hook 'coffee-mode-hook
-						    '(lambda() (progn
-								 (set (make-local-variable 'tab-width) 2)
-								 (define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer))))))
-	     
-	     autopair haml-mode
-	     nxhtml
-	     rspec-mode 
-             sass-mode sudo-save
+             ;; auto-complete-clang auto-complete-etags auto-complete-extensions
 
-	     (:name yaml-mode
-		    :post-init (lambda () (progn
-					(add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
-					(add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
-					(add-to-list 'auto-mode-alist '("^Gemfile.lock$" . yaml-mode)))))
+             color-theme
+             (:name color-theme-github
+                    :type git
+                    :url "https://github.com/dudleyf/color-theme-github.git"
+                    :info "Color theme GitHub"
+                    :load "color-theme-github.el"
+                    :post-init (lambda () (color-theme-github)))
+             (:name color-theme-solarized
+                    :type git
+                    :url "https://github.com/sellout/emacs-color-theme-solarized.git"
+                    :info "The emacs port of the solarized color scheme"
+                    :load "color-theme-solarized.el"
+                    :post-init (lambda () (color-theme-solarized-light)))
 
-	     (:name maxframe
-		    :features maxframe
-		    :post-init (lambda () (add-hook 'window-setup-hook 'maximize-frame t)))
+             (:name coffee-mode
+                    :post-init (lambda () (add-hook 'coffee-mode-hook
+                                                    '(lambda() (progn
+                                                                 (set (make-local-variable 'tab-width) 2)
+                                                                 (define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer))))))
 
-	     (:name rinari 
-		    :post-init (lambda () (setq rinari-tags-file-name "TAGS")))
+             autopair haml-mode
+             nxhtml
+             rspec-mode
+             sass-mode
 
-	     (:name ri-emacs
-		    :post-init (lambda () (setq ri-ruby-script (expand-file-name (concat el-get-dir "/ri-emacs/ri-emacs.rb")))))
+             sudo-save
 
-	     (:name rhtml-mode
-		    :post-init (lambda () (progn
-					(add-hook 'rhtml-mode-hook
-						  (lambda () (rinari-launch)))
-					(add-to-list 'auto-mode-alist '("\\.html.erb$" . rhtml-mode))
-					(add-to-list 'auto-mode-alist '("\\.html.rb$" . rhtml-mode))
-					(add-to-list 'auto-mode-alist '("\\.rhtml$" . rhtml-mode))
-					)))
+             (:name yaml-mode
+                    :post-init (lambda () (progn
+                                        (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
+                                        (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
+                                        (add-to-list 'auto-mode-alist '("^Gemfile.lock$" . yaml-mode)))))
 
-	     (:name ruby-mode
-		    :after (lambda () (progn
-					(add-hook 'ruby-mode-hook 'turn-on-font-lock)
-					(add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
-					(add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
-					(add-to-list 'auto-mode-alist '("^Gemfile$" . ruby-mode)))))
-	     ruby-electric 
+             (:name maxframe
+                    :features maxframe
+                    :post-init (lambda () (add-hook 'window-setup-hook 'maximize-frame t)))
 
-	     (:name rsense
-		    :type git
-		    :url "git://github.com/m2ym/rsense.git"
-		    :prepare (lambda () (setq rsense-home (expand-file-name (concat el-get-dir "/rsense"))))
-		    :features rsense
-		    :load-path "etc")
+             (:name rinari
+                    :post-init (lambda () (setq rinari-tags-file-name "TAGS")))
 
-	     (:name js2-mode
-		    :post-init (lambda () (progn 
-					    (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
-					    (add-hook 'js2-mode-hook
-						      (lambda () (progn
-								   (setq imenu-create-index-function 'javascript-imenu-create-index)
-								   (local-set-key (kbd "<return>") 'newline-and-indent)
-								   (setq javascript-indent-level 2)))
-						      t))))
+             (:name ri-emacs
+                    :post-init (lambda () (setq ri-ruby-script (expand-file-name (concat el-get-dir "/ri-emacs/ri-emacs.rb")))))
 
-	     (:name textmate
-		    :type git 
-		    :url "git://github.com/defunkt/textmate.el.git"
-		    :load "textmate.el"
-		    :post-init (lambda () (textmate-mode 1)))
+             (:name rhtml-mode
+                    :post-init (lambda () (progn
+                                        (add-hook 'rhtml-mode-hook
+                                                  (lambda () (rinari-launch)))
+                                        (add-to-list 'auto-mode-alist '("\\.html.erb$" . rhtml-mode))
+                                        (add-to-list 'auto-mode-alist '("\\.html.rb$" . rhtml-mode))
+                                        (add-to-list 'auto-mode-alist '("\\.rhtml$" . rhtml-mode))
+                                        )))
 
-	     (:name magit
-		    :post-init (lambda () (global-set-key (kbd "C-x C-z") 'magit-status)))
-	     magithub
+             (:name ruby-mode
+                    :after (lambda () (progn
+                                        (add-hook 'ruby-mode-hook 'turn-on-font-lock)
+                                        (add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
+                                        (add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
+                                        (add-to-list 'auto-mode-alist '("^Gemfile$" . ruby-mode)))))
+             ruby-electric
 
-	     auctex
-	     (:name reftex 
-		    :post-init (lambda () (progn
-					    (setq-default TeX-master nil)
-					    (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-					    (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-					    (add-hook 'LaTeX-mode-hook 'reftex-mode)
-					    (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
-					    (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
-					    (setq reftex-plug-into-AUCTeX t)
-					    (setq TeX-auto-save t)
-					    (setq TeX-save-query nil)
-					    (setq TeX-parse-self t)
-					    (setq-default TeX-master nil))))
+             (:name rsense
+                    :type git
+                    :url "git://github.com/m2ym/rsense.git"
+                    :prepare (lambda () (setq rsense-home (expand-file-name (concat el-get-dir "/rsense"))))
+                    :features rsense
+                    :load-path "etc")
 
-	     (:name project-mode
-		    :type git
-		    :url "http://github.com/timfel/emacs-project-mode.git"
-		    :load-path "."
-		    :features project-mode
-		    :post-init (lambda () (progn
-					    (project-mode 1)
-					    (project-mode-menu)
-					    (project-load-all)
-					    (global-set-key "\C-t" 'project-fuzzy-search))))
+             (:name js2-mode
+                    :post-init (lambda () (progn
+                                            (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+                                            (add-hook 'js2-mode-hook
+                                                      (lambda () (progn
+                                                                   (setq imenu-create-index-function 'javascript-imenu-create-index)
+                                                                   (local-set-key (kbd "<return>") 'newline-and-indent)
+                                                                   (setq javascript-indent-level 2)))
+                                                      t))))
 
-	     ;; (:name dictionary-el    :type apt-get)
-	     ;; (:name emacs-goodies-el :type apt-get)
+             (:name textmate
+                    :type git
+                    :url "git://github.com/defunkt/textmate.el.git"
+                    :load "textmate.el"
+                    :post-init (lambda () (textmate-mode 1)))
 
-	     (:name org-mode
-		    :post-init (lambda () (progn
-					    (setq org-hide-leading-stars t)
-					    (setq org-agenda-files '())
-					    (add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
-					    (setq org-agenda-files (append (file-expand-wildcards
-									    (expand-file-name "~/Documents/HPI/11SS/*"))
-									   org-agenda-files))
-					    (setq org-insert-mode-line-in-empty-file t))))
-	     ))
+             (:name magit
+                    :features (magit magit-svn)
+                    :post-init (lambda () (global-set-key (kbd "C-x C-z") 'magit-status)))
+             magithub
+
+             auctex
+             (:name reftex
+                    :post-init (lambda () (progn
+                                            (setq-default TeX-master nil)
+                                            (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+                                            (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+                                            (add-hook 'LaTeX-mode-hook 'reftex-mode)
+                                            (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+                                            (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+                                            (setq reftex-plug-into-AUCTeX t)
+                                            (setq TeX-auto-save t)
+                                            (setq TeX-save-query nil)
+                                            (setq TeX-parse-self t)
+                                            (setq-default TeX-master nil))))
+
+             (:name project-mode
+                    :type git
+                    :url "http://github.com/timfel/emacs-project-mode.git"
+                    :load-path "."
+                    :features project-mode
+                    :post-init (lambda () (progn
+                                            (project-mode 1)
+                                            (project-mode-menu)
+                                            (project-load-all)
+                                            (global-set-key "\C-t" 'project-fuzzy-search))))
+
+             ;; (:name dictionary-el    :type apt-get)
+             ;; (:name emacs-goodies-el :type apt-get)
+
+             (:name org-mode
+                    :post-init (lambda () (progn
+                                            (setq org-hide-leading-stars t)
+                                            (setq org-agenda-files '())
+                                            (add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
+                                            (setq org-agenda-files (append (file-expand-wildcards
+                                                                            (expand-file-name "~/Documents/HPI/11SS/*"))
+                                                                           org-agenda-files))
+                                            (setq org-insert-mode-line-in-empty-file t))))
+             ))
 
 (el-get)
 
@@ -183,10 +186,10 @@
 ;; Flyspell options
 (require 'ispell)
 (add-to-list 'ispell-dictionary-alist
-	     '("de"
-	       "[a-zA-Z\304\326\334\344\366\337\374]"
-	       "[^a-zA-Z\304\326\334\344\366\337\374]"
-	       "[']" t ("-C" "-d" "de_DE") "~latin1" iso-8859-15))
+             '("de"
+               "[a-zA-Z\304\326\334\344\366\337\374]"
+               "[^a-zA-Z\304\326\334\344\366\337\374]"
+               "[']" t ("-C" "-d" "de_DE") "~latin1" iso-8859-15))
 (setq ispell-program-name "aspell")
 (setq ispell-list-command "list")
 (setq ispell-extra-args '("--sug-mode=fast"))
@@ -197,7 +200,7 @@
 (defun fd-switch-dictionary()
   (interactive)
   (let* ((dic ispell-current-dictionary)
-	 (change (if (string= dic "de") "english" "de")))
+         (change (if (string= dic "de") "english" "de")))
     (ispell-change-dictionary change)
     (message "Dictionary switched from %s to %s" dic change)
     ))
@@ -208,7 +211,7 @@
 (setq server-host "127.0.0.1")
 (if (functionp 'server-running-p)
     (if (not (server-running-p)) ;; Server might be running
-	(server-start)))
+        (server-start)))
 
 (recentf-mode t)
 
@@ -272,25 +275,25 @@ LIST defaults to all existing live buffers."
   (dolist (buffer list)
     (let ((name (buffer-name buffer)))
       (if (and (not (string-equal (buffer-name) name)) ;; Don't kill the active buffer
-	       (notany
-		(lambda (x) (string-match-p x name))
-		'("^$" "\\*Messages\\*" "\\*Buffer List\\*" "\\*buffer-selection\\*"
-		  "\\*Shell Command Output\\*" "\\*scratch\\*" "ECB" "magit"))
-	       (/= (aref name 0) ? ))
-	  (if (buffer-modified-p buffer)
-	      (if (yes-or-no-p
-		   (format "Buffer %s has been edited. Kill? " name))
-		  (kill-buffer buffer))
-	    (kill-buffer buffer))))))
+               (notany
+                (lambda (x) (string-match-p x name))
+                '("^$" "\\*Messages\\*" "\\*Buffer List\\*" "\\*buffer-selection\\*"
+                  "\\*Shell Command Output\\*" "\\*scratch\\*" "ECB" "magit"))
+               (/= (aref name 0) ? ))
+          (if (buffer-modified-p buffer)
+              (if (yes-or-no-p
+                   (format "Buffer %s has been edited. Kill? " name))
+                  (kill-buffer buffer))
+            (kill-buffer buffer))))))
 (global-set-key "\C-x\C-ka" 'kill-all-but-active-buffers)
 
 ;; fullscreen
 (defun toggle-fullscreen ()
   (interactive)
   (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
-			 '(2 "_NET_WM_STATE_MAXIMIZED_VERT" 0))
+                         '(2 "_NET_WM_STATE_MAXIMIZED_VERT" 0))
   (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
-			 '(2 "_NET_WM_STATE_MAXIMIZED_HORZ" 0)))
+                         '(2 "_NET_WM_STATE_MAXIMIZED_HORZ" 0)))
 (toggle-fullscreen)
 
 ;; Commenting blocks
@@ -298,18 +301,18 @@ LIST defaults to all existing live buffers."
 
 (mouse-wheel-mode t)
 ;; wheel mouse
-					;(defun up-slightly () (interactive) (scroll-up 5))
-					;(defun down-slightly () (interactive) (scroll-down 5))
-					;(global-set-key [mouse-4] 'down-slightly)
-					;(global-set-key [mouse-5] 'up-slightly)
-					;(defun up-one () (interactive) (scroll-up 1))
-					;(defun down-one () (interactive) (scroll-down 1))
-					;(global-set-key [S-mouse-4] 'down-one)
-					;(global-set-key [S-mouse-5] 'up-one)
-					;(defun up-a-lot () (interactive) (scroll-up))
-					;(defun down-a-lot () (interactive) (scroll-down))
-					;(global-set-key [C-mouse-4] 'down-a-lot)
-					;(global-set-key [C-mouse-5] 'up-a-lot)
+                                        ;(defun up-slightly () (interactive) (scroll-up 5))
+                                        ;(defun down-slightly () (interactive) (scroll-down 5))
+                                        ;(global-set-key [mouse-4] 'down-slightly)
+                                        ;(global-set-key [mouse-5] 'up-slightly)
+                                        ;(defun up-one () (interactive) (scroll-up 1))
+                                        ;(defun down-one () (interactive) (scroll-down 1))
+                                        ;(global-set-key [S-mouse-4] 'down-one)
+                                        ;(global-set-key [S-mouse-5] 'up-one)
+                                        ;(defun up-a-lot () (interactive) (scroll-up))
+                                        ;(defun down-a-lot () (interactive) (scroll-down))
+                                        ;(global-set-key [C-mouse-4] 'down-a-lot)
+                                        ;(global-set-key [C-mouse-5] 'up-a-lot)
 
 
 (custom-set-variables
@@ -318,8 +321,8 @@ LIST defaults to all existing live buffers."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(ecb-source-path (quote (("~/Devel/projects" "Dev")
-			   ("~/Documents/HPI/10WS/" "Uni")
-			   ("~/Finnlabs/Finnlabs/" "Finn"))))
+                           ("~/Documents/HPI/10WS/" "Uni")
+                           ("~/Finnlabs/Finnlabs/" "Finn"))))
  '(TeX-view-program-selection (quote (((output-dvi style-pstricks) "xdg-open") (output-dvi "xdg-open") (output-pdf "xdg-open") (output-html "xdg-open"))))
  '(ecb-compilation-buffer-names (quote (("*Calculator*") ("*vc*") ("*vc-diff*") ("*Apropos*") ("*Occur*") ("*shell*") ("\\*[cC]ompilation.*\\*" . t) ("\\*i?grep.*\\*" . t) ("*JDEE Compile Server*") ("*Help*") ("*Completions*") ("*Backtrace*") ("*Compile-log*") ("*bsh*") ("*Messages*") ("*Buffer List*"))))
  '(ecb-compile-window-height 8)
@@ -343,7 +346,7 @@ LIST defaults to all existing live buffers."
      (interactive "P")
      ,do-always
      (if (equal nil arg)
-	 ,on-no-prefix
+         ,on-no-prefix
        ,on-prefix)))
 
 (defun-prefix-alt shk-tabbar-next (tabbar-forward-tab) (tabbar-forward-group) (tabbar-mode 1))
@@ -354,10 +357,10 @@ LIST defaults to all existing live buffers."
 ;; and place a space around the label to make it looks less crowd
 (defadvice tabbar-buffer-tab-label (after fixup_tab_label_space_and_flag activate)
   (setq ad-return-value
-	(if (and (buffer-modified-p (tabbar-tab-value tab))
-		 (buffer-file-name (tabbar-tab-value tab)))
-	    (concat " + " (concat ad-return-value " "))
-	  (concat " " (concat ad-return-value " ")))))
+        (if (and (buffer-modified-p (tabbar-tab-value tab))
+                 (buffer-file-name (tabbar-tab-value tab)))
+            (concat " + " (concat ad-return-value " "))
+          (concat " " (concat ad-return-value " ")))))
 
 ;; called each time the modification state of the buffer changed
 (defun ztl-modification-state-change ()
@@ -380,18 +383,18 @@ LIST defaults to all existing live buffers."
 
 ;; anything-rcodetools
 (add-to-list 'load-path "~/.emacs.d/plugins/rcodetools")
-					;(require 'rcodetools)
-					;(require 'icicles-rcodetools)
-					;(require 'anything)
+                                        ;(require 'rcodetools)
+                                        ;(require 'icicles-rcodetools)
+                                        ;(require 'anything)
 (require 'anything-rcodetools)
 ;;       ;; Command to get all RI entries.
 (setq rct-get-all-methods-command "PAGER=cat fri -l -L")
 ;;       (setq rct-get-all-methods-command "PAGER=cat fri -l")
-					;(setq rct-get-all-methods-command "PAGER=cat ri -l")
+                                        ;(setq rct-get-all-methods-command "PAGER=cat ri -l")
 ;;       ;; See docs
 ;; (define-key ruby-mode-map "\M-\C-i" 'rct-complete-symbol)
 (define-key anything-map "\C-z" 'anything-execute-persistent-action)
-					;(rct-get-all-methods)
+                                        ;(rct-get-all-methods)
 
 ;; Interactively Do Things (highly recommended, but not strictly required)
 (require 'ido)
@@ -403,29 +406,29 @@ LIST defaults to all existing live buffers."
   (interactive)
   (imenu--make-index-alist)
   (let ((name-and-pos '())
-	(symbol-names '()))
+        (symbol-names '()))
     (flet ((addsymbols (symbol-list)
-		       (when (listp symbol-list)
-			 (dolist (symbol symbol-list)
-			   (let ((name nil) (position nil))
-			     (cond
-			      ((and (listp symbol) (imenu--subalist-p symbol))
-			       (addsymbols symbol))
+                       (when (listp symbol-list)
+                         (dolist (symbol symbol-list)
+                           (let ((name nil) (position nil))
+                             (cond
+                              ((and (listp symbol) (imenu--subalist-p symbol))
+                               (addsymbols symbol))
 
-			      ((listp symbol)
-			       (setq name (car symbol))
-			       (setq position (cdr symbol)))
+                              ((listp symbol)
+                               (setq name (car symbol))
+                               (setq position (cdr symbol)))
 
-			      ((stringp symbol)
-			       (setq name symbol)
-			       (setq position (get-text-property 1 'org-imenu-marker symbol))))
+                              ((stringp symbol)
+                               (setq name symbol)
+                               (setq position (get-text-property 1 'org-imenu-marker symbol))))
 
-			     (unless (or (null position) (null name))
-			       (add-to-list 'symbol-names name)
-			       (add-to-list 'name-and-pos (cons name position))))))))
+                             (unless (or (null position) (null name))
+                               (add-to-list 'symbol-names name)
+                               (add-to-list 'name-and-pos (cons name position))))))))
       (addsymbols imenu--index-alist))
     (let* ((selected-symbol (ido-completing-read "Symbol? " symbol-names))
-	   (position (cdr (assoc selected-symbol name-and-pos))))
+           (position (cdr (assoc selected-symbol name-and-pos))))
       (goto-char position))))
 (global-set-key [(control .)] 'ido-goto-symbol)
 
@@ -434,67 +437,67 @@ LIST defaults to all existing live buffers."
 (autoload 'dtd-etags "tdtd" "Execute etags on FILESPEC and match on DTD-specific regular expressions." t)
 (autoload 'dtd-grep "tdtd" "Grep for PATTERN in files matching FILESPEC." t)
 (setq auto-mode-alist (append (list
-			       '("\\.dcl$" . dtd-mode)
-			       '("\\.dec$" . dtd-mode)
-			       '("\\.dtd$" . dtd-mode)
-			       '("\\.ele$" . dtd-mode)
-			       '("\\.ent$" . dtd-mode)
-			       '("\\.mod$" . etd-mode))
-			      auto-mode-alist))
+                               '("\\.dcl$" . dtd-mode)
+                               '("\\.dec$" . dtd-mode)
+                               '("\\.dtd$" . dtd-mode)
+                               '("\\.ele$" . dtd-mode)
+                               '("\\.ent$" . dtd-mode)
+                               '("\\.mod$" . etd-mode))
+                              auto-mode-alist))
 
 (add-hook 'css-mode-hook (lambda()
-			   (local-set-key (kbd "<return>") 'newline-and-indent)))
+                           (local-set-key (kbd "<return>") 'newline-and-indent)))
 
 ;; ruby electric
 (defun try-complete-abbrev (old)
   (if (expand-abbrev) t nil))
 (setq hippie-expand-try-functions-list
       '(try-complete-abbrev
-	try-complete-file-name
-	try-expand-dabbrev))
+        try-complete-file-name
+        try-expand-dabbrev))
 
 ;; ruby-mode-hook
 (add-hook 'ruby-mode-hook
-	  (lambda()
-	    (add-hook 'write-file-functions
-		      '(lambda()
-			 (save-excursion
-			   (untabify (point-min) (point-max))
-			   (delete-trailing-whitespace)
-			   )))
-	    (set (make-local-variable 'indent-tabs-mode) 'nil)
-	    (set (make-local-variable 'tab-width) 2)
-	    (imenu-add-to-menubar "IMENU")
-					;           (require 'ruby-electric)
-	    (ruby-electric-mode t)
-					;           (require 'ruby-block)
-	    (ruby-block-mode t)
-					;           (local-set-key 'f1 'ri)
-	    (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
-					;           (local-set-key 'f4 'ri-ruby-show-args)
-	    (if (project-current)
-		(rsense-open-project (project-default-directory (project-current))))
-	    (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
-	    ;; Always force spaces
-	    (setq-default indent-tabs-mode nil)
-	    (local-set-key (kbd "<return>") 'newline-and-indent)
-	    ))
+          (lambda()
+            (add-hook 'write-file-functions
+                      '(lambda()
+                         (save-excursion
+                           (untabify (point-min) (point-max))
+                           (delete-trailing-whitespace)
+                           )))
+            (set (make-local-variable 'indent-tabs-mode) 'nil)
+            (set (make-local-variable 'tab-width) 2)
+            (imenu-add-to-menubar "IMENU")
+                                        ;           (require 'ruby-electric)
+            (ruby-electric-mode t)
+                                        ;           (require 'ruby-block)
+            (ruby-block-mode t)
+                                        ;           (local-set-key 'f1 'ri)
+            (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
+                                        ;           (local-set-key 'f4 'ri-ruby-show-args)
+            (if (project-current)
+                (rsense-open-project (project-default-directory (project-current))))
+            (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
+            ;; Always force spaces
+            (setq-default indent-tabs-mode nil)
+            (local-set-key (kbd "<return>") 'newline-and-indent)
+            ))
 
 ;; nxhtml
-					;(setq *nxhtml-autostart-file* (expand-file-name "~/.emacs.d/plugins/nxhtml/autostart.el"))
-					;(load *nxhtml-autostart-file*)
-					;(setq
-					;      nxhtml-global-minor-mode t
-					;      mumamo-chunk-coloring 'submode-colored
-					;      nxhtml-skip-welcome t
-					;      indent-region-mode t
-					;      nxhtml-default-encoding "utf8"
-					;      rng-nxml-auto-validate-flag nil
-					;      nxml-degraded t)
-					;(add-to-list 'auto-mode-alist '("\\.html$" . nxhtml-mumamo-mode))
-					;(add-to-list 'auto-mode-alist '("\\.html\\.erb$" . eruby-nxhtml-mumamo-mode))
-					;(add-hook 'nxhtml-mumamo-mode-hook 'tabkey2-mode)
-					;(add-hook 'eruby-nxhtml-mumamo-mode-hook 'tabkey2-mode)
+                                        ;(setq *nxhtml-autostart-file* (expand-file-name "~/.emacs.d/plugins/nxhtml/autostart.el"))
+                                        ;(load *nxhtml-autostart-file*)
+                                        ;(setq
+                                        ;      nxhtml-global-minor-mode t
+                                        ;      mumamo-chunk-coloring 'submode-colored
+                                        ;      nxhtml-skip-welcome t
+                                        ;      indent-region-mode t
+                                        ;      nxhtml-default-encoding "utf8"
+                                        ;      rng-nxml-auto-validate-flag nil
+                                        ;      nxml-degraded t)
+                                        ;(add-to-list 'auto-mode-alist '("\\.html$" . nxhtml-mumamo-mode))
+                                        ;(add-to-list 'auto-mode-alist '("\\.html\\.erb$" . eruby-nxhtml-mumamo-mode))
+                                        ;(add-hook 'nxhtml-mumamo-mode-hook 'tabkey2-mode)
+                                        ;(add-hook 'eruby-nxhtml-mumamo-mode-hook 'tabkey2-mode)
 
 
 ;; flymake
@@ -542,22 +545,22 @@ makes)."
   (or prefix
       (setq prefix "flymake"))
   (let* ((name (concat
-		(file-name-nondirectory
-		 (file-name-sans-extension file-name))
-		"_" prefix))
-	 (ext  (concat "." (file-name-extension file-name)))
-	 (temp-name (make-temp-file name nil ext))
-	 )
+                (file-name-nondirectory
+                 (file-name-sans-extension file-name))
+                "_" prefix))
+         (ext  (concat "." (file-name-extension file-name)))
+         (temp-name (make-temp-file name nil ext))
+         )
     (flymake-log 3 "create-temp-intemp: file=%s temp=%s" file-name temp-name)
     temp-name))
 
 ;; Invoke ruby with '-c' to get syntax checking
 (defun flymake-ruby-init ()
   (let* ((temp-file   (flymake-init-create-temp-buffer-copy
-		       'flymake-create-temp-intemp))
-	 (local-file  (file-relative-name
-		       temp-file
-		       (file-name-directory buffer-file-name))))
+                       'flymake-create-temp-intemp))
+         (local-file  (file-relative-name
+                       temp-file
+                       (file-name-directory buffer-file-name))))
     (list "ruby" (list "-c" local-file))))
 
 (push '(".+\\.rb$" flymake-ruby-init) flymake-allowed-file-name-masks)
@@ -567,20 +570,20 @@ makes)."
 (push '("^\\(.*\\):\\([0-9]+\\): \\(.*\\)$" 1 2 nil 3) flymake-err-line-patterns)
 
 (add-hook 'ruby-mode-hook
-	  '(lambda ()
+          '(lambda ()
 
-	     ;; Don't want flymake mode for ruby regions in rhtml files and also on read only files
-	     (if (and (not (null buffer-file-name)) (file-writable-p buffer-file-name))
-		 (flymake-mode))
-	     ))
+             ;; Don't want flymake mode for ruby regions in rhtml files and also on read only files
+             (if (and (not (null buffer-file-name)) (file-writable-p buffer-file-name))
+                 (flymake-mode))
+             ))
 
 (require 'flymake-jslint)
 (add-hook 'javascript-mode-hook
-	  '(lambda ()
-	     ;; Don't want flymake mode for ruby regions in rhtml files and also on read only files
-	     (if (and (not (null buffer-file-name)) (file-writable-p buffer-file-name))
-		 (flymake-mode))
-	     ))
+          '(lambda ()
+             ;; Don't want flymake mode for ruby regions in rhtml files and also on read only files
+             (if (and (not (null buffer-file-name)) (file-writable-p buffer-file-name))
+                 (flymake-mode))
+             ))
 
 ;; yasnippet rails
 (load "~/.emacs.d/plugins/yasnippets-rails/setup.el")
@@ -590,22 +593,22 @@ makes)."
 
 (add-to-list 'load-path "~/.emacs.d/plugins/auto-complete")
 (require 'auto-complete-config)
-					;(global-auto-complete-mode t)
-					;(define-key ac-complete-mode-map "\C-n" 'ac-next)
-					;(define-key ac-complete-mode-map "\C-p" 'ac-previous)
+                                        ;(global-auto-complete-mode t)
+                                        ;(define-key ac-complete-mode-map "\C-n" 'ac-next)
+                                        ;(define-key ac-complete-mode-map "\C-p" 'ac-previous)
 ;;     ;; start completion when entered 3 characters
-					;(setq ac-auto-start 2)
+                                        ;(setq ac-auto-start 2)
 ;; Add following code to your .emacs.
 ;;
-					;(define-key ac-complete-mode-map "\t" 'ac-complete)
-					;(define-key ac-complete-mode-map "\r" nil)
+                                        ;(define-key ac-complete-mode-map "\t" 'ac-complete)
+                                        ;(define-key ac-complete-mode-map "\r" nil)
 
 
-					;(add-to-list 'load-path "~/.emacs.d/plugins/auto-complete")
-					; (when (require 'auto-complete nil t)
-					;   (require 'auto-complete-yasnippet)
-					;   (require 'auto-complete-ruby)
-					;   (require 'auto-complete-css)
+                                        ;(add-to-list 'load-path "~/.emacs.d/plugins/auto-complete")
+                                        ; (when (require 'auto-complete nil t)
+                                        ;   (require 'auto-complete-yasnippet)
+                                        ;   (require 'auto-complete-ruby)
+                                        ;   (require 'auto-complete-css)
 
 (global-auto-complete-mode t)           ;enable global-mode
 (setq ac-auto-start t)                  ;automatically start
@@ -619,38 +622,38 @@ makes)."
 
 (setq ac-modes
       (append ac-modes
-	      '(eshell-mode
-					;org-mode
-		)))
-					;(add-to-list 'ac-trigger-commands 'org-self-insert-command)
+              '(eshell-mode
+                                        ;org-mode
+                )))
+                                        ;(add-to-list 'ac-trigger-commands 'org-self-insert-command)
 
 (add-hook 'emacs-lisp-mode-hook
-	  (lambda ()
-	    (setq ac-sources '(ac-source-yasnippet ac-source-abbrev ac-source-words-in-buffer ac-source-symbols))))
+          (lambda ()
+            (setq ac-sources '(ac-source-yasnippet ac-source-abbrev ac-source-words-in-buffer ac-source-symbols))))
 
 (add-hook 'eshell-mode-hook
-	  (lambda ()
-	    (setq ac-sources '(ac-source-yasnippet ac-source-abbrev ac-source-files-in-current-dir ac-source-words-in-buffer))))
+          (lambda ()
+            (setq ac-sources '(ac-source-yasnippet ac-source-abbrev ac-source-files-in-current-dir ac-source-words-in-buffer))))
 
 (add-hook 'ruby-mode-hook
-	  (lambda ()
-	    (setq ac-sources (append '(ac-source-rsense-method ac-source-rsense-constant) ac-sources))
-	    (setq ac-sources (append ac-sources '(ac-source-words-in-same-mode-buffers)))
-	    (setq ac-omni-completion-sources '(("\\.\\=" ac-source-rcodetools)))));)
+          (lambda ()
+            (setq ac-sources (append '(ac-source-rsense-method ac-source-rsense-constant) ac-sources))
+            (setq ac-sources (append ac-sources '(ac-source-words-in-same-mode-buffers)))
+            (setq ac-omni-completion-sources '(("\\.\\=" ac-source-rcodetools)))));)
 
 ;; ri
-					;(load "~/.emacs.d/plugins/ri/ri.el")
+                                        ;(load "~/.emacs.d/plugins/ri/ri.el")
 
 ;; snippet
-					;(add-to-list 'load-path "~/.emacs.d/plugins/snippet")
+                                        ;(add-to-list 'load-path "~/.emacs.d/plugins/snippet")
 
 ;; rails-emacs
-					;(add-to-list 'load-path "~/.emacs.d/plugins/emacs-rails")
-					;(require 'rails)
+                                        ;(add-to-list 'load-path "~/.emacs.d/plugins/emacs-rails")
+                                        ;(require 'rails)
 
-					;(kill-buffer "*ESS*")
-					;(kill-buffer "*Compile-Log*")
-					;(kill-buffer "*Messages*")
+                                        ;(kill-buffer "*ESS*")
+                                        ;(kill-buffer "*Compile-Log*")
+                                        ;(kill-buffer "*Messages*")
 
 
 
