@@ -1,7 +1,20 @@
-(when
-    (load
-     (expand-file-name "~/.emacs.d/elpa/package.el"))
-  (package-initialize))
+(condition-case nil
+    (when
+	(load
+	 (expand-file-name "~/.emacs.d/elpa/package.el"))
+      (package-initialize))
+  (error (let ((buffer (url-retrieve-synchronously
+			"http://tromey.com/elpa/package-install.el")))
+	   (save-excursion
+	     (set-buffer buffer)
+	     (goto-char (point-min))
+	     (re-search-forward "^$" nil 'move)
+	     (eval-region (point) (point-max))
+	     (kill-buffer (current-buffer))
+	     (when
+		 (load
+		  (expand-file-name "~/.emacs.d/elpa/package.el"))
+	       (package-initialize))))))
 (setq package-archives '("tromey" . "http://tromey.com/elpa/"))
 
 (add-to-list 'load-path "~/.emacs.d/el-get/el-get")
@@ -44,17 +57,19 @@
 
              ;; auto-complete-clang auto-complete-etags auto-complete-extensions
 
-             color-theme
-             (:name color-theme-github
-                    :type git
-                    :url "https://github.com/dudleyf/color-theme-github.git"
-                    :info "Color theme GitHub"
-                    :load "color-theme-github.el"
-                    :post-init (lambda () (color-theme-github)))
+             (:name color-theme
+		    :load-path "."
+		    :load "color-theme.el")
+             ;; (:name color-theme-github
+             ;;        :type git
+             ;;        :url "https://github.com/dudleyf/color-theme-github.git"
+             ;;        :info "Color theme GitHub"
+             ;;        :load "color-theme-github.el"
+             ;;        :post-init (lambda () (color-theme-github)))
              (:name color-theme-solarized
+		    :depends color-theme
                     :type git
                     :url "https://github.com/sellout/emacs-color-theme-solarized.git"
-                    :info "The emacs port of the solarized color scheme"
                     :load "color-theme-solarized.el"
                     :post-init (lambda () (color-theme-solarized-light)))
 
@@ -143,7 +158,6 @@
              magithub
              gist
 
-             auctex
              (:name reftex
                     :post-init (lambda () (progn
                                             (setq-default TeX-master nil)
@@ -183,7 +197,21 @@
                                             (setq org-insert-mode-line-in-empty-file t))))
              ))
 
-(el-get)
+;; Auctex depends on pdflatex being available, only install if desired on this system
+(if (= (let ((path-from-shell
+	      (replace-regexp-in-string "[[:space:]\n]*$" "" 
+					(shell-command-to-string "$SHELL -l -c 'echo $PATH'"))))
+	 (setenv "PATH" path-from-shell)
+	 (setq exec-path (split-string path-from-shell path-separator))
+	 (shell-command "pdflatex -version"))
+       0) ;; pdflatex command is installed
+    (setq el-get-sources
+	  (append '((:name auctex
+			   :build `("./autogen.sh" ,(concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs) "make")))
+		  el-get-sources)))
+
+(setq my-packages (mapcar 'el-get-source-name el-get-sources))
+(el-get 'sync my-packages)
 
 ;; stops me killing emacs by accident!
 (setq confirm-kill-emacs 'yes-or-no-p)
@@ -305,7 +333,9 @@ LIST defaults to all existing live buffers."
                          '(2 "_NET_WM_STATE_MAXIMIZED_VERT" 0))
   (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
                          '(2 "_NET_WM_STATE_MAXIMIZED_HORZ" 0)))
-(toggle-fullscreen)
+(condition-case nil
+    (toggle-fullscreen)
+  (error nil))
 
 ;; Commenting blocks
 (global-set-key [(control /)] 'comment-or-uncomment-region-or-line)
@@ -346,51 +376,54 @@ LIST defaults to all existing live buffers."
  '(ecb-windows-width 0.2))
 ;; resize the windows on emacs and run ecb-store-window-sizes
 
-;; Tabbar
-(require 'tabbar)
-(tabbar-mode t)
-(dolist (func '(tabbar-mode tabbar-forward-tab tabbar-forward-group tabbar-backward-tab tabbar-backward-group))
-  (autoload func "tabbar" "Tabs at the top of buffers and easy control-tab navigation"))
+;; Tabbar, this is in emacs-goodies, so it'll only work in Ubuntu
+(condition-case nil
+    (save-excursion
+      (require 'tabbar)
+      (tabbar-mode t)
+      (dolist (func '(tabbar-mode tabbar-forward-tab tabbar-forward-group tabbar-backward-tab tabbar-backward-group))
+	(autoload func "tabbar" "Tabs at the top of buffers and easy control-tab navigation"))
 
-(defmacro defun-prefix-alt (name on-no-prefix on-prefix &optional do-always)
-  `(defun ,name (arg)
-     (interactive "P")
-     ,do-always
-     (if (equal nil arg)
-         ,on-no-prefix
-       ,on-prefix)))
+      (defmacro defun-prefix-alt (name on-no-prefix on-prefix &optional do-always)
+	`(defun ,name (arg)
+	   (interactive "P")
+	   ,do-always
+	   (if (equal nil arg)
+	       ,on-no-prefix
+	     ,on-prefix)))
 
-(defun-prefix-alt shk-tabbar-next (tabbar-forward-tab) (tabbar-forward-group) (tabbar-mode 1))
-(defun-prefix-alt shk-tabbar-prev (tabbar-backward-tab) (tabbar-backward-group) (tabbar-mode 1))
-(global-set-key [(backtab)] 'shk-tabbar-next)
-(global-set-key "\C-c<left>" 'shk-tabbar-prev)
-;; add a buffer modification state indicator in the tab label,
-;; and place a space around the label to make it looks less crowd
-(defadvice tabbar-buffer-tab-label (after fixup_tab_label_space_and_flag activate)
-  (setq ad-return-value
-        (if (and (buffer-modified-p (tabbar-tab-value tab))
-                 (buffer-file-name (tabbar-tab-value tab)))
-            (concat " + " (concat ad-return-value " "))
-          (concat " " (concat ad-return-value " ")))))
+      (defun-prefix-alt shk-tabbar-next (tabbar-forward-tab) (tabbar-forward-group) (tabbar-mode 1))
+      (defun-prefix-alt shk-tabbar-prev (tabbar-backward-tab) (tabbar-backward-group) (tabbar-mode 1))
+      (global-set-key [(backtab)] 'shk-tabbar-next)
+      (global-set-key "\C-c<left>" 'shk-tabbar-prev)
+      ;; add a buffer modification state indicator in the tab label,
+      ;; and place a space around the label to make it looks less crowd
+      (defadvice tabbar-buffer-tab-label (after fixup_tab_label_space_and_flag activate)
+	(setq ad-return-value
+	      (if (and (buffer-modified-p (tabbar-tab-value tab))
+		       (buffer-file-name (tabbar-tab-value tab)))
+		  (concat " + " (concat ad-return-value " "))
+		(concat " " (concat ad-return-value " ")))))
 
-;; called each time the modification state of the buffer changed
-(defun ztl-modification-state-change ()
-  (tabbar-set-template tabbar-current-tabset nil)
-  (tabbar-display-update))
-;; first-change-hook is called BEFORE the change is made
-(defun ztl-on-buffer-modification ()
-  (set-buffer-modified-p t)
-  (ztl-modification-state-change))
-(add-hook 'after-save-hook 'ztl-modification-state-change)
-;; this doesn't work for revert, I don't know
-;;(add-hook 'after-revert-hook 'ztl-modification-state-change)
-(add-hook 'first-change-hook 'ztl-on-buffer-modification)
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+      ;; called each time the modification state of the buffer changed
+      (defun ztl-modification-state-change ()
+	(tabbar-set-template tabbar-current-tabset nil)
+	(tabbar-display-update))
+      ;; first-change-hook is called BEFORE the change is made
+      (defun ztl-on-buffer-modification ()
+	(set-buffer-modified-p t)
+	(ztl-modification-state-change))
+      (add-hook 'after-save-hook 'ztl-modification-state-change)
+      ;; this doesn't work for revert, I don't know
+      ;;(add-hook 'after-revert-hook 'ztl-modification-state-change)
+      (add-hook 'first-change-hook 'ztl-on-buffer-modification)
+      (custom-set-faces
+       ;; custom-set-faces was added by Custom.
+       ;; If you edit it by hand, you could mess it up, so be careful.
+       ;; Your init file should contain only one such instance.
+       ;; If there is more than one, they won't work right.
+       ))
+  (error nil))
 
 ;; anything-rcodetools
 (add-to-list 'load-path "~/.emacs.d/plugins/rcodetools")
