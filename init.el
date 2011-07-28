@@ -1,7 +1,20 @@
-(when
-    (load
-     (expand-file-name "~/.emacs.d/elpa/package.el"))
-  (package-initialize))
+(condition-case nil
+    (when
+	(load
+	 (expand-file-name "~/.emacs.d/elpa/package.el"))
+      (package-initialize))
+  (error (let ((buffer (url-retrieve-synchronously
+			"http://tromey.com/elpa/package-install.el")))
+	   (save-excursion
+	     (set-buffer buffer)
+	     (goto-char (point-min))
+	     (re-search-forward "^$" nil 'move)
+	     (eval-region (point) (point-max))
+	     (kill-buffer (current-buffer))
+	     (when
+		 (load
+		  (expand-file-name "~/.emacs.d/elpa/package.el"))
+	       (package-initialize))))))
 (setq package-archives '("tromey" . "http://tromey.com/elpa/"))
 
 (add-to-list 'load-path "~/.emacs.d/el-get/el-get")
@@ -44,17 +57,19 @@
 
              ;; auto-complete-clang auto-complete-etags auto-complete-extensions
 
-             color-theme
-             (:name color-theme-github
-                    :type git
-                    :url "https://github.com/dudleyf/color-theme-github.git"
-                    :info "Color theme GitHub"
-                    :load "color-theme-github.el"
-                    :post-init (lambda () (color-theme-github)))
+             (:name color-theme
+		    :load-path "."
+		    :load "color-theme.el")
+             ;; (:name color-theme-github
+             ;;        :type git
+             ;;        :url "https://github.com/dudleyf/color-theme-github.git"
+             ;;        :info "Color theme GitHub"
+             ;;        :load "color-theme-github.el"
+             ;;        :post-init (lambda () (color-theme-github)))
              (:name color-theme-solarized
+		    :depends color-theme
                     :type git
                     :url "https://github.com/sellout/emacs-color-theme-solarized.git"
-                    :info "The emacs port of the solarized color scheme"
                     :load "color-theme-solarized.el"
                     :post-init (lambda () (color-theme-solarized-light)))
 
@@ -173,7 +188,8 @@
                                             (setq org-insert-mode-line-in-empty-file t))))
              ))
 
-(el-get)
+(setq my-packages (mapcar 'el-get-source-name el-get-sources))
+(el-get 'sync my-packages)
 
 ;; stops me killing emacs by accident!
 (setq confirm-kill-emacs 'yes-or-no-p)
@@ -295,7 +311,9 @@ LIST defaults to all existing live buffers."
                          '(2 "_NET_WM_STATE_MAXIMIZED_VERT" 0))
   (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
                          '(2 "_NET_WM_STATE_MAXIMIZED_HORZ" 0)))
-(toggle-fullscreen)
+(condition-case nil
+    (toggle-fullscreen)
+  (error nil))
 
 ;; Commenting blocks
 (global-set-key [(control /)] 'comment-or-uncomment-region-or-line)
