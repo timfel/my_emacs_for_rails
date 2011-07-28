@@ -124,6 +124,7 @@
                     :url "git://github.com/michaelklishin/cucumber.el.git"
                     :load-path "."
                     :features feature-mode
+		    :depends yasnippet
                     :post-init (lambda () (progn
                                             ;; load bundle snippets
                                             (yas/load-directory (expand-file-name (concat el-get-dir "/cucumber/snippets")))
