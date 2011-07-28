@@ -159,20 +159,6 @@
              magithub
              gist
 
-             (:name reftex
-                    :post-init (lambda () (progn
-                                            (setq-default TeX-master nil)
-                                            (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-                                            (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-                                            (add-hook 'LaTeX-mode-hook 'reftex-mode)
-                                            (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
-                                            (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
-                                            (setq reftex-plug-into-AUCTeX t)
-                                            (setq TeX-auto-save t)
-                                            (setq TeX-save-query nil)
-                                            (setq TeX-parse-self t)
-                                            (setq-default TeX-master nil))))
-
              (:name project-mode
                     :type git
                     :url "http://github.com/timfel/emacs-project-mode.git"
@@ -208,7 +194,22 @@
        0) ;; pdflatex command is installed
     (setq el-get-sources
 	  (append '((:name auctex
-			   :build `("./autogen.sh" ,(concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs) "make")))
+			   :build `("./autogen.sh" ,
+				    (concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs)
+				    "make"))
+		    (:name reftex
+			   :post-init (lambda () (progn
+						   (setq-default TeX-master nil)
+						   (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+						   (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+						   (add-hook 'LaTeX-mode-hook 'reftex-mode)
+						   (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+						   (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+						   (setq reftex-plug-into-AUCTeX t)
+						   (setq TeX-auto-save t)
+						   (setq TeX-save-query nil)
+						   (setq TeX-parse-self t)
+						   (setq-default TeX-master nil)))))
 		  el-get-sources)))
 
 (setq my-packages (mapcar 'el-get-source-name el-get-sources))
