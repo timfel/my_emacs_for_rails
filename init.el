@@ -88,6 +88,7 @@
                     :post-init (lambda () (setq ri-ruby-script (expand-file-name (concat el-get-dir "/ri-emacs/ri-emacs.rb")))))
 
              (:name rhtml-mode
+                    :features rhtml-mode
                     :post-init (lambda () (progn
                                         (add-hook 'rhtml-mode-hook
                                                   (lambda () (rinari-launch)))
