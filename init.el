@@ -102,8 +102,17 @@
                                         (add-hook 'ruby-mode-hook 'turn-on-font-lock)
                                         (add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
                                         (add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
-                                        (add-to-list 'auto-mode-alist '("^Gemfile$" . ruby-mode)))))
+                                        (add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode)))))
              ruby-electric
+             (:name cucumber
+                    :type git
+                    :url "git://github.com/michaelklishin/cucumber.el.git"
+                    :load-path "."
+                    :features feature-mode
+                    :post-init (lambda () (progn
+                                            ;; load bundle snippets
+                                            (yas/load-directory (expand-file-name (concat el-get-dir "/cucumber/snippets")))
+                                            (add-to-list 'auto-mode-alist '("\\.feature" . feature-mode)))))
 
              (:name rsense
                     :type git
