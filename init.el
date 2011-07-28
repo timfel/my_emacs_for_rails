@@ -75,7 +75,7 @@
                     :post-init (lambda () (progn
                                         (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
                                         (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
-                                        (add-to-list 'auto-mode-alist '("^Gemfile.lock$" . yaml-mode)))))
+                                        (add-to-list 'auto-mode-alist '("Gemfile.lock$" . yaml-mode)))))
 
              (:name maxframe
                     :features maxframe
