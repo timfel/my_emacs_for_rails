@@ -148,8 +148,6 @@
              magithub
              gist
 
-             (:name auctex
-                    :build `("./autogen.sh" ,(concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs) "make"))
              (:name reftex
                     :post-init (lambda () (progn
                                             (setq-default TeX-master nil)
@@ -188,6 +186,19 @@
                                                                            org-agenda-files))
                                             (setq org-insert-mode-line-in-empty-file t))))
              ))
+
+;; Auctex depends on pdflatex being available, only install if desired on this system
+(if (= (let ((path-from-shell
+	      (replace-regexp-in-string "[[:space:]\n]*$" "" 
+					(shell-command-to-string "$SHELL -l -c 'echo $PATH'"))))
+	 (setenv "PATH" path-from-shell)
+	 (setq exec-path (split-string path-from-shell path-separator))
+	 (shell-command "pdflatex -version"))
+       0) ;; pdflatex command is installed
+    (setq el-get-sources
+	  (append '((:name auctex
+			   :build `("./autogen.sh" ,(concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs) "make")))
+		  el-get-sources)))
 
 (setq my-packages (mapcar 'el-get-source-name el-get-sources))
 (el-get 'sync my-packages)
