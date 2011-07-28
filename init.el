@@ -148,7 +148,8 @@
              magithub
              gist
 
-             auctex
+             (:name auctex
+                    :build `("./autogen.sh" ,(concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs) "make"))
              (:name reftex
                     :post-init (lambda () (progn
                                             (setq-default TeX-master nil)
