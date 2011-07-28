@@ -332,7 +332,7 @@ LIST defaults to all existing live buffers."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(ecb-source-path (quote (("~/Devel/projects" "Dev")
-                           ("~/Documents/HPI/10WS/" "Uni")
+                           ("~/Documents/HPI/11SS/" "Uni")
                            ("~/Finnlabs/Finnlabs/" "Finn"))))
  '(TeX-view-program-selection (quote (((output-dvi style-pstricks) "xdg-open") (output-dvi "xdg-open") (output-pdf "xdg-open") (output-html "xdg-open"))))
  '(ecb-compilation-buffer-names (quote (("*Calculator*") ("*vc*") ("*vc-diff*") ("*Apropos*") ("*Occur*") ("*shell*") ("\\*[cC]ompilation.*\\*" . t) ("\\*i?grep.*\\*" . t) ("*JDEE Compile Server*") ("*Help*") ("*Completions*") ("*Backtrace*") ("*Compile-log*") ("*bsh*") ("*Messages*") ("*Buffer List*"))))
