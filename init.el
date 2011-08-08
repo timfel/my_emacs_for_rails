@@ -1,20 +1,20 @@
 (condition-case nil
     (when
-	(load
-	 (expand-file-name "~/.emacs.d/elpa/package.el"))
+        (load
+         (expand-file-name "~/.emacs.d/elpa/package.el"))
       (package-initialize))
   (error (let ((buffer (url-retrieve-synchronously
-			"http://tromey.com/elpa/package-install.el")))
-	   (save-excursion
-	     (set-buffer buffer)
-	     (goto-char (point-min))
-	     (re-search-forward "^$" nil 'move)
-	     (eval-region (point) (point-max))
-	     (kill-buffer (current-buffer))
-	     (when
-		 (load
-		  (expand-file-name "~/.emacs.d/elpa/package.el"))
-	       (package-initialize))))))
+                        "http://tromey.com/elpa/package-install.el")))
+           (save-excursion
+             (set-buffer buffer)
+             (goto-char (point-min))
+             (re-search-forward "^$" nil 'move)
+             (eval-region (point) (point-max))
+             (kill-buffer (current-buffer))
+             (when
+                 (load
+                  (expand-file-name "~/.emacs.d/elpa/package.el"))
+               (package-initialize))))))
 (setq package-archives '("tromey" . "http://tromey.com/elpa/"))
 
 (add-to-list 'load-path "~/.emacs.d/el-get/el-get")
@@ -58,8 +58,8 @@
              ;; auto-complete-clang auto-complete-etags auto-complete-extensions
 
              (:name color-theme
-		    :load-path "."
-		    :load "color-theme.el")
+                    :load-path "."
+                    :load "color-theme.el")
              ;; (:name color-theme-github
              ;;        :type git
              ;;        :url "https://github.com/dudleyf/color-theme-github.git"
@@ -67,7 +67,7 @@
              ;;        :load "color-theme-github.el"
              ;;        :post-init (lambda () (color-theme-github)))
              (:name color-theme-solarized
-		    :depends color-theme
+                    :depends color-theme
                     :type git
                     :url "https://github.com/sellout/emacs-color-theme-solarized.git"
                     :load "color-theme-solarized.el"
@@ -88,9 +88,9 @@
 
              (:name yaml-mode
                     :post-init (lambda () (progn
-                                        (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
-                                        (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
-                                        (add-to-list 'auto-mode-alist '("Gemfile.lock$" . yaml-mode)))))
+                                            (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
+                                            (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
+                                            (add-to-list 'auto-mode-alist '("Gemfile.lock$" . yaml-mode)))))
 
              (:name maxframe
                     :features maxframe
@@ -105,12 +105,12 @@
              (:name rhtml-mode
                     :features rhtml-mode
                     :post-init (lambda () (progn
-                                        (add-hook 'rhtml-mode-hook
-                                                  (lambda () (rinari-launch)))
-                                        (add-to-list 'auto-mode-alist '("\\.html.erb$" . rhtml-mode))
-                                        (add-to-list 'auto-mode-alist '("\\.html.rb$" . rhtml-mode))
-                                        (add-to-list 'auto-mode-alist '("\\.rhtml$" . rhtml-mode))
-                                        )))
+                                            (add-hook 'rhtml-mode-hook
+                                                      (lambda () (rinari-launch)))
+                                            (add-to-list 'auto-mode-alist '("\\.html.erb$" . rhtml-mode))
+                                            (add-to-list 'auto-mode-alist '("\\.html.rb$" . rhtml-mode))
+                                            (add-to-list 'auto-mode-alist '("\\.rhtml$" . rhtml-mode))
+                                            )))
 
              (:name ruby-mode
                     :after (lambda () (progn
@@ -125,7 +125,7 @@
                     :url "git://github.com/michaelklishin/cucumber.el.git"
                     :load-path "."
                     :features feature-mode
-		    :depends yasnippet
+                    :depends yasnippet
                     :post-init (lambda () (progn
                                             ;; load bundle snippets
                                             (yas/load-directory (expand-file-name (concat el-get-dir "/cucumber/snippets")))
@@ -188,24 +188,24 @@
 ;; Auctex depends on pdflatex being available, only install if desired on this system
 (if (executable-find "pdflatex")
     (setq el-get-sources
-	  (append '((:name auctex
-			   :build `("./autogen.sh" ,
-				    (concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs)
-				    "make"))
-		    (:name reftex
-			   :post-init (lambda () (progn
-						   (setq-default TeX-master nil)
-						   (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-						   (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-						   (add-hook 'LaTeX-mode-hook 'reftex-mode)
-						   (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
-						   (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
-						   (setq reftex-plug-into-AUCTeX t)
-						   (setq TeX-auto-save t)
-						   (setq TeX-save-query nil)
-						   (setq TeX-parse-self t)
-						   (setq-default TeX-master nil)))))
-		  el-get-sources)))
+          (append '((:name auctex
+                           :build `("./autogen.sh" ,
+                                    (concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs)
+                                    "make"))
+                    (:name reftex
+                           :post-init (lambda () (progn
+                                                   (setq-default TeX-master nil)
+                                                   (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+                                                   (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+                                                   (add-hook 'LaTeX-mode-hook 'reftex-mode)
+                                                   (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+                                                   (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+                                                   (setq reftex-plug-into-AUCTeX t)
+                                                   (setq TeX-auto-save t)
+                                                   (setq TeX-save-query nil)
+                                                   (setq TeX-parse-self t)
+                                                   (setq-default TeX-master nil)))))
+                  el-get-sources)))
 
 (setq my-packages (mapcar 'el-get-source-name el-get-sources))
 (el-get 'sync my-packages)
@@ -379,15 +379,15 @@ LIST defaults to all existing live buffers."
       (require 'tabbar)
       (tabbar-mode t)
       (dolist (func '(tabbar-mode tabbar-forward-tab tabbar-forward-group tabbar-backward-tab tabbar-backward-group))
-	(autoload func "tabbar" "Tabs at the top of buffers and easy control-tab navigation"))
+        (autoload func "tabbar" "Tabs at the top of buffers and easy control-tab navigation"))
 
       (defmacro defun-prefix-alt (name on-no-prefix on-prefix &optional do-always)
-	`(defun ,name (arg)
-	   (interactive "P")
-	   ,do-always
-	   (if (equal nil arg)
-	       ,on-no-prefix
-	     ,on-prefix)))
+        `(defun ,name (arg)
+           (interactive "P")
+           ,do-always
+           (if (equal nil arg)
+               ,on-no-prefix
+             ,on-prefix)))
 
       (defun-prefix-alt shk-tabbar-next (tabbar-forward-tab) (tabbar-forward-group) (tabbar-mode 1))
       (defun-prefix-alt shk-tabbar-prev (tabbar-backward-tab) (tabbar-backward-group) (tabbar-mode 1))
@@ -396,20 +396,20 @@ LIST defaults to all existing live buffers."
       ;; add a buffer modification state indicator in the tab label,
       ;; and place a space around the label to make it looks less crowd
       (defadvice tabbar-buffer-tab-label (after fixup_tab_label_space_and_flag activate)
-	(setq ad-return-value
-	      (if (and (buffer-modified-p (tabbar-tab-value tab))
-		       (buffer-file-name (tabbar-tab-value tab)))
-		  (concat " + " (concat ad-return-value " "))
-		(concat " " (concat ad-return-value " ")))))
+        (setq ad-return-value
+              (if (and (buffer-modified-p (tabbar-tab-value tab))
+                       (buffer-file-name (tabbar-tab-value tab)))
+                  (concat " + " (concat ad-return-value " "))
+                (concat " " (concat ad-return-value " ")))))
 
       ;; called each time the modification state of the buffer changed
       (defun ztl-modification-state-change ()
-	(tabbar-set-template tabbar-current-tabset nil)
-	(tabbar-display-update))
+        (tabbar-set-template tabbar-current-tabset nil)
+        (tabbar-display-update))
       ;; first-change-hook is called BEFORE the change is made
       (defun ztl-on-buffer-modification ()
-	(set-buffer-modified-p t)
-	(ztl-modification-state-change))
+        (set-buffer-modified-p t)
+        (ztl-modification-state-change))
       (add-hook 'after-save-hook 'ztl-modification-state-change)
       ;; this doesn't work for revert, I don't know
       ;;(add-hook 'after-revert-hook 'ztl-modification-state-change)
