@@ -655,6 +655,9 @@ makes)."
 (setq ac-auto-start t)                  ;automatically start
 (setq ac-dwim 3)                        ;Do what i mean
 (setq ac-override-local-map nil)        ;don't override local map
+(ac-flyspell-workaround)
+(setq ac-delay 5)
+(setq ac-auto-show-menu 2)
 ;;   (define-key ac-complete-mode-map "\t" 'ac-expand)
 ;;   (define-key ac-complete-mode-map "\r" 'ac-complete)
 ;;   (define-key ac-complete-mode-map "\M-n" 'ac-next)
