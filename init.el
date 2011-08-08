@@ -117,6 +117,7 @@
                                         (add-hook 'ruby-mode-hook 'turn-on-font-lock)
                                         (add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
                                         (add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
+                                        (add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
                                         (add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode)))))
              ruby-electric
              (:name cucumber
