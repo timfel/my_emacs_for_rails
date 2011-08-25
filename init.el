@@ -60,12 +60,6 @@
              (:name color-theme
                     :load-path "."
                     :load "color-theme.el")
-             ;; (:name color-theme-github
-             ;;        :type git
-             ;;        :url "https://github.com/dudleyf/color-theme-github.git"
-             ;;        :info "Color theme GitHub"
-             ;;        :load "color-theme-github.el"
-             ;;        :post-init (lambda () (color-theme-github)))
              (:name color-theme-solarized
                     :depends color-theme
                     :type git
@@ -115,9 +109,35 @@
              (:name ruby-mode
                     :after (lambda () (progn
                                         (add-hook 'ruby-mode-hook 'turn-on-font-lock)
+                                        (add-hook 'ruby-mode-hook '(lambda() ((add-hook 'write-contents-functions
+                                                                                        '(lambda()
+                                                                                           (save-excursion
+                                                                                             (untabify (point-min) (point-max))
+                                                                                             (delete-trailing-whitespace)
+                                                                                             )))
+                                                                              (ruby-electric-mode t)
+                                                                              (ruby-block-mode t)
+                                                                              ;; Don't want flymake mode for ruby regions in rhtml files and also on read only files
+                                                                              (if (and (not (null buffer-file-name)) (file-writable-p buffer-file-name))
+                                                                                  (flymake-mode))
+                                                                              ;; Indenting options
+                                                                              (set (make-local-variable 'indent-tabs-mode) 'nil)
+                                                                              (set (make-local-variable 'tab-width) 2)
+                                                                              (local-set-key (kbd "<return>") 'newline-and-indent)
+                                                                              ;; Auto completion
+                                                                              (imenu-add-to-menubar "IMENU")
+                                                                              (setq ac-sources (append '(ac-source-rsense-method ac-source-rsense-constant) ac-sources))
+                                                                              (setq ac-sources (append ac-sources '(ac-source-words-in-same-mode-buffers)))
+                                                                              (setq ac-omni-completion-sources '(("\\.\\=" ac-source-rcodetools)))
+                                                                              (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
+                                                                              (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
+                                                                              ;; Type inference auto completion
+                                                                              (if (project-current)
+                                                                                  (rsense-open-project (project-default-directory (project-current)))))))
                                         (add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
                                         (add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
                                         (add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
+                                        (add-to-list 'auto-mode-alist '("Rakefile$" . ruby-mode))
                                         (add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode)))))
              ruby-electric
              (:name cucumber
@@ -199,6 +219,7 @@
                                                    (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
                                                    (add-hook 'LaTeX-mode-hook 'reftex-mode)
                                                    (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+                                                   (add-hook 'LaTeX-mode-hook 'flyspell-mode)
                                                    (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
                                                    (setq reftex-plug-into-AUCTeX t)
                                                    (setq TeX-auto-save t)
@@ -218,6 +239,8 @@
 
 ;; C/C++/Java Options
 (setq-default c-basic-offset 4)
+(add-hook 'c++-mode-hook 'flyspell-prog-mode)
+(add-hook 'c-mode-hook 'flyspell-prog-mode)
 
 ;; Flyspell options
 (require 'ispell)
@@ -230,9 +253,6 @@
 (setq ispell-list-command "list")
 (setq ispell-extra-args '("--sug-mode=fast"))
 (setq flyspell-issue-message-flag nil)
-(add-hook 'LaTeX-mode-hook 'flyspell-mode)
-(add-hook 'c++-mode-hook 'flyspell-prog-mode)
-(add-hook 'c-mode-hook 'flyspell-prog-mode)
 (defun fd-switch-dictionary()
   (interactive)
   (let* ((dic ispell-current-dictionary)
@@ -294,7 +314,6 @@
       (insert (format "%4d %c\n" i i))))
   (beginning-of-buffer))
 
-
 ;; insert date into buffer at point
 ;; optained from http://www.chrislott.org/geek/emacs/dotemacs.html
 (defun insert-date ()
@@ -337,21 +356,8 @@ LIST defaults to all existing live buffers."
 ;; Commenting blocks
 (global-set-key [(control /)] 'comment-or-uncomment-region-or-line)
 
-(mouse-wheel-mode t)
 ;; wheel mouse
-                                        ;(defun up-slightly () (interactive) (scroll-up 5))
-                                        ;(defun down-slightly () (interactive) (scroll-down 5))
-                                        ;(global-set-key [mouse-4] 'down-slightly)
-                                        ;(global-set-key [mouse-5] 'up-slightly)
-                                        ;(defun up-one () (interactive) (scroll-up 1))
-                                        ;(defun down-one () (interactive) (scroll-down 1))
-                                        ;(global-set-key [S-mouse-4] 'down-one)
-                                        ;(global-set-key [S-mouse-5] 'up-one)
-                                        ;(defun up-a-lot () (interactive) (scroll-up))
-                                        ;(defun down-a-lot () (interactive) (scroll-down))
-                                        ;(global-set-key [C-mouse-4] 'down-a-lot)
-                                        ;(global-set-key [C-mouse-5] 'up-a-lot)
-
+(mouse-wheel-mode t)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -424,9 +430,7 @@ LIST defaults to all existing live buffers."
 
 ;; anything-rcodetools
 (add-to-list 'load-path "~/.emacs.d/plugins/rcodetools")
-                                        ;(require 'rcodetools)
-                                        ;(require 'icicles-rcodetools)
-                                        ;(require 'anything)
+
 (require 'anything-rcodetools)
 ;;       ;; Command to get all RI entries.
 (setq rct-get-all-methods-command "PAGER=cat fri -l -L")
@@ -496,33 +500,6 @@ LIST defaults to all existing live buffers."
       '(try-complete-abbrev
         try-complete-file-name
         try-expand-dabbrev))
-
-;; ruby-mode-hook
-(add-hook 'ruby-mode-hook
-          (lambda()
-            (add-hook 'write-file-functions
-                      '(lambda()
-                         (save-excursion
-                           (untabify (point-min) (point-max))
-                           (delete-trailing-whitespace)
-                           )))
-            (set (make-local-variable 'indent-tabs-mode) 'nil)
-            (set (make-local-variable 'tab-width) 2)
-            (imenu-add-to-menubar "IMENU")
-                                        ;           (require 'ruby-electric)
-            (ruby-electric-mode t)
-                                        ;           (require 'ruby-block)
-            (ruby-block-mode t)
-                                        ;           (local-set-key 'f1 'ri)
-            (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
-                                        ;           (local-set-key 'f4 'ri-ruby-show-args)
-            (if (project-current)
-                (rsense-open-project (project-default-directory (project-current))))
-            (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
-            ;; Always force spaces
-            (setq-default indent-tabs-mode nil)
-            (local-set-key (kbd "<return>") 'newline-and-indent)
-            ))
 
 ;; nxhtml
                                         ;(setq *nxhtml-autostart-file* (expand-file-name "~/.emacs.d/plugins/nxhtml/autostart.el"))
@@ -610,14 +587,6 @@ makes)."
 
 (push '("^\\(.*\\):\\([0-9]+\\): \\(.*\\)$" 1 2 nil 3) flymake-err-line-patterns)
 
-(add-hook 'ruby-mode-hook
-          '(lambda ()
-
-             ;; Don't want flymake mode for ruby regions in rhtml files and also on read only files
-             (if (and (not (null buffer-file-name)) (file-writable-p buffer-file-name))
-                 (flymake-mode))
-             ))
-
 (require 'flymake-jslint)
 (add-hook 'javascript-mode-hook
           '(lambda ()
@@ -679,33 +648,8 @@ makes)."
           (lambda ()
             (setq ac-sources '(ac-source-yasnippet ac-source-abbrev ac-source-files-in-current-dir ac-source-words-in-buffer))))
 
-(add-hook 'ruby-mode-hook
-          (lambda ()
-            (setq ac-sources (append '(ac-source-rsense-method ac-source-rsense-constant) ac-sources))
-            (setq ac-sources (append ac-sources '(ac-source-words-in-same-mode-buffers)))
-            (setq ac-omni-completion-sources '(("\\.\\=" ac-source-rcodetools)))));)
-
-;; ri
-                                        ;(load "~/.emacs.d/plugins/ri/ri.el")
-
-;; snippet
-                                        ;(add-to-list 'load-path "~/.emacs.d/plugins/snippet")
-
-;; rails-emacs
-                                        ;(add-to-list 'load-path "~/.emacs.d/plugins/emacs-rails")
-                                        ;(require 'rails)
-
-                                        ;(kill-buffer "*ESS*")
-                                        ;(kill-buffer "*Compile-Log*")
-                                        ;(kill-buffer "*Messages*")
-
-
-
 ;; Standard copy'n'paste
 (cua-mode 1)
-
-;; some useful shortcuts
-(global-set-key "\C-cl" 'goto-line)
 
 (defun word-count nil "Count words in buffer" (interactive)
   (shell-command-on-region (region-beginning) (region-end) "wc -w"))
