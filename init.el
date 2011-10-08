@@ -641,7 +641,7 @@ makes)."
                                         ;   (require 'auto-complete-css)
 
 (global-auto-complete-mode t)           ;enable global-mode
-(setq ac-auto-start t)                  ;automatically start
+(setq ac-auto-start nil)                  ;automatically start
 (setq ac-dwim 3)                        ;Do what i mean
 (setq ac-override-local-map nil)        ;don't override local map
 (ac-flyspell-workaround)
