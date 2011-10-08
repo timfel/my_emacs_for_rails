@@ -198,6 +198,12 @@
 	;; (:name dictionary-el    :type apt-get)
 	;; (:name emacs-goodies-el :type apt-get)
 
+	(:name showoff-mode
+	       :type git
+	       :url "https://github.com/developernotes/showoff-mode.git"
+	       :load-path "."
+	       :features showoff-mode)
+
 	(:name org-mode
 	       :post-init (lambda () (progn
 				       (setq org-hide-leading-stars t)
