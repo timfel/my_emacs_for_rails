@@ -692,3 +692,9 @@ makes)."
 (ad-activate 'server-create-window-system-frame)
 (add-hook 'after-make-frame-functions 'setup-window-system-frame-colours t)
 
+
+;; Use the default browser on linux
+(if (eq system-type 'gnu/linux)
+    (setq browse-url-generic-program
+	  "xdg-open"
+	  browse-url-browser-function 'browse-url-generic))
