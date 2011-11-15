@@ -1,6 +1,6 @@
 (defun load-init-files (list)
   (mapcar (lambda (e) (load (expand-file-name (format "~/.emacs.d/init-%s.el" e))))
-	  list))
+          list))
 
 ;; Run el-get
 (load-init-files '(el-get-packages))

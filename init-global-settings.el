@@ -38,8 +38,8 @@
 ;; Use the default browser on linux
 (if (eq system-type 'gnu/linux)
     (setq browse-url-generic-program
-	  "xdg-open"
-	  browse-url-browser-function 'browse-url-generic))
+          "xdg-open"
+          browse-url-browser-function 'browse-url-generic))
 
 ;; Hippie expand
 (defun try-complete-abbrev (old)

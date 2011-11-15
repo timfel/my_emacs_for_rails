@@ -1,20 +1,20 @@
 (condition-case nil
     (when
-        (load
-         (expand-file-name "~/.emacs.d/elpa/package.el"))
+	(load
+	 (expand-file-name "~/.emacs.d/elpa/package.el"))
       (package-initialize))
   (error (let ((buffer (url-retrieve-synchronously
-                        "http://tromey.com/elpa/package-install.el")))
-           (save-excursion
-             (set-buffer buffer)
-             (goto-char (point-min))
-             (re-search-forward "^$" nil 'move)
-             (eval-region (point) (point-max))
-             (kill-buffer (current-buffer))
-             (when
-                 (load
-                  (expand-file-name "~/.emacs.d/elpa/package.el"))
-               (package-initialize))))))
+			"http://tromey.com/elpa/package-install.el")))
+	   (save-excursion
+	     (set-buffer buffer)
+	     (goto-char (point-min))
+	     (re-search-forward "^$" nil 'move)
+	     (eval-region (point) (point-max))
+	     (kill-buffer (current-buffer))
+	     (when
+		 (load
+		  (expand-file-name "~/.emacs.d/elpa/package.el"))
+	       (package-initialize))))))
 (setq package-archives '("tromey" . "http://tromey.com/elpa/"))
 
 (add-to-list 'load-path "~/.emacs.d/el-get/el-get")
@@ -30,7 +30,7 @@
 
 (setq el-get-sources
       '(
-	
+
 	magithub gist ruby-electric autopair haml-mode nxhtml
 	rspec-mode sass-mode cssh el-get switch-window vkill
 	yasnippet xcscope anything sudo-save
@@ -58,7 +58,7 @@
 						 (lambda ()
 						   (setq ac-sources '(ac-source-yasnippet
 								      ac-source-abbrev
-								      ac-source-files-in-current-dir 
+								      ac-source-files-in-current-dir
 								      ac-source-words-in-buffer)))))))
 
 	(:name redo+
@@ -152,32 +152,27 @@
 	(:name ruby-mode
 	       :after (lambda () (progn
 				   (add-hook 'ruby-mode-hook 'turn-on-font-lock)
-				   (add-hook 'ruby-mode-hook '(lambda() ((add-hook 'write-contents-functions
-										   '(lambda()
-										      (save-excursion
-											(untabify (point-min) (point-max))
-											(delete-trailing-whitespace)
-											)))
-									 (ruby-electric-mode t)
-									 (ruby-block-mode t)
-									 ;; Don't want flymake mode for ruby regions in rhtml files and also on read only files
-									 (if (and (not (null buffer-file-name)) (file-writable-p buffer-file-name))
-									     (flymake-mode))
-									 ;; Indenting options
-									 (set (make-local-variable 'indent-tabs-mode) 'nil)
-									 (set (make-local-variable 'tab-width) 2)
-									 (local-set-key (kbd "<return>") 'newline-and-indent)
-									 ;; Auto completion
-									 (imenu-add-to-menubar "IMENU")
-									 (setq ac-sources (append '(ac-source-rsense-method ac-source-rsense-constant) ac-sources))
-									 (setq ac-sources (append ac-sources '(ac-source-words-in-same-mode-buffers)))
-									 (setq ac-omni-completion-sources '(("\\.\\=" ac-source-rcodetools)))
-									 (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
-									 (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
-									 ;; Type inference auto completion
-									 (if (project-current)
-									     (rsense-open-project (project-default-directory (project-current)))))))
 				   (add-hook 'ruby-mode-hook 'friendly-whitespace)
+				   (add-hook 'ruby-mode-hook '(lambda() (progn
+									  (ruby-electric-mode t)
+									  (ruby-block-mode t)
+									  ;; Don't want flymake mode for ruby regions in rhtml files and also on read only files
+									  (if (and (not (null buffer-file-name)) (file-writable-p buffer-file-name))
+									      (flymake-mode))
+									  ;; Indenting options
+									  (set (make-local-variable 'indent-tabs-mode) 'nil)
+									  (set (make-local-variable 'tab-width) 2)
+									  (local-set-key (kbd "<return>") 'newline-and-indent)
+									  ;; Auto completion
+									  (imenu-add-to-menubar "IMENU")
+									  (setq ac-sources (append '(ac-source-rsense-method ac-source-rsense-constant) ac-sources))
+									  (setq ac-sources (append ac-sources '(ac-source-words-in-same-mode-buffers)))
+									  (setq ac-omni-completion-sources '(("\\.\\=" ac-source-rcodetools)))
+									  (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
+									  (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
+									  ;; Type inference auto completion
+									  (if (project-current)
+									      (rsense-open-project (project-default-directory (project-current)))))))
 				   (add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
 				   (add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
 				   (add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
@@ -260,25 +255,25 @@
 ;; Auctex depends on pdflatex being available, only install if desired on this system
 (if (executable-find "pdflatex")
     (setq el-get-sources
-          (append '((:name auctex
-                           :build `("./autogen.sh" ,
-                                    (concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs)
-                                    "make"))
-                    (:name reftex
-                           :post-init (lambda () (progn
-                                                   (setq-default TeX-master nil)
-                                                   (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-                                                   (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-                                                   (add-hook 'LaTeX-mode-hook 'reftex-mode)
-                                                   (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
-                                                   (add-hook 'LaTeX-mode-hook 'flyspell-mode)
-                                                   (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
-                                                   (setq reftex-plug-into-AUCTeX t)
-                                                   (setq TeX-auto-save t)
-                                                   (setq TeX-save-query nil)
-                                                   (setq TeX-parse-self t)
-                                                   (setq-default TeX-master nil)))))
-                  el-get-sources)))
+	  (append '((:name auctex
+			   :build `("./autogen.sh" ,
+				    (concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs)
+				    "make"))
+		    (:name reftex
+			   :post-init (lambda () (progn
+						   (setq-default TeX-master nil)
+						   (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+						   (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+						   (add-hook 'LaTeX-mode-hook 'reftex-mode)
+						   (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+						   (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+						   (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+						   (setq reftex-plug-into-AUCTeX t)
+						   (setq TeX-auto-save t)
+						   (setq TeX-save-query nil)
+						   (setq TeX-parse-self t)
+						   (setq-default TeX-master nil)))))
+		  el-get-sources)))
 
 ;; (setq el-get-sources '())
 ;; (setq my-packages

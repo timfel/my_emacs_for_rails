@@ -13,8 +13,8 @@
 (defun irc-start-or-switch ()
   "Connect to ERC, or switch to last active buffer"
   (interactive)
-  (if (get-buffer "rkh.im:1337") ;; ERC already active?
-      (erc-track-switch-buffer 1) ;; yes: switch to last active
+  (if (get-buffer "rkh.im:1337")   ;; ERC already active?
+      (erc-track-switch-buffer 1)  ;; yes: switch to last active
     (when (y-or-n-p "Start ERC? ") ;; no: maybe start ERC
       (erc-tls :server "rkh.im" :port 1337 :nick "phlebas" :password "timfel" :full-name "Tim Felgentreff"))))
 
