@@ -31,6 +31,7 @@
 ;; fix clipboard
 (setq x-select-enable-clipboard t)
 (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
+(column-number-mode t)
 
 ;; Enable fullscreen on first load
 (condition-case nil (toggle-fullscreen) (error nil))
