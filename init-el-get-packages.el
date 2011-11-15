@@ -177,6 +177,7 @@
 									 ;; Type inference auto completion
 									 (if (project-current)
 									     (rsense-open-project (project-default-directory (project-current)))))))
+				   (add-hook 'ruby-mode-hook 'friendly-whitespace)
 				   (add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
 				   (add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
 				   (add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))

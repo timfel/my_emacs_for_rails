@@ -1,3 +1,13 @@
+;; add to the buffer-local write-contents-functions
+;; remove tabs and delete trailing whitespace from files
+(defun friendly-whitespace ()
+  (interactive)
+  (add-hook 'write-contents-functions
+            '(lambda()
+               (save-excursion
+                 (untabify (point-min) (point-max))
+                 (delete-trailing-whitespace)))))
+
 ;; show ascii table
 ;; optained from http://www.chrislott.org/geek/emacs/dotemacs.html
 (defun ascii-table ()
