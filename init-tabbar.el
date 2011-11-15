@@ -38,11 +38,5 @@
       (add-hook 'after-save-hook 'ztl-modification-state-change)
       ;; this doesn't work for revert, I don't know
       ;;(add-hook 'after-revert-hook 'ztl-modification-state-change)
-      (add-hook 'first-change-hook 'ztl-on-buffer-modification)
-      (custom-set-faces
-       ;; custom-set-faces was added by Custom.
-       ;; If you edit it by hand, you could mess it up, so be careful.
-       ;; Your init file should contain only one such instance.
-       ;; If there is more than one, they won't work right.
-       ))
+      (add-hook 'first-change-hook 'ztl-on-buffer-modification))
   (error nil))
