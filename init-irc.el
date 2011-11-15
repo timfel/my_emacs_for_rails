@@ -7,7 +7,8 @@
 ;; don't show any of this
 (setq erc-hide-list '("JOIN" "PART" "QUIT" "NICK"))
 ;; Highlight my first name and my full-name, and maglev, too
-(setq erc-keywords '("\\bTim Felgentreff\\b" "\\bTim\\b" "\\bMaglev\\b" "\\bmaglev\\b" "\\bMagLev\\b"))
+(setq erc-keywords '("\\bphlebas\\b" "\\bTim Felgentreff\\b" "\\bTim\\b"
+		     "\\bMaglev\\b" "\\bmaglev\\b" "\\bMagLev\\b"))
 
 ;; connect or goto irc
 (defun irc-start-or-switch ()
@@ -16,19 +17,15 @@
   (if (get-buffer "rkh.im:1337")   ;; ERC already active?
       (erc-track-switch-buffer 1)  ;; yes: switch to last active
     (when (y-or-n-p "Start ERC? ") ;; no: maybe start ERC
-      (erc-tls :server "rkh.im" :port 1337 :nick "phlebas" :password "timfel" :full-name "Tim Felgentreff"))))
+      (erc-tls :server "rkh.im" :port 1337 :nick "phlebas"
+	       :full-name "Tim Felgentreff"))))
 
 ;; A hook for when our keywords or text are matched
 (defun my-erc-page-me (match-type nick message)
   "Notify the current user when someone sends a message that
 matches a regexp in `erc-keywords'."
   (interactive)
-  (when (and (eq match-type 'keyword)
-             ;; I don't want to see anything from the erc server
-             (not (string-match "\\`\\([sS]erver\\|localhost\\|root\\)" nick))
-             ;; or bots
-             (not (string-match "\\(^CIA[^!]*\\|bot\\|serv\\)!" nick)))
-    (my-erc-page-popup-notification nick message)))
+  (my-erc-page-popup-notification nick message))
 (add-hook 'erc-text-matched-hook 'my-erc-page-me)
 
 ;; A hook for private messages
@@ -53,3 +50,6 @@ matches a regexp in `erc-keywords'."
                      "-u" "normal" "-t" "8640000"
                      (format "%s: %s" nick msg)))))
 
+(setq tls-program '("openssl s_client -connect %h:%p -no_ssl2 -ign_eof"
+		    "gnutls-cli --priority secure256 -p %p %h" 
+		    "gnutls-cli --priority secure256 -p %p %h"))
