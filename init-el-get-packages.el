@@ -31,7 +31,7 @@
 (setq el-get-sources
       '(
 
-	magithub gist ruby-electric autopair haml-mode nxhtml
+	mo-git-blame magithub gist ruby-electric autopair haml-mode nxhtml
 	rspec-mode sass-mode cssh el-get switch-window vkill
 	yasnippet xcscope anything sudo-save
 
