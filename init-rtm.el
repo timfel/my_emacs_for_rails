@@ -23,4 +23,5 @@
 		  (local-set-key (kbd "C-x C-s") (lambda () (interactive) (slack-rtm-sync) (slack-rtm-reload-buffer)))
 		  (local-set-key (kbd "C-x C-v") 'slack-rtm-reload-buffer)
 		  (local-set-key (kbd "C-x C-d") 'slack-rtm-delete-task)
+		  (local-set-key (kbd "C-x C-n") 'slack-rtm-task-quickadd)
 		  (local-set-key (kbd "C-t") 'slack-rtm-touch-task)))))
