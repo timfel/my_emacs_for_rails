@@ -98,7 +98,7 @@
 					     (message "Not activating ECB, window height to small"))
 					 (message "Not activating ECB, not using a window system")))))
 
-	;; auto-complete-clang auto-complete-etags auto-complete-extensions
+	auto-complete-clang auto-complete-etags auto-complete-extensions
 
 	(:name color-theme
 	       :load-path "."
