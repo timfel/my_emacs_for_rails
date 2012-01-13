@@ -251,6 +251,14 @@
 								      org-agenda-files))
 				       (setq org-insert-mode-line-in-empty-file t))))
 
+	(:name emacsmirror-rcp
+	       :type git
+	       :url "https://github.com/edenc/emacsmirror-rcp"
+	       :after (lambda () (let ((new_path (expand-file-name (concat el-get-dir "/emacsmirror-rcp"))))
+				   (if (not (member new_path el-get-recipe-path))
+				       (setq el-get-recipe-path
+					     (append el-get-recipe-path (list new_path)))))))
+
 	))
 
 ;; Auctex depends on pdflatex being available, only install if desired on this system
