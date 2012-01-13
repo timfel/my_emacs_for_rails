@@ -23,8 +23,9 @@
   (url-retrieve
    "https://github.com/dimitri/el-get/raw/master/el-get-install.el"
    (lambda (s)
-     (end-of-buffer)
-     (eval-print-last-sexp))))
+     (let (el-get-master-branch)
+       (end-of-buffer)
+       (eval-print-last-sexp)))))
 
 (require 'compile) ;; Needed for some reason or other. el-get fails for me, otherwise
 
