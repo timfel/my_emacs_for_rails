@@ -48,6 +48,7 @@
 				   (set-default 'ac-sources '(ac-source-yasnippet ac-source-semantic ac-source-abbrev ac-source-words-in-buffer))
 
 				   (setq ac-modes (append ac-modes '(eshell-mode)))
+				   (global-set-key (kbd "M-?") 'ac-fuzzy-complete)
 				   (add-hook 'emacs-lisp-mode-hook
 					     (lambda ()
 					       (setq ac-sources '(ac-source-yasnippet
@@ -171,8 +172,9 @@
 									  (local-set-key (kbd "<return>") 'newline-and-indent)
 									  ;; Auto completion
 									  (imenu-add-to-menubar "IMENU")
-									  (setq ac-sources (append '(ac-source-rsense-method ac-source-rsense-constant) ac-sources))
-									  (setq ac-sources (append ac-sources '(ac-source-words-in-same-mode-buffers)))
+									  (mapcar (lambda (x) (push x ac-sources))
+										  '(ac-source-rsense-method ac-source-rsense-constant
+													    ac-source-words-in-same-mode-buffers))
 									  (setq ac-omni-completion-sources '(("\\.\\=" ac-source-rcodetools)))
 									  (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
 									  (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
