@@ -37,29 +37,29 @@
 (setq el-get-sources
       '((:name auto-complete
 	       :after (lambda () (progn
-				       (require 'auto-complete-config)
-				       (global-auto-complete-mode t)     ;; enable global-mode
-				       (setq ac-auto-start nil)          ;; do not automatically start
-				       (setq ac-dwim 3)                  ;; Do what i mean
-				       (setq ac-override-local-map nil)  ;; don't override local map
-				       (ac-flyspell-workaround)
-				       (setq ac-delay 5)
-				       (setq ac-auto-show-menu 2)
-				       (set-default 'ac-sources '(ac-source-yasnippet ac-source-semantic ac-source-abbrev ac-source-words-in-buffer))
+				   (require 'auto-complete-config)
+				   (global-auto-complete-mode t)     ;; enable global-mode
+				   (setq ac-auto-start nil)          ;; do not automatically start
+				   (setq ac-dwim 3)                  ;; Do what i mean
+				   (setq ac-override-local-map nil)  ;; don't override local map
+				   (ac-flyspell-workaround)
+				   (setq ac-delay 5)
+				   (setq ac-auto-show-menu 2)
+				   (set-default 'ac-sources '(ac-source-yasnippet ac-source-semantic ac-source-abbrev ac-source-words-in-buffer))
 
-				       (setq ac-modes (append ac-modes '(eshell-mode)))
-				       (add-hook 'emacs-lisp-mode-hook
-						 (lambda ()
-						   (setq ac-sources '(ac-source-yasnippet
-								      ac-source-abbrev
-								      ac-source-words-in-buffer
-								      ac-source-symbols))))
-				       (add-hook 'eshell-mode-hook
-						 (lambda ()
-						   (setq ac-sources '(ac-source-yasnippet
-								      ac-source-abbrev
-								      ac-source-files-in-current-dir
-								      ac-source-words-in-buffer)))))))
+				   (setq ac-modes (append ac-modes '(eshell-mode)))
+				   (add-hook 'emacs-lisp-mode-hook
+					     (lambda ()
+					       (setq ac-sources '(ac-source-yasnippet
+								  ac-source-abbrev
+								  ac-source-words-in-buffer
+								  ac-source-symbols))))
+				   (add-hook 'eshell-mode-hook
+					     (lambda ()
+					       (setq ac-sources '(ac-source-yasnippet
+								  ac-source-abbrev
+								  ac-source-files-in-current-dir
+								  ac-source-words-in-buffer)))))))
 
 	(:name redo+
 	       :type http
@@ -78,25 +78,25 @@
 	       :load-path "lisp"
 	       :depends org-mode
 	       :after (lambda () (progn
-				       (load "rtm.el")
-				       (load "slack-rtm.el"))))
+				   (load "rtm.el")
+				   (load "slack-rtm.el"))))
 
 	(:name ecb
 	       :load-path "."
 	       :features ecb
 	       :after (lambda () (progn
-				       (global-ede-mode 1)
-				       (semantic-mode t)
-				       (setq semantic-load-turn-everything-on t)
-				       (setq ecb-tip-of-the-day nil)
-				       (setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
-				       (if window-system
-					   (if (>= (window-height) 16)
-					       (progn
-						 (ecb-activate)
-						 (add-hook 'window-setup-hook 'ecb-redraw-layout t))
-					     (message "Not activating ECB, window height to small"))
-					 (message "Not activating ECB, not using a window system")))))
+				   (global-ede-mode 1)
+				   (semantic-mode t)
+				   (setq semantic-load-turn-everything-on t)
+				   (setq ecb-tip-of-the-day nil)
+				   (setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
+				   (if window-system
+				       (if (>= (window-height) 16)
+					   (progn
+					     (ecb-activate)
+					     (add-hook 'window-setup-hook 'ecb-redraw-layout t))
+					 (message "Not activating ECB, window height to small"))
+				     (message "Not activating ECB, not using a window system")))))
 
 	(:name color-theme
 	       :load-path "."
@@ -107,34 +107,34 @@
 	       :url "https://github.com/sellout/emacs-color-theme-solarized.git"
 	       :load "color-theme-solarized.el"
 	       :after (lambda () (progn
-				       (color-theme-solarized-light)
-				       ;; Re-initialize colors when creating a new frame, to fix color-palette incompats between terminal and X
-				       (defun setup-window-system-frame-colours (&rest frame)
-					 (color-theme-solarized-light))
-				       (defadvice server-create-window-system-frame
-					 (after set-window-system-frame-colours ())
-					 "Set custom frame colours when creating the first frame on a display"
-					 (message "Running after frame-initialize")
-					 (setup-window-system-frame-colours))
-				       (ad-activate 'server-create-window-system-frame)
-				       (add-hook 'after-make-frame-functions 'setup-window-system-frame-colours t))))
+				   (color-theme-solarized-light)
+				   ;; Re-initialize colors when creating a new frame, to fix color-palette incompats between terminal and X
+				   (defun setup-window-system-frame-colours (&rest frame)
+				     (color-theme-solarized-light))
+				   (defadvice server-create-window-system-frame
+				     (after set-window-system-frame-colours ())
+				     "Set custom frame colours when creating the first frame on a display"
+				     (message "Running after frame-initialize")
+				     (setup-window-system-frame-colours))
+				   (ad-activate 'server-create-window-system-frame)
+				   (add-hook 'after-make-frame-functions 'setup-window-system-frame-colours t))))
 
 	(:name coffee-mode
 	       :after (lambda () (add-hook 'coffee-mode-hook
-					       '(lambda() (progn
-							    ;; Enable compile-on-save if there is already a *.coffee & *.js file
-							    (if (and (file-exists-p (buffer-file-name))
-								     (file-exists-p (coffee-compiled-file-name)))
-								(coffee-cos-mode t))
-							    (setq coffee-args-compile '("-c" "--bare"))
-							    (set (make-local-variable 'tab-width) 2)
-							    (define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer))))))
+					   '(lambda() (progn
+							;; Enable compile-on-save if there is already a *.coffee & *.js file
+							(if (and (file-exists-p (buffer-file-name))
+								 (file-exists-p (coffee-compiled-file-name)))
+							    (coffee-cos-mode t))
+							(setq coffee-args-compile '("-c" "--bare"))
+							(set (make-local-variable 'tab-width) 2)
+							(define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer))))))
 
 	(:name yaml-mode
 	       :after (lambda () (progn
-				       (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
-				       (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
-				       (add-to-list 'auto-mode-alist '("Gemfile.lock$" . yaml-mode)))))
+				   (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
+				   (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
+				   (add-to-list 'auto-mode-alist '("Gemfile.lock$" . yaml-mode)))))
 
 	(:name maxframe
 	       :features maxframe
@@ -149,12 +149,12 @@
 	(:name rhtml-mode
 	       :features rhtml-mode
 	       :after (lambda () (progn
-				       ;; (add-hook 'rhtml-mode-hook
-				;;		 (lambda () (rinari-launch)))
-				       (add-to-list 'auto-mode-alist '("\\.html.erb$" . rhtml-mode))
-				       (add-to-list 'auto-mode-alist '("\\.html.rb$" . rhtml-mode))
-				       (add-to-list 'auto-mode-alist '("\\.rhtml$" . rhtml-mode))
-				       )))
+				   ;; (add-hook 'rhtml-mode-hook
+				   ;;		 (lambda () (rinari-launch)))
+				   (add-to-list 'auto-mode-alist '("\\.html.erb$" . rhtml-mode))
+				   (add-to-list 'auto-mode-alist '("\\.html.rb$" . rhtml-mode))
+				   (add-to-list 'auto-mode-alist '("\\.rhtml$" . rhtml-mode))
+				   )))
 
 	(:name ruby-mode
 	       :after (lambda () (progn
@@ -192,9 +192,9 @@
 	       :features feature-mode
 	       :depends yasnippet
 	       :after (lambda () (progn
-				       ;; load bundle snippets
-				       (yas/load-directory (expand-file-name (concat el-get-dir "/cucumber/snippets")))
-				       (add-to-list 'auto-mode-alist '("\\.feature" . feature-mode)))))
+				   ;; load bundle snippets
+				   (yas/load-directory (expand-file-name (concat el-get-dir "/cucumber/snippets")))
+				   (add-to-list 'auto-mode-alist '("\\.feature" . feature-mode)))))
 
 	(:name rsense
 	       :type git
@@ -205,22 +205,22 @@
 
 	(:name js2-mode
 	       :after (lambda () (progn
-				       (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
-				       (add-hook 'js2-mode-hook
-						 (lambda () (progn
-							      (setq imenu-create-index-function 'javascript-imenu-create-index)
-							      (local-set-key (kbd "<return>") 'newline-and-indent)
-							      (setq javascript-indent-level 2)))
-						 t))))
+				   (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+				   (add-hook 'js2-mode-hook
+					     (lambda () (progn
+							  (setq imenu-create-index-function 'javascript-imenu-create-index)
+							  (local-set-key (kbd "<return>") 'newline-and-indent)
+							  (setq javascript-indent-level 2)))
+					     t))))
 
 	(:name textmate
 	       :type git
 	       :url "git://github.com/defunkt/textmate.el.git"
 	       :load "textmate.el"
 	       :after (lambda () (progn
-				       (textmate-mode 1)
-				       ;; Commenting blocks
-				       (global-set-key [(control /)] 'comment-or-uncomment-region-or-line))))
+				   (textmate-mode 1)
+				   ;; Commenting blocks
+				   (global-set-key [(control /)] 'comment-or-uncomment-region-or-line))))
 
 	(:name magit
 	       :features (magit magit-svn)
@@ -232,10 +232,10 @@
 	       :load-path "."
 	       :features project-mode
 	       :after (lambda () (progn
-				       (project-mode 1)
-				       (project-mode-menu)
-				       (project-load-all)
-				       (global-set-key "\C-t" 'project-fuzzy-search))))
+				   (project-mode 1)
+				   (project-mode-menu)
+				   (project-load-all)
+				   (global-set-key "\C-t" 'project-fuzzy-search))))
 
 	;; (:name dictionary-el    :type apt-get)
 	;; (:name emacs-goodies-el :type apt-get)
@@ -248,13 +248,13 @@
 
 	(:name org-mode
 	       :after (lambda () (progn
-				       (setq org-hide-leading-stars t)
-				       (setq org-agenda-files '())
-				       (add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
-				       (setq org-agenda-files (append (file-expand-wildcards
-								       (expand-file-name "~/Documents/HPI/11SS/*"))
-								      org-agenda-files))
-				       (setq org-insert-mode-line-in-empty-file t))))
+				   (setq org-hide-leading-stars t)
+				   (setq org-agenda-files '())
+				   (add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
+				   (setq org-agenda-files (append (file-expand-wildcards
+								   (expand-file-name "~/Documents/HPI/11SS/*"))
+								  org-agenda-files))
+				   (setq org-insert-mode-line-in-empty-file t))))
 
 	(:name emacsmirror-rcp
 	       :type git
@@ -265,68 +265,68 @@
 	       :after (lambda () (progn
 				   (add-hook 'java-mode-hook 'ajc-java-complete-mode))))
 
-	;; (:name jdee
-	;;        :type git
-	;;        :url "https://github.com/timfel/jdee.git"
-	;;        :build ("ant configure" "ant")
-	;;        :load-path ("lisp")
-	;;        :depends (ecb)
-	;;        :after (lambda () (progn
-	;; 			   (setq jde-auto-parse-enable nil)
-	;; 			   (setq jde-enable-senator nil)
-	;; 			   (setq defer-loading-jde t)
-	;; 			   (if defer-loading-jde
-	;; 			       (progn
-	;; 			   	 (autoload 'jde-mode "jde" "JDE mode." t)
-	;; 			   	 (setq auto-mode-alist
-	;; 			   	       (append
-	;; 			   		'(("\\.java\\'" . jde-mode))
-	;; 			   		auto-mode-alist)))
-	;; 			     (require 'jde))
-	;; 			   (let ((java-dir
-	;; 				  (substring
-	;; 				   (shell-command-to-string "dirname $(dirname $(readlink -f $(which java)))")
-	;; 				   0 -1)))
-	;; 			     (setq
-	;; 			      jde-web-browser "xdg-open"
-	;; 			      jde-doc-dir (concat java-dir "/doc")
-	;; 			      jde-sourcepath '( (expand-file-name "~/Devel/" ) )
-	;; 			      jde-db-option-connect-socket '(nil "28380")
-	;; 			      jde-jdk-registry (quote (("1.7" . java-dir)))
-	;; 			      jde-jdk `("1.7")
-	;; 			      )
-	;; 			     )
-	;; 			   ;; (require 'jdibug)
-	;; 			   ;; (define-key jde-mode-map [f8]   'jdibug-step-over)
-	;; 			   ;; (define-key jde-mode-map [M-f8] 'jdibug-step-into)
-	;; 			   ;; (define-key jde-mode-map [f7]   'jdibug-step-out)
-	;; 			   ;; (define-key jde-mode-map [M-f7] 'jdibug-resume)
-	;; 			   (defun flymake-java-ecj-init ()
-	;; 			     (let* ((temp-file   (flymake-init-create-temp-buffer-copy
-	;; 			   			  'jde-ecj-create-temp-file))
-	;; 			   	    (local-file  (file-relative-name
-	;; 			   			  temp-file
-	;; 			   			  (file-name-directory buffer-file-name))))
-	;; 			       ;; Change your ecj.jar location here
-	;; 			       (list "java" (list "-jar" "/usr/share/java/ecj.jar" "-Xemacs" "-d" "/dev/null"
-	;; 			   			  "-source" "1.6" "-target" "1.6" "-proceedOnError"
-	;; 			   			  "-classpath"
-	;; 			   			  (jde-build-classpath jde-global-classpath) local-file))))
-	;; 			   (defun flymake-java-ecj-cleanup ()
-	;; 			     "Cleanup after `flymake-java-ecj-init' -- delete temp file and dirs."
-	;; 			     (flymake-safe-delete-file flymake-temp-source-file-name)
-	;; 			     (when flymake-temp-source-file-name
-	;; 			       (flymake-safe-delete-directory (file-name-directory flymake-temp-source-file-name))))
+	(:name jdee
+	       :type git
+	       :url "https://github.com/timfel/jdee.git"
+	       :build ("ant configure" "ant")
+	       :load-path ("lisp")
+	       :depends (ecb)
+	       :after (lambda () (progn
+				   ;; 			   (setq jde-auto-parse-enable nil)
+				   ;; 			   (setq jde-enable-senator nil)
+				   ;; 			   (setq defer-loading-jde t)
+				   ;; 			   (if defer-loading-jde
+				   ;; 			       (progn
+				   ;; 			   	 (autoload 'jde-mode "jde" "JDE mode." t)
+				   ;; 			   	 (setq auto-mode-alist
+				   ;; 			   	       (append
+				   ;; 			   		'(("\\.java\\'" . jde-mode))
+				   ;; 			   		auto-mode-alist)))
+				   ;; 			     (require 'jde))
+				   ;; 			   (let ((java-dir
+				   ;; 				  (substring
+				   ;; 				   (shell-command-to-string "dirname $(dirname $(readlink -f $(which java)))")
+				   ;; 				   0 -1)))
+				   ;; 			     (setq
+				   ;; 			      jde-web-browser "xdg-open"
+				   ;; 			      jde-doc-dir (concat java-dir "/doc")
+				   ;; 			      jde-sourcepath '( (expand-file-name "~/Devel/" ) )
+				   ;; 			      jde-db-option-connect-socket '(nil "28380")
+				   ;; 			      jde-jdk-registry (quote (("1.7" . java-dir)))
+				   ;; 			      jde-jdk `("1.7")
+				   ;; 			      )
+				   ;; 			     )
+				   ;; 			   ;; (require 'jdibug)
+				   ;; 			   ;; (define-key jde-mode-map [f8]   'jdibug-step-over)
+				   ;; 			   ;; (define-key jde-mode-map [M-f8] 'jdibug-step-into)
+				   ;; 			   ;; (define-key jde-mode-map [f7]   'jdibug-step-out)
+				   ;; 			   ;; (define-key jde-mode-map [M-f7] 'jdibug-resume)
+				   ;; 			   (defun flymake-java-ecj-init ()
+				   ;; 			     (let* ((temp-file   (flymake-init-create-temp-buffer-copy
+				   ;; 			   			  'jde-ecj-create-temp-file))
+				   ;; 			   	    (local-file  (file-relative-name
+				   ;; 			   			  temp-file
+				   ;; 			   			  (file-name-directory buffer-file-name))))
+				   ;; 			       ;; Change your ecj.jar location here
+				   ;; 			       (list "java" (list "-jar" "/usr/share/java/ecj.jar" "-Xemacs" "-d" "/dev/null"
+				   ;; 			   			  "-source" "1.6" "-target" "1.6" "-proceedOnError"
+				   ;; 			   			  "-classpath"
+				   ;; 			   			  (jde-build-classpath jde-global-classpath) local-file))))
+				   ;; 			   (defun flymake-java-ecj-cleanup ()
+				   ;; 			     "Cleanup after `flymake-java-ecj-init' -- delete temp file and dirs."
+				   ;; 			     (flymake-safe-delete-file flymake-temp-source-file-name)
+				   ;; 			     (when flymake-temp-source-file-name
+				   ;; 			       (flymake-safe-delete-directory (file-name-directory flymake-temp-source-file-name))))
 
-	;; 			   (defun jde-ecj-create-temp-file (file-name prefix)
-	;; 			     "Create the file FILE-NAME in a unique directory in the temp directory."
-	;; 			     (file-truename (expand-file-name (file-name-nondirectory file-name)
-	;; 			   				      (expand-file-name  (int-to-string (random)) (flymake-get-temp-dir)))))
-	;; 			   (push '("\\(.*?\\):\\([0-9]+\\): error: \\(.*?\\)\n" 1 2 nil 2 3 (6 compilation-error-face))
-	;; 			   	 compilation-error-regexp-alist)
-	;; 			   (push '("\\(.*?\\):\\([0-9]+\\): warning: \\(.*?\\)\n" 1 2 nil 1 3 (6 compilation-warning-face))
-	;; 			   	 compilation-error-regexp-alist)
-	;; 			   )))
+				   ;; 			   (defun jde-ecj-create-temp-file (file-name prefix)
+				   ;; 			     "Create the file FILE-NAME in a unique directory in the temp directory."
+				   ;; 			     (file-truename (expand-file-name (file-name-nondirectory file-name)
+				   ;; 			   				      (expand-file-name  (int-to-string (random)) (flymake-get-temp-dir)))))
+				   ;; 			   (push '("\\(.*?\\):\\([0-9]+\\): error: \\(.*?\\)\n" 1 2 nil 2 3 (6 compilation-error-face))
+				   ;; 			   	 compilation-error-regexp-alist)
+				   ;; 			   (push '("\\(.*?\\):\\([0-9]+\\): warning: \\(.*?\\)\n" 1 2 nil 1 3 (6 compilation-warning-face))
+				   ;; 			   	 compilation-error-regexp-alist)
+				   )))
 	))
 
 ;; Auctex depends on pdflatex being available, only install if desired on this system
@@ -338,18 +338,18 @@
 				    "make"))
 		    (:name reftex
 			   :after (lambda () (progn
-						   (setq-default TeX-master nil)
-						   (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-						   (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-						   (add-hook 'LaTeX-mode-hook 'reftex-mode)
-						   (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
-						   (add-hook 'LaTeX-mode-hook 'flyspell-mode)
-						   (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
-						   (setq reftex-plug-into-AUCTeX t)
-						   (setq TeX-auto-save t)
-						   (setq TeX-save-query nil)
-						   (setq TeX-parse-self t)
-						   (setq-default TeX-master nil)))))
+					       (setq-default TeX-master nil)
+					       (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+					       (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+					       (add-hook 'LaTeX-mode-hook 'reftex-mode)
+					       (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+					       (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+					       (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+					       (setq reftex-plug-into-AUCTeX t)
+					       (setq TeX-auto-save t)
+					       (setq TeX-save-query nil)
+					       (setq TeX-parse-self t)
+					       (setq-default TeX-master nil)))))
 		  el-get-sources)))
 
 (let ((new_path (expand-file-name (concat el-get-dir "/emacsmirror-rcp"))))
