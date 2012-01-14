@@ -253,11 +253,12 @@
 
 	(:name emacsmirror-rcp
 	       :type git
-	       :url "https://github.com/edenc/emacsmirror-rcp"
-	       :after (lambda () (let ((new_path (expand-file-name (concat el-get-dir "/emacsmirror-rcp"))))
-				   (if (not (member new_path el-get-recipe-path))
-				       (setq el-get-recipe-path
-					     (append el-get-recipe-path (list new_path)))))))
+	       :url "https://github.com/edenc/emacsmirror-rcp")
+
+	(:name ajc-java-complete
+	       :depends (emacsmirror-rcp)
+	       :after (lambda () (progn
+				   (add-hook 'java-mode-hook 'ajc-java-complete-mode))))
 
 	))
 
@@ -284,7 +285,11 @@
 						   (setq-default TeX-master nil)))))
 		  el-get-sources)))
 
-;; (setq el-get-sources '())
+(let ((new_path (expand-file-name (concat el-get-dir "/emacsmirror-rcp"))))
+  (if (not (member new_path el-get-recipe-path))
+      (setq el-get-recipe-path
+	    (append el-get-recipe-path (list new_path)))))
+
 (setq my-packages
       (mapcar 'el-get-as-symbol
 	      (append '(auto-complete-clang auto-complete-etags auto-complete-extension
@@ -292,11 +297,6 @@
 					    rspec-mode sass-mode cssh el-get switch-window vkill
 					    yasnippet xcscope anything sudo-save)
 		      (mapcar 'el-get-source-name el-get-sources))))
-;; (mapcar (lambda (p)
-;; 	  (message (symbol-name p))
-;; 	  (el-get 'sync p)
-;; 	  (el-get 'wait))
-;; 	my-packages)
 (el-get 'sync my-packages)
 (el-get 'wait)
 
