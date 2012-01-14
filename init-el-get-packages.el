@@ -27,6 +27,11 @@
        (end-of-buffer)
        (eval-print-last-sexp)))))
 
+
+;; ;; CEDET hack
+;; (defun inversion-test (p v)
+;;   (string= v (symbol-value
+;; 	      (intern-soft (concat (symbol-name p) "-version")))))
 (require 'compile) ;; Needed for some reason or other. el-get fails for me, otherwise
 
 (setq el-get-sources
@@ -260,6 +265,68 @@
 	       :after (lambda () (progn
 				   (add-hook 'java-mode-hook 'ajc-java-complete-mode))))
 
+	;; (:name jdee
+	;;        :type git
+	;;        :url "https://github.com/timfel/jdee.git"
+	;;        :build ("ant configure" "ant")
+	;;        :load-path ("lisp")
+	;;        :depends (ecb)
+	;;        :after (lambda () (progn
+	;; 			   (setq jde-auto-parse-enable nil)
+	;; 			   (setq jde-enable-senator nil)
+	;; 			   (setq defer-loading-jde t)
+	;; 			   (if defer-loading-jde
+	;; 			       (progn
+	;; 			   	 (autoload 'jde-mode "jde" "JDE mode." t)
+	;; 			   	 (setq auto-mode-alist
+	;; 			   	       (append
+	;; 			   		'(("\\.java\\'" . jde-mode))
+	;; 			   		auto-mode-alist)))
+	;; 			     (require 'jde))
+	;; 			   (let ((java-dir
+	;; 				  (substring
+	;; 				   (shell-command-to-string "dirname $(dirname $(readlink -f $(which java)))")
+	;; 				   0 -1)))
+	;; 			     (setq
+	;; 			      jde-web-browser "xdg-open"
+	;; 			      jde-doc-dir (concat java-dir "/doc")
+	;; 			      jde-sourcepath '( (expand-file-name "~/Devel/" ) )
+	;; 			      jde-db-option-connect-socket '(nil "28380")
+	;; 			      jde-jdk-registry (quote (("1.7" . java-dir)))
+	;; 			      jde-jdk `("1.7")
+	;; 			      )
+	;; 			     )
+	;; 			   ;; (require 'jdibug)
+	;; 			   ;; (define-key jde-mode-map [f8]   'jdibug-step-over)
+	;; 			   ;; (define-key jde-mode-map [M-f8] 'jdibug-step-into)
+	;; 			   ;; (define-key jde-mode-map [f7]   'jdibug-step-out)
+	;; 			   ;; (define-key jde-mode-map [M-f7] 'jdibug-resume)
+	;; 			   (defun flymake-java-ecj-init ()
+	;; 			     (let* ((temp-file   (flymake-init-create-temp-buffer-copy
+	;; 			   			  'jde-ecj-create-temp-file))
+	;; 			   	    (local-file  (file-relative-name
+	;; 			   			  temp-file
+	;; 			   			  (file-name-directory buffer-file-name))))
+	;; 			       ;; Change your ecj.jar location here
+	;; 			       (list "java" (list "-jar" "/usr/share/java/ecj.jar" "-Xemacs" "-d" "/dev/null"
+	;; 			   			  "-source" "1.6" "-target" "1.6" "-proceedOnError"
+	;; 			   			  "-classpath"
+	;; 			   			  (jde-build-classpath jde-global-classpath) local-file))))
+	;; 			   (defun flymake-java-ecj-cleanup ()
+	;; 			     "Cleanup after `flymake-java-ecj-init' -- delete temp file and dirs."
+	;; 			     (flymake-safe-delete-file flymake-temp-source-file-name)
+	;; 			     (when flymake-temp-source-file-name
+	;; 			       (flymake-safe-delete-directory (file-name-directory flymake-temp-source-file-name))))
+
+	;; 			   (defun jde-ecj-create-temp-file (file-name prefix)
+	;; 			     "Create the file FILE-NAME in a unique directory in the temp directory."
+	;; 			     (file-truename (expand-file-name (file-name-nondirectory file-name)
+	;; 			   				      (expand-file-name  (int-to-string (random)) (flymake-get-temp-dir)))))
+	;; 			   (push '("\\(.*?\\):\\([0-9]+\\): error: \\(.*?\\)\n" 1 2 nil 2 3 (6 compilation-error-face))
+	;; 			   	 compilation-error-regexp-alist)
+	;; 			   (push '("\\(.*?\\):\\([0-9]+\\): warning: \\(.*?\\)\n" 1 2 nil 1 3 (6 compilation-warning-face))
+	;; 			   	 compilation-error-regexp-alist)
+	;; 			   )))
 	))
 
 ;; Auctex depends on pdflatex being available, only install if desired on this system
@@ -299,4 +366,3 @@
 		      (mapcar 'el-get-source-name el-get-sources))))
 (el-get 'sync my-packages)
 (el-get 'wait)
-
