@@ -39,16 +39,16 @@
 	       :after (lambda () (progn
 				   (require 'auto-complete-config)
 				   (global-auto-complete-mode t)     ;; enable global-mode
-				   (setq ac-auto-start nil)          ;; do not automatically start
+				   (setq ac-auto-start nil)            ;; automatically start
 				   (setq ac-dwim 3)                  ;; Do what i mean
 				   (setq ac-override-local-map nil)  ;; don't override local map
 				   (ac-flyspell-workaround)
 				   (setq ac-delay 5)
-				   (setq ac-auto-show-menu 2)
+				   (setq ac-auto-show-menu 1)
 				   (set-default 'ac-sources '(ac-source-yasnippet ac-source-semantic ac-source-abbrev ac-source-words-in-buffer))
 
 				   (setq ac-modes (append ac-modes '(eshell-mode)))
-				   (global-set-key (kbd "M-?") 'ac-fuzzy-complete)
+				   (global-set-key (kbd "M-?") 'auto-complete)
 				   (add-hook 'emacs-lisp-mode-hook
 					     (lambda ()
 					       (setq ac-sources '(ac-source-yasnippet
@@ -172,10 +172,17 @@
 									  (local-set-key (kbd "<return>") 'newline-and-indent)
 									  ;; Auto completion
 									  (imenu-add-to-menubar "IMENU")
-									  (mapcar (lambda (x) (push x ac-sources))
-										  '(ac-source-rsense-method ac-source-rsense-constant
-													    ac-source-words-in-same-mode-buffers))
-									  (setq ac-omni-completion-sources '(("\\.\\=" ac-source-rcodetools)))
+									  (setq ac-sources
+										'(ac-source-rsense-method
+										  ac-source-rsense-constant
+										  ac-source-semantic
+										  ac-source-words-in-same-mode-buffers
+										  ac-source-yasnippet
+										  ac-source-abbrev))
+									  (setq ac-omni-completion-sources
+										'((cons "\\.\\=" '(ac-source-rcodetools))
+										  (cons "\\.[A-Za-z0-9_]*" '(ac-source-rsense-method))
+										  (cons "[ :][A-Z][A-Za-z0-9_]*" '(ac-source-rsense-constant)) ))
 									  (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
 									  (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
 									  ;; Type inference auto completion
@@ -250,6 +257,9 @@
 
 	(:name org-mode
 	       :after (lambda () (progn
+				   (add-hook 'org-mode-hook (lambda () (progn
+				      (local-set-key (kbd "<return>") 'org-insert-heading)
+				      (local-set-key (kbd "M-<return>") 'org-insert-subheading))))
 				   (setq org-hide-leading-stars t)
 				   (setq org-agenda-files '())
 				   (add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
@@ -265,70 +275,78 @@
 	(:name ajc-java-complete
 	       :depends (emacsmirror-rcp)
 	       :after (lambda () (progn
-				   (add-hook 'java-mode-hook 'ajc-java-complete-mode))))
+				   (require 'ajc-java-complete)
+				   (require 'ajc-java-complete-config)
+				   (add-hook 'java-mode-hook
+					     (lambda () (progn
+							  (ajc-java-complete-mode t)
+							  (setq ac-omni-completion-sources
+								'((cons "\\.[A-Za-z0-9_]*" '(ac-source-ajc-method))
+								  (cons "\s[A-Z][A-Za-z]+" '(ac-source-ajc-class))
+								  (cons "new [A-Za-z]+(" '(ac-source-ajc-constructor)) )) ))) )))
 
-	(:name jdee
-	       :type git
-	       :url "https://github.com/timfel/jdee.git"
-	       :build ("ant configure" "ant")
-	       :load-path ("lisp")
-	       :depends (ecb)
-	       :after (lambda () (progn
-				   ;; 			   (setq jde-auto-parse-enable nil)
-				   ;; 			   (setq jde-enable-senator nil)
-				   ;; 			   (setq defer-loading-jde t)
-				   ;; 			   (if defer-loading-jde
-				   ;; 			       (progn
-				   ;; 			   	 (autoload 'jde-mode "jde" "JDE mode." t)
-				   ;; 			   	 (setq auto-mode-alist
-				   ;; 			   	       (append
-				   ;; 			   		'(("\\.java\\'" . jde-mode))
-				   ;; 			   		auto-mode-alist)))
-				   ;; 			     (require 'jde))
-				   ;; 			   (let ((java-dir
-				   ;; 				  (substring
-				   ;; 				   (shell-command-to-string "dirname $(dirname $(readlink -f $(which java)))")
-				   ;; 				   0 -1)))
-				   ;; 			     (setq
-				   ;; 			      jde-web-browser "xdg-open"
-				   ;; 			      jde-doc-dir (concat java-dir "/doc")
-				   ;; 			      jde-sourcepath '( (expand-file-name "~/Devel/" ) )
-				   ;; 			      jde-db-option-connect-socket '(nil "28380")
-				   ;; 			      jde-jdk-registry (quote (("1.7" . java-dir)))
-				   ;; 			      jde-jdk `("1.7")
-				   ;; 			      )
-				   ;; 			     )
-				   ;; 			   ;; (require 'jdibug)
-				   ;; 			   ;; (define-key jde-mode-map [f8]   'jdibug-step-over)
-				   ;; 			   ;; (define-key jde-mode-map [M-f8] 'jdibug-step-into)
-				   ;; 			   ;; (define-key jde-mode-map [f7]   'jdibug-step-out)
-				   ;; 			   ;; (define-key jde-mode-map [M-f7] 'jdibug-resume)
-				   ;; 			   (defun flymake-java-ecj-init ()
-				   ;; 			     (let* ((temp-file   (flymake-init-create-temp-buffer-copy
-				   ;; 			   			  'jde-ecj-create-temp-file))
-				   ;; 			   	    (local-file  (file-relative-name
-				   ;; 			   			  temp-file
-				   ;; 			   			  (file-name-directory buffer-file-name))))
-				   ;; 			       ;; Change your ecj.jar location here
-				   ;; 			       (list "java" (list "-jar" "/usr/share/java/ecj.jar" "-Xemacs" "-d" "/dev/null"
-				   ;; 			   			  "-source" "1.6" "-target" "1.6" "-proceedOnError"
-				   ;; 			   			  "-classpath"
-				   ;; 			   			  (jde-build-classpath jde-global-classpath) local-file))))
-				   ;; 			   (defun flymake-java-ecj-cleanup ()
-				   ;; 			     "Cleanup after `flymake-java-ecj-init' -- delete temp file and dirs."
-				   ;; 			     (flymake-safe-delete-file flymake-temp-source-file-name)
-				   ;; 			     (when flymake-temp-source-file-name
-				   ;; 			       (flymake-safe-delete-directory (file-name-directory flymake-temp-source-file-name))))
+	;; (:name jdee
+	;;        :type git
+	;;        :url "https://github.com/timfel/jdee.git"
+	;;        :build ("ant configure" "ant")
+	;;        :load-path ("lisp")
+	;;        :depends (ecb)
+	;;        :after (lambda () (progn
+	;; 			   			   (setq jde-auto-parse-enable nil)
+	;; 			   			   (setq jde-enable-senator nil)
+	;; 			   			   (setq defer-loading-jde t)
+	;; 			   			   (if defer-loading-jde
+	;; 			   			       (progn
+	;; 			   			   	 (autoload 'jde-mode "jde" "JDE mode." t)
+	;; 			   			   	 (setq auto-mode-alist
+	;; 			   			   	       (append
+	;; 			   			   		'(("\\.java\\'" . jde-mode))
+	;; 			   			   		auto-mode-alist)))
+	;; 			   			     (require 'jde))
+	;; 			   			   (let ((java-dir
+	;; 			   				  (substring
+	;; 			   				   (shell-command-to-string "dirname $(dirname $(readlink -f $(which java)))")
+	;; 			   				   0 -1)))
+	;; 			   			     (setq
+	;; 			   			      jde-web-browser "xdg-open"
+	;; 			   			      jde-doc-dir (concat java-dir "/doc")
+	;; 			   			      jde-sourcepath '( (expand-file-name "~/Devel/" ) )
+	;; 			   			      jde-db-option-connect-socket '(nil "28380")
+	;; 			   			      jde-jdk-registry (quote (("1.7" . java-dir)))
+	;; 			   			      jde-jdk `("1.7")
+	;; 			   			      )
+	;; 			   			     )
+	;; 			   			   ;; (require 'jdibug)
+	;; 			   			   ;; (define-key jde-mode-map [f8]   'jdibug-step-over)
+	;; 			   			   ;; (define-key jde-mode-map [M-f8] 'jdibug-step-into)
+	;; 			   			   ;; (define-key jde-mode-map [f7]   'jdibug-step-out)
+	;; 			   			   ;; (define-key jde-mode-map [M-f7] 'jdibug-resume)
+	;; 			   			   (defun flymake-java-ecj-init ()
+	;; 			   			     (let* ((temp-file   (flymake-init-create-temp-buffer-copy
+	;; 			   			   			  'jde-ecj-create-temp-file))
+	;; 			   			   	    (local-file  (file-relative-name
+	;; 			   			   			  temp-file
+	;; 			   			   			  (file-name-directory buffer-file-name))))
+	;; 			   			       ;; Change your ecj.jar location here
+	;; 			   			       (list "java" (list "-jar" "/usr/share/java/ecj.jar" "-Xemacs" "-d" "/dev/null"
+	;; 			   			   			  "-source" "1.6" "-target" "1.6" "-proceedOnError"
+	;; 			   			   			  "-classpath"
+	;; 			   			   			  (jde-build-classpath jde-global-classpath) local-file))))
+	;; 			   			   (defun flymake-java-ecj-cleanup ()
+	;; 			   			     "Cleanup after `flymake-java-ecj-init' -- delete temp file and dirs."
+	;; 			   			     (flymake-safe-delete-file flymake-temp-source-file-name)
+	;; 			   			     (when flymake-temp-source-file-name
+	;; 			   			       (flymake-safe-delete-directory (file-name-directory flymake-temp-source-file-name))))
 
-				   ;; 			   (defun jde-ecj-create-temp-file (file-name prefix)
-				   ;; 			     "Create the file FILE-NAME in a unique directory in the temp directory."
-				   ;; 			     (file-truename (expand-file-name (file-name-nondirectory file-name)
-				   ;; 			   				      (expand-file-name  (int-to-string (random)) (flymake-get-temp-dir)))))
-				   ;; 			   (push '("\\(.*?\\):\\([0-9]+\\): error: \\(.*?\\)\n" 1 2 nil 2 3 (6 compilation-error-face))
-				   ;; 			   	 compilation-error-regexp-alist)
-				   ;; 			   (push '("\\(.*?\\):\\([0-9]+\\): warning: \\(.*?\\)\n" 1 2 nil 1 3 (6 compilation-warning-face))
-				   ;; 			   	 compilation-error-regexp-alist)
-				   )))
+	;; 			   			   (defun jde-ecj-create-temp-file (file-name prefix)
+	;; 			   			     "Create the file FILE-NAME in a unique directory in the temp directory."
+	;; 			   			     (file-truename (expand-file-name (file-name-nondirectory file-name)
+	;; 			   			   				      (expand-file-name  (int-to-string (random)) (flymake-get-temp-dir)))))
+	;; 			   			   (push '("\\(.*?\\):\\([0-9]+\\): error: \\(.*?\\)\n" 1 2 nil 2 3 (6 compilation-error-face))
+	;; 			   			   	 compilation-error-regexp-alist)
+	;; 			   			   (push '("\\(.*?\\):\\([0-9]+\\): warning: \\(.*?\\)\n" 1 2 nil 1 3 (6 compilation-warning-face))
+	;; 			   			   	 compilation-error-regexp-alist)
+	;; 			   )))
 	))
 
 ;; Auctex depends on pdflatex being available, only install if desired on this system
