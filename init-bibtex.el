@@ -1,8 +1,9 @@
 (defun org-mode-reftex-setup ()
   (interactive)
-  (load-library "reftex")
-  (global-auto-revert-mode t)
+  (reftex-mode t)
+  (reftex-mode nil)
   (reftex-parse-all)
+  (global-auto-revert-mode t)
   ;; add a custom reftex cite format to insert links
   (reftex-set-cite-format
    '((?b . "[[bib:%l][%l-bib]]")
