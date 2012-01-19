@@ -25,5 +25,12 @@
  '(ecb-source-path (quote (("~/Devel/projects" "Dev") ("~/Documents/HPI/11SS/" "Uni") ("~/Finnlabs/Finnlabs/" "Finn"))))
  '(ecb-tree-indent 2)
  '(ecb-windows-width 0.2)
+ '(org-file-apps (quote ((auto-mode . emacs) ("\\.mm\\'" . default) ("\\.x?html?\\'" . default) ("\\.pdf\\'" . "evince %s"))))
  '(safe-local-variable-values (quote ((encoding . utf-8)))))
 ;; resize the windows on emacs and run ecb-store-window-sizes
+(custom-set-faces
+  ;; custom-set-faces was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ )
