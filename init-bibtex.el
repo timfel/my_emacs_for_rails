@@ -7,10 +7,10 @@
   ;; add a custom reftex cite format to insert links
   (reftex-set-cite-format
    '((?b . "[[bib:%l][%l-bib]]")
-     (?n . "[[notes:%l][%l-notes]]")
-     (?p . "[[papers:%l][%l-paper]]")
+     (?n . "[[notes:%l][%l]]")
+     (?p . "[[papers:%l][%l.pdf]]")
      (?t . "%t")
-     (?h . "** %t\n:PROPERTIES:\n:Custom_ID: %l\n:END:\n[[papers:%l][%l-paper]]")))
+     (?h . "** %t\n:PROPERTIES:\n:Custom_ID: %l\n:END:\n[[papers:%l][%l.pdf]]")))
   (local-set-key (kbd "C-x C-s") (lambda () (interactive) (write-file (buffer-file-name)) (rename-buffer "*bibtex*")))
   (local-set-key (kbd "C-c )") 'reftex-citation)
   (local-set-key (kbd "C-c (") 'org-mode-reftex-search))
