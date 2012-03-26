@@ -269,6 +269,12 @@
 								  org-agenda-files))
 				   (setq org-insert-mode-line-in-empty-file t))))
 
+	(:name helm
+	       :description "Emacs incremental and narrowing framework"
+	       :type git
+	       :url "https://github.com/emacs-helm/helm"
+	       :features helm-config)
+
 	(:name emacsmirror-rcp
 	       :type git
 	       :url "https://github.com/edenc/emacsmirror-rcp")
@@ -383,7 +389,7 @@
 	      (append '(auto-complete-clang auto-complete-etags auto-complete-extension
 					    mo-git-blame magithub gist ruby-electric autopair haml-mode nxhtml
 					    rspec-mode sass-mode cssh el-get switch-window vkill
-					    yasnippet xcscope anything sudo-save)
+					    yasnippet xcscope sudo-save)
 		      (mapcar 'el-get-source-name el-get-sources))))
 (el-get 'sync my-packages)
 (el-get 'wait)
