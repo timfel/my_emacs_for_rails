@@ -284,6 +284,15 @@
 	       :url "https://github.com/emacs-helm/helm"
 	       :features helm-config)
 
+	(:name emacs-evernote-mode
+	       :description "Emacs Evernote Mode"
+	       :type git
+	       :url "https://github.com/awasira/emacs-evernote-mode.git"
+	       :load-path "."
+	       :features evernote-mode
+	       :compile "emacs-evernote-mode.el"
+	       :build `("ruby ruby/setup.rb"))
+
 	(:name emacsmirror-rcp
 	       :type git
 	       :url "https://github.com/edenc/emacsmirror-rcp")
