@@ -57,16 +57,8 @@
 (add-hook 'css-mode-hook (lambda()
                            (local-set-key (kbd "<return>") 'newline-and-indent)))
 
-
-(global-set-key (kbd "C->") (lambda ()
-                              (interactive)
-                              (set-mark (point))
-                              (goto-char (point-max))))
-
-(global-set-key (kbd "C-<") (lambda ()
-                              (interactive)
-                              (set-mark (point))
-                              (goto-char (point-min))))
+(global-set-key (kbd "C->") 'forward-list)
+(global-set-key (kbd "C-<") 'backward-list)
 
 (setq evernote-username "timfelgentreff") ; optional: you can use this username as default.
 (setq evernote-enml-formatter-command '("w3m" "-dump" "-I" "UTF8" "-O" "UTF8")) ; optional
