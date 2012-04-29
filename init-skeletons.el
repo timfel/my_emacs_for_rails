@@ -1,3 +1,86 @@
+(define-skeleton latex-llncs
+  "Creates a standard SWA style presentation"
+  ""
+  "% Copyright (C) 2012, Tim Felgentreff
+
+% Permission is hereby granted, free of charge, to any person obtaining a 
+% copy of this text and associated files (the \"Document\"), to deal in the
+% Document without restriction, including without limitation the rights to
+% use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+% copies of the Document, and to permit persons to whom the Document is 
+% furnished to do so, subject to the following conditions: 
+%
+% The above copyright notice and this permission notice shall be included in 
+% all copies or substantial portions of the Document. 
+%
+% THE DOCUMENT IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.	 IN NO EVENT SHALL 
+% THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+% FROM, OUT OF OR IN CONNECTION WITH THE DOCUMENT OR THE USE OR OTHER 
+% DEALINGS IN THE DOCUMENT. 
+
+\\documentclass{llncs}
+\\usepackage{makeidx}  % allows for indexgeneration
+\\usepackage[pdftex]{graphicx} % PNGs
+\\usepackage{amsmath, amssymb} % algebra
+% \\usepackage[ngerman]{babel} % deutsch
+\\usepackage[utf8x]{inputenc}
+\\usepackage[T1]{fontenc} 
+\\usepackage{listings} % for sourcecode
+\\usepackage{graphviz} % graphs
+\\usepackage{array} % tables
+\\usepackage{afterpage} % figures
+\\usepackage{float} % figures
+
+\\lstset{%
+  	language=Java,
+	basicstyle=\\small,
+	frame=single,
+	emph={localId, Super, refines, layer},
+	emphstyle={\\bfseries}
+	}
+\\restylefloat{figure}
+
+\\begin{document}
+\\frontmatter          % for the preliminaries
+\\pagestyle{headings}  % switches on printing of running heads
+\\mainmatter           % start of the contributions
+\\title{" (skeleton-read "Title: ") "}
+\\subtitle{" (skeleton-read "Subtitle: ") "}
+\\titlerunning{" (skeleton-read "Abbreviated Title: ") "}  % abbreviated title (for running head)
+                                                          % also used for the TOC unless
+                                                          % \\toctitle is used
+\\author{" (skeleton-read "Author(s): ") "}
+\\authorrunning{" (skeleton-read "Abbreviated Authors: ") "}   % abbreviated author list (for running head)
+%
+\\date{\\today}
+%
+%%%% modified list of authors for the TOC (add the affiliations)
+% \\tocauthor{Tim Felgentreff (Hasso-Plattner-Institute)}
+%
+\\institute{Hasso-Plattner-Institut, Universität Potsdam, D-14482 Potsdam, Germany,\\\\
+\\email{" (skeleton-read "Email(s) for HPI students: ") "@student.hpi.uni-potsdam.de}}
+
+\\maketitle              % typeset the title of the contribution
+
+\\begin{abstract}
+\\end{abstract}
+%
+\\section{Introduction}
+\\subsection{Overview}
+
+" _ "
+
+\\section*{Acknowledgments}
+\\bibliographystyle{splncs.bst}
+% Possibly change this
+\\bibliography{" (expand-file-name (car reftex-default-bibliography)) "}
+\\clearpage
+\\end{document}"
+)
+
 (define-skeleton latex-letter
   "Inserts a Latex letter skeleton into current buffer.
     This only makes sense for empty buffers."
