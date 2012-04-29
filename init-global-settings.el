@@ -67,3 +67,6 @@
                               (interactive)
                               (set-mark (point))
                               (goto-char (point-min))))
+
+(setq evernote-username "timfelgentreff") ; optional: you can use this username as default.
+(setq evernote-enml-formatter-command '("w3m" "-dump" "-I" "UTF8" "-O" "UTF8")) ; optional
