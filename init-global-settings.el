@@ -62,3 +62,5 @@
 
 (setq evernote-username "timfelgentreff") ; optional: you can use this username as default.
 (setq evernote-enml-formatter-command '("w3m" "-dump" "-I" "UTF8" "-O" "UTF8")) ; optional
+(add-to-list 'helm-sources anything-c-source-evernote-title)
+(defalias 'evernote-find 'anything-evernote-title)
