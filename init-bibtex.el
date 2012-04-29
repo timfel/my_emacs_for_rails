@@ -31,4 +31,4 @@
 	("notes" . "~/Dropbox/Papers/bibtex.org::#%s")
 	("papers" . "~/Dropbox/Papers/%s.pdf")))
 
-(setq reftex-default-bibliography (list (expand-file-name "~/Dropbox/Papers/bibtex.bib")))
+(setq reftex-default-bibliography (list (expand-file-name "~/Dropbox/Papers/library.bib")))
