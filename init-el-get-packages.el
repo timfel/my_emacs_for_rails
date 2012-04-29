@@ -73,14 +73,23 @@
 	       :url "git://github.com/DamienCassou/textlint.git"
 	       :load "textlint.el")
 
-	(:name slack-rtm
+	;; (:name slack-rtm
+	;;        :type git
+	;;        :url "git://github.com/slackorama/slack-rtm.git"
+	;;        :load-path "lisp"
+	;;        :depends org-mode
+	;;        :after (lambda () (progn
+	;; 			   (load "rtm.el")
+	;; 			   (load "slack-rtm.el"))))
+
+	(:name simple-rtm
 	       :type git
-	       :url "git://github.com/slackorama/slack-rtm.git"
+	       :url "git://github.com/mbunkus/simple-rtm.git"
 	       :load-path "lisp"
 	       :depends org-mode
 	       :after (lambda () (progn
 				   (load "rtm.el")
-				   (load "slack-rtm.el"))))
+				   (load "simple-rtm.el"))))
 
 	(:name ecb
 	       :load-path "."
