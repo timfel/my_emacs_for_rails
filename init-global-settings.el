@@ -56,3 +56,14 @@
 ;; CSS mode tweak
 (add-hook 'css-mode-hook (lambda()
                            (local-set-key (kbd "<return>") 'newline-and-indent)))
+
+
+(global-set-key (kbd "C->") (lambda ()
+                              (interactive)
+                              (set-mark (point))
+                              (goto-char (point-max))))
+
+(global-set-key (kbd "C-<") (lambda ()
+                              (interactive)
+                              (set-mark (point))
+                              (goto-char (point-min))))
