@@ -67,3 +67,5 @@
 
 (setq lpr-command "xpp")
 (setq ps-lpr-command "xpp")
+
+(global-set-key (kbd "s-c") 'capitalize-word)
