@@ -19,6 +19,7 @@
  '(TeX-source-correlate-start-server t)
  '(TeX-view-program-list (quote (("Okular" "okular --unique %o#src:%n%b"))))
  '(TeX-view-program-selection (quote (((output-dvi style-pstricks) "xdg-open") (output-dvi "xdg-open") (output-pdf "Okular") (output-html "xdg-open"))))
+ '(doc-view-continuous t)
  '(ecb-compilation-buffer-names (quote (("*Calculator*") ("*vc*") ("*vc-diff*") ("*Apropos*") ("*Occur*") ("*shell*") ("\\*[cC]ompilation.*\\*" . t) ("\\*i?grep.*\\*" . t) ("*JDEE Compile Server*") ("*Help*") ("*Completions*") ("*Backtrace*") ("*Compile-log*") ("*bsh*") ("*Messages*") ("*Buffer List*"))))
  '(ecb-compile-window-height 8)
  '(ecb-compile-window-temporally-enlarge (quote both))
