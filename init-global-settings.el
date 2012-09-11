@@ -27,7 +27,7 @@
 ;; wheel mouse
 (mouse-wheel-mode t)
 ;; Standard copy'n'paste
-(cua-mode 1)
+;; (cua-mode 1)
 ;; fix clipboard
 (setq x-select-enable-clipboard t)
 (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
