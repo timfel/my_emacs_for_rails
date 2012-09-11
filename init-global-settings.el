@@ -87,3 +87,6 @@
 ;; Better C multiline comments
 (setq comment-multi-line t)
 (setq comment-style 'extra-line)
+
+(yas/global-mode t)
+(global-auto-complete-mode t)
