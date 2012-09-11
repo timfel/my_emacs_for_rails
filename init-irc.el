@@ -48,7 +48,7 @@ matches a regexp in `erc-keywords'."
       ;; 8640000 milliseconds = 1 day
       (start-process "page-me" nil "notify-send"
                      "-u" "normal" "-t" "8640000"
-                     (format "%s: %s" nick msg)))))
+		     nick msg))))
 
 (setq tls-program '("openssl s_client -connect %h:%p -no_ssl2 -ign_eof"
 		    "gnutls-cli --priority secure256 -p %p %h" 
