@@ -69,6 +69,9 @@
 (setq ps-lpr-command "xpp")
 
 (global-set-key (kbd "s-c") 'capitalize-word)
+
+(load (expand-file-name "~/.emacs.d/fic-mode.el"))
+
 (defun scroll-down-in-place (n)
   (interactive "p")
   (previous-line n)
