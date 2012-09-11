@@ -19,7 +19,9 @@
 
                               ((listp symbol)
                                (setq name (car symbol))
-                               (setq position (cdr symbol)))
+                               (setq position (if (overlayp (cdr symbol))
+						  (overlay-start (cdr symbol))
+						(cdr symbol))))
 
                               ((stringp symbol)
                                (setq name symbol)
