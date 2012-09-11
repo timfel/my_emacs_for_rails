@@ -83,3 +83,7 @@
 (global-set-key [mouse-5] 'scroll-up-in-place)
 (global-set-key [C-up] 'scroll-down-in-place)
 (global-set-key [C-down] 'scroll-up-in-place)
+
+;; Better C multiline comments
+(setq comment-multi-line t)
+(setq comment-style 'extra-line)
