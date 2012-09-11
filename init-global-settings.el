@@ -69,3 +69,17 @@
 (setq ps-lpr-command "xpp")
 
 (global-set-key (kbd "s-c") 'capitalize-word)
+(defun scroll-down-in-place (n)
+  (interactive "p")
+  (previous-line n)
+  (scroll-down n))
+
+(defun scroll-up-in-place (n)
+  (interactive "p")
+  (next-line n)
+  (scroll-up n))
+
+(global-set-key [mouse-4] 'scroll-down-in-place)
+(global-set-key [mouse-5] 'scroll-up-in-place)
+(global-set-key [C-up] 'scroll-down-in-place)
+(global-set-key [C-down] 'scroll-up-in-place)
