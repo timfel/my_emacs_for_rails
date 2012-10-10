@@ -35,3 +35,11 @@
            (position (cdr (assoc selected-symbol name-and-pos))))
       (goto-char position))))
 (global-set-key [(control .)] 'ido-goto-symbol)
+
+;; Patch ruby-mode
+(defun ruby-accurate-end-of-block (&optional end)
+  "TODO: document."
+  (let (state
+        (end (or end (point-max))))
+    (while (and (setq state (apply 'ruby-parse-partial end state))
+		(nth 2 state) (>= (nth 2 state) 0) (< (point) end)))))
