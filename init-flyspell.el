@@ -17,6 +17,3 @@
     (message "Dictionary switched from %s to %s" dic change)
     ))
 (global-set-key (kbd "<f8>") 'fd-switch-dictionary)
-
-(add-hook 'c++-mode-hook 'flyspell-prog-mode)
-(add-hook 'c-mode-hook 'flyspell-prog-mode)
