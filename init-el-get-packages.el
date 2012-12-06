@@ -91,22 +91,22 @@
 				   (load "rtm.el")
 				   (load "simple-rtm.el"))))
 
-	(:name ecb
-	       :load-path "."
-	       :features ecb
-	       :after (lambda () (progn
-				   (global-ede-mode 1)
-				   (semantic-mode t)
-				   (setq semantic-load-turn-everything-on t)
-				   (setq ecb-tip-of-the-day nil)
-				   (setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
-				   (if window-system
-				       (if (>= (window-height) 16)
-					   (progn
-					     (ecb-activate)
-					     (add-hook 'window-setup-hook 'ecb-redraw-layout t))
-					 (message "Not activating ECB, window height to small"))
-				     (message "Not activating ECB, not using a window system")))))
+	;; (:name ecb
+	;;        :load-path "."
+	;;        :features ecb
+	;;        :after (lambda () (progn
+	;; 			   (global-ede-mode 1)
+	;; 			   (semantic-mode t)
+	;; 			   (setq semantic-load-turn-everything-on t)
+	;; 			   (setq ecb-tip-of-the-day nil)
+	;; 			   (setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
+	;; 			   (if window-system
+	;; 			       (if (>= (window-height) 16)
+	;; 				   (progn
+	;; 				     (ecb-activate)
+	;; 				     (add-hook 'window-setup-hook 'ecb-redraw-layout t))
+	;; 				 (message "Not activating ECB, window height to small"))
+	;; 			     (message "Not activating ECB, not using a window system")))))
 
 	(:name color-theme
 	       :load-path "."
@@ -284,31 +284,36 @@
 	       :url "https://github.com/emacs-helm/helm"
 	       :features helm-config)
 
-	(:name emacs-evernote-mode
-	       :description "Emacs Evernote Mode"
-	       :type git
-	       :url "https://github.com/awasira/emacs-evernote-mode.git"
-	       :load-path "."
-	       :features evernote-mode
-	       :compile "emacs-evernote-mode.el"
-	       :build `("ruby ruby/setup.rb"))
+	;; (:name emacs-evernote-mode
+	;;        :description "Emacs Evernote Mode"
+	;;        :type git
+	;;        :url "https://github.com/awasira/emacs-evernote-mode.git"
+	;;        :load-path "."
+	;;        :features evernote-mode
+	;;        :compile "emacs-evernote-mode.el"
+	;;        :build `("ruby ruby/setup.rb")
+	;;        :after (progn
+	;; 		(setq evernote-username "timfelgentreff") ; optional: you can use this username as default.
+	;; 		(setq evernote-enml-formatter-command '("w3m" "-dump" "-I" "UTF8" "-O" "UTF8")) ; optional
+	;; 		(add-to-list 'helm-sources anything-c-source-evernote-title)
+	;; 		(defalias 'evernote-find 'anything-evernote-title)))
 
 	(:name emacsmirror-rcp
 	       :type git
 	       :url "https://github.com/edenc/emacsmirror-rcp")
 
-	(:name ajc-java-complete
-	       :depends (emacsmirror-rcp)
-	       :after (lambda () (progn
-				   (require 'ajc-java-complete)
-				   (require 'ajc-java-complete-config)
-				   (add-hook 'java-mode-hook
-					     (lambda () (progn
-							  (ajc-java-complete-mode t)
-							  (setq ac-omni-completion-sources
-								'((cons "\\.[A-Za-z0-9_]*" '(ac-source-ajc-method))
-								  (cons "\s[A-Z][A-Za-z]+" '(ac-source-ajc-class))
-								  (cons "new [A-Za-z]+(" '(ac-source-ajc-constructor)) )) ))) )))
+	;; (:name ajc-java-complete
+	;;        :depends (emacsmirror-rcp)
+	;;        :after (lambda () (progn
+	;; 			   (require 'ajc-java-complete)
+	;; 			   (require 'ajc-java-complete-config)
+	;; 			   (add-hook 'java-mode-hook
+	;; 				     (lambda () (progn
+	;; 						  (ajc-java-complete-mode t)
+	;; 						  (setq ac-omni-completion-sources
+	;; 							'((cons "\\.[A-Za-z0-9_]*" '(ac-source-ajc-method))
+	;; 							  (cons "\s[A-Z][A-Za-z]+" '(ac-source-ajc-class))
+	;; 							  (cons "new [A-Za-z]+(" '(ac-source-ajc-constructor)) )) ))) )))
 
 	;; (:name jdee
 	;;        :type git
@@ -405,8 +410,10 @@
 (setq my-packages
       (mapcar 'el-get-as-symbol
 	      (append '(auto-complete-clang auto-complete-etags auto-complete-extension
-					    mo-git-blame magithub gist ruby-electric autopair haml-mode nxhtml
+					    mo-git-blame ;; magithub 
+					    gist ruby-electric autopair haml-mode nxhtml
 					    rspec-mode sass-mode cssh el-get switch-window vkill
+					    markdown-mode
 					    yasnippet xcscope sudo-save)
 		      (mapcar 'el-get-source-name el-get-sources))))
 (el-get 'sync my-packages)
