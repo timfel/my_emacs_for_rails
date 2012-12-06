@@ -31,7 +31,7 @@
  '(ecb-tree-indent 2)
  '(ecb-windows-width 0.2)
  '(org-file-apps (quote ((auto-mode . emacs) ("\\.mm\\'" . default) ("\\.x?html?\\'" . default) ("\\.pdf\\'" . "evince %s"))))
- '(safe-local-variable-values (quote ((Â mode . Â orgÂ ) (encoding . us-ascii) (encoding . utf-8)))))
+ '(safe-local-variable-values (quote (( mode .  org ) (encoding . us-ascii) (encoding . utf-8)))))
 ;; resize the windows on emacs and run ecb-store-window-sizes
 (custom-set-faces
   ;; custom-set-faces was added by Custom.
