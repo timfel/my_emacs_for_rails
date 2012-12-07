@@ -19,11 +19,12 @@
 ;; Get back font antialiasing
 (push '(font-backend xft x) default-frame-alist)
 (setq font-lock-maximum-decoration t)
+(set-face-attribute 'default nil :font "DejaVu Sans Mono-11")
 (setq default-directory "~/")
 ;; Get rid of toolbar and scrollbar
-(tool-bar-mode nil)
+;; (tool-bar-mode nil)
 ;; (menu-bar-mode)
-(scroll-bar-mode nil)
+;; (scroll-bar-mode nil)
 ;; wheel mouse
 (mouse-wheel-mode t)
 ;; Standard copy'n'paste
@@ -31,10 +32,10 @@
 ;; fix clipboard
 (setq x-select-enable-clipboard t)
 (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
-(column-number-mode t)
+;; (column-number-mode t)
 
 ;; Enable fullscreen on first load
-(condition-case nil (toggle-fullscreen) (error nil))
+;; (condition-case nil (toggle-fullscreen) (error nil))
 
 ;; Use the default browser on linux
 (if (eq system-type 'gnu/linux)
