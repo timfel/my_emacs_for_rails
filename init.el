@@ -5,7 +5,7 @@
 ;; Run el-get
 (load-init-files '(el-get-packages))
 ;; Some global functions, settings and modes
-(load-init-files '(useful-functions global-settings))
+(load-init-files '(windows useful-functions global-settings))
 ;; Now setup packages that weren't loaded and/or setup through el-get
 (load-init-files '(irc flyspell flymake tabbar term-mode ido server tramp bibtex skeletons))
 

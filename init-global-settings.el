@@ -19,7 +19,16 @@
 ;; Get back font antialiasing
 (push '(font-backend xft x) default-frame-alist)
 (setq font-lock-maximum-decoration t)
-(set-face-attribute 'default nil :font "DejaVu Sans Mono-11")
+(if (eq window-system 'x)
+    (set-face-attribute 'default nil :font "DejaVu Sans Mono-11"))
+
+;; Start server on windows, if not happened already
+(if (eq 'windows-nt system-type)
+    (progn
+      (if (not (file-exists-p "~/.emacs.d/server/server"))
+	  (server-start))))
+
+;; Always start in HOME
 (setq default-directory "~/")
 ;; Get rid of toolbar and scrollbar
 ;; (tool-bar-mode nil)
@@ -30,9 +39,11 @@
 ;; Standard copy'n'paste
 ;; (cua-mode 1)
 ;; fix clipboard
-(setq x-select-enable-clipboard t)
-(setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
-;; (column-number-mode t)
+(if (eq window-system 'x)
+    (progn
+      (setq x-select-enable-clipboard t)
+      (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)))
+(column-number-mode t)
 
 ;; Enable fullscreen on first load
 ;; (condition-case nil (toggle-fullscreen) (error nil))
