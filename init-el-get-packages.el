@@ -173,8 +173,10 @@
 				   (add-hook 'ruby-mode-hook 'friendly-whitespace)
 				   (add-hook 'ruby-mode-hook '(lambda() (progn
 									  (ruby-electric-mode t)
-									  ;; Don't want flymake mode for ruby regions in rhtml files and also on read only files
-									  (if (and (not (null buffer-file-name)) (file-writable-p buffer-file-name))
+									  ;; Don't want flymake mode for ruby regions in rhtml files, not on read only files, or remote files
+									  (if (and (not (null buffer-file-name))
+										   (file-writable-p buffer-file-name)
+										   (not (file-remote-p buffer-file-name)))
 									      (flymake-mode))
 									  ;; Indenting options
 									  (set (make-local-variable 'indent-tabs-mode) 'nil)

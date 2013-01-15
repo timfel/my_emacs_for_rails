@@ -31,6 +31,9 @@
     ;; appear in the output of java applications.
     (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)
 
+    ;; Make tramp ssh work
+    (setq tramp-default-method "sshx")
+
     ;;; Follow Cygwin symlinks.
     ;;; Handles old-style (text file) symlinks and new-style (.lnk file) symlinks.
     ;;; (Non-Cygwin-symlink .lnk files, such as desktop shortcuts, are still loaded as such.)
