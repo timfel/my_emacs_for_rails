@@ -59,4 +59,17 @@
 
     ;;; Use Unix-style line endings.
     (setq-default buffer-file-coding-system 'undecided-unix)
+
+    ;; Setup a useable LaTeX PDF viewer
+    (let* ((sumatra-download "https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.2.1.zip")
+	   (target-dir "~/.emacs.d")
+	   (target-file (format "%s/sumatrapdf.zip" target-dir))
+	   (exe "SumatraPDF.exe"))
+      (if (not (file-exists-p (format "%s/%s" target-dir exe)))
+	  (progn
+	    (message "Downloading and setting up SumatraPDF as LaTeX PDF Viewer")
+	    (shell-command (format "wget --quiet --no-check-certificate -O %s %s" target-file sumatra-download))
+	    (shell-command (format "unzip %s -d %s" target-file target-dir))
+	    (shell-command (format "rm -f %s" target-file))))
+      (setq TeX-view-program-list (list (list "SumatraPDF" (format "%s/%s %s" target-dir exe "%o")))))
 ))
