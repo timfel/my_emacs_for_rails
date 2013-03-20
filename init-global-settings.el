@@ -22,6 +22,12 @@
 (if (eq window-system 'x)
     (set-face-attribute 'default nil :font "DejaVu Sans Mono-11"))
 
+;; Don't even blink
+(blink-cursor-mode 0)
+
+;; Narrow (C-x n n)
+(put 'narrow-to-region 'disabled nil)
+
 ;; Start server on windows, if not happened already
 (if (eq 'windows-nt system-type)
     (progn
@@ -98,9 +104,6 @@
 (setq comment-multi-line t)
 (setq comment-style 'extra-line)
 
-(yas/global-mode t)
-(global-auto-complete-mode t)
-
 ;; Sessions
 (desktop-save-mode 1)
 (setq history-length 250)
@@ -116,3 +119,63 @@
 (add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
 (add-to-list 'desktop-modes-not-to-save 'grep-mode)
 (add-to-list 'desktop-modes-not-to-save 'magit-mode)
+
+;; ISearch word under cursor
+(defun my-isearch-word-at-point ()
+  (interactive)
+  (call-interactively 'isearch-forward-regexp))
+
+(defun my-isearch-yank-word-hook ()
+  (when (equal this-command 'my-isearch-word-at-point)
+    (let ((string (concat "\\<"
+                          (buffer-substring-no-properties
+                           (progn (skip-syntax-backward "w_") (point))
+                           (progn (skip-syntax-forward "w_") (point)))
+                          "\\>")))
+      (skip-syntax-backward "w_") ;; go before the current search term
+      (if (and isearch-case-fold-search
+               (eq 'not-yanks search-upper-case))
+          (setq string (downcase string)))
+      (if (equal string "\\<\\>")
+	  	  (setq string ""))
+      (setq isearch-string string
+            isearch-message
+            (concat isearch-message
+                    (mapconcat 'isearch-text-char-description
+                               string ""))
+            isearch-yank-flag t)
+      (isearch-search-and-update)
+      )))
+
+(add-hook 'isearch-mode-hook 'my-isearch-yank-word-hook)
+(global-set-key (kbd "C-s") 'my-isearch-word-at-point)
+(define-key isearch-mode-map [backspace] 'isearch-edit-string)
+
+
+(defun my-get-top-vcs-dir (previous &optional current)
+  (let* ((last (if current previous (file-truename previous)))
+	 (dir (if current current (expand-file-name ".." last))))
+    (if (or (file-directory-p (concat (file-name-as-directory dir) ".git"))
+	    (file-directory-p (concat (file-name-as-directory dir) ".hg")))
+	dir
+      (my-get-top-vcs-dir dir (expand-file-name ".." dir)))))
+
+(defun ensure-tags-file ()
+  (interactive)
+  (if (or (not tags-file-name) (equal this-command 'my-ensure-tags-file))
+      (let* ((topdir (or (my-get-top-vcs-dir buffer-file-truename)
+			 default-directory))
+	     (tagsdir (file-name-as-directory
+		       (or (my-get-top-vcs-dir buffer-file-truename)
+			   (expand-file-name ".." buffer-file-truename))))
+	     (tag-file (concat tagsdir "TAGS")))
+	(shell-command (format "cd \"%s\"; find . -name \"*.%s\" -print | xargs %s -o %s"
+			       topdir
+			       (file-name-extension buffer-file-truename)
+			       (expand-file-name "../etags" el-get-emacs)
+			       tag-file))
+	(visit-tags-table tag-file))))
+
+;; Taggs....
+(defadvice find-tag (before c-tag-file activate)
+  (ensure-tags-file))

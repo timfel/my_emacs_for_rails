@@ -36,7 +36,7 @@
 
 (setq el-get-sources
       '((:name auto-complete
-	       :after (lambda () (progn
+	       :after (progn
 				   (require 'auto-complete-config)
 				   (global-auto-complete-mode t)     ;; enable global-mode
 				   (setq ac-auto-start nil)            ;; automatically start
@@ -60,13 +60,19 @@
 					       (setq ac-sources '(ac-source-yasnippet
 								  ac-source-abbrev
 								  ac-source-files-in-current-dir
-								  ac-source-words-in-buffer)))))))
+								  ac-source-words-in-buffer))))))
+
+	(:name yasnippet
+	       :after (progn
+			 (yas/load-directory (expand-file-name "../snippets" el-get-dir))
+			 (yas/global-mode t)
+			 (global-auto-complete-mode t)))
 
 	(:name redo+
 	       :type http
 	       :url "http://www.emacswiki.org/emacs/download/redo%2b.el"
 	       :load "redo_2b.el"
-	       :after (lambda () (global-set-key [(control -)] 'redo)))
+	       :after (progn (global-set-key [(control -)] 'redo)))
 
 	(:name textlint
 	       :type git
@@ -87,9 +93,9 @@
 	       :url "git://github.com/mbunkus/simple-rtm.git"
 	       :load-path "lisp"
 	       :depends org-mode
-	       :after (lambda () (progn
+	       :after (progn
 				   (load "rtm.el")
-				   (load "simple-rtm.el"))))
+				   (load "simple-rtm.el")))
 
 	;; (:name ecb
 	;;        :load-path "."
@@ -116,7 +122,7 @@
 	       :type git
 	       :url "https://github.com/sellout/emacs-color-theme-solarized.git"
 	       :load "color-theme-solarized.el"
-	       :after (lambda () (progn
+	       :after (progn
 				   (color-theme-solarized-light)
 				   ;; Re-initialize colors when creating a new frame, to fix color-palette incompats between terminal and X
 				   (defun setup-window-system-frame-colours (&rest frame)
@@ -127,10 +133,10 @@
 				     (message "Running after frame-initialize")
 				     (setup-window-system-frame-colours))
 				   (ad-activate 'server-create-window-system-frame)
-				   (add-hook 'after-make-frame-functions 'setup-window-system-frame-colours t))))
+				   (add-hook 'after-make-frame-functions 'setup-window-system-frame-colours t)))
 
 	(:name coffee-mode
-	       :after (lambda () (add-hook 'coffee-mode-hook
+	       :after (progn (add-hook 'coffee-mode-hook
 					   '(lambda() (progn
 							;; Enable compile-on-save if there is already a *.coffee & *.js file
 							(if (and (file-exists-p (buffer-file-name))
@@ -141,70 +147,68 @@
 							(define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer))))))
 
 	(:name yaml-mode
-	       :after (lambda () (progn
+	       :after (progn
 				   (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
 				   (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
-				   (add-to-list 'auto-mode-alist '("Gemfile.lock$" . yaml-mode)))))
+				   (add-to-list 'auto-mode-alist '("Gemfile.lock$" . yaml-mode))))
 
 	(:name maxframe
 	       :features maxframe
-	       :after (lambda () (add-hook 'window-setup-hook 'maximize-frame t)))
+	       :after (progn (add-hook 'window-setup-hook 'maximize-frame t)))
 
 	;; (:name rinari
 	;;       :after (lambda () (setq rinari-tags-file-name "TAGS")))
 
 	(:name ri-emacs
-	       :after (lambda () (setq ri-ruby-script (expand-file-name (concat el-get-dir "/ri-emacs/ri-emacs.rb")))))
+	       :after (progn (setq ri-ruby-script (expand-file-name (concat el-get-dir "/ri-emacs/ri-emacs.rb")))))
 
 	(:name rhtml-mode
 	       :features rhtml-mode
-	       :after (lambda () (progn
-				   ;; (add-hook 'rhtml-mode-hook
-				   ;;		 (lambda () (rinari-launch)))
-				   (add-to-list 'auto-mode-alist '("\\.html.erb$" . rhtml-mode))
-				   (add-to-list 'auto-mode-alist '("\\.html.rb$" . rhtml-mode))
-				   (add-to-list 'auto-mode-alist '("\\.rhtml$" . rhtml-mode))
-				   )))
+	       :after (progn
+			(add-to-list 'auto-mode-alist '("\\.html.erb$" . rhtml-mode))
+			(add-to-list 'auto-mode-alist '("\\.html.rb$" . rhtml-mode))
+			(add-to-list 'auto-mode-alist '("\\.rhtml$" . rhtml-mode))
+			))
 
 	(:name ruby-mode
-	       :after (lambda () (progn
-				   (eval-after-load "ruby-mode" '(load (expand-file-name "~/.emacs.d/ruby-mode-indent.fix.el")))
-				   (add-hook 'ruby-mode-hook 'turn-on-font-lock)
-				   (add-hook 'ruby-mode-hook 'friendly-whitespace)
-				   (add-hook 'ruby-mode-hook '(lambda() (progn
-									  (ruby-electric-mode t)
-									  ;; Don't want flymake mode for ruby regions in rhtml files, not on read only files, or remote files
-									  (if (and (not (null buffer-file-name))
-										   (file-writable-p buffer-file-name)
-										   (not (file-remote-p buffer-file-name)))
-									      (flymake-mode))
-									  ;; Indenting options
-									  (set (make-local-variable 'indent-tabs-mode) 'nil)
-									  (set (make-local-variable 'tab-width) 2)
-									  (local-set-key (kbd "<return>") 'newline-and-indent)
-									  ;; Auto completion
-									  (imenu-add-to-menubar "IMENU")
-									  (setq ac-sources
-										'(ac-source-rsense-method
-										  ac-source-rsense-constant
-										  ac-source-semantic
-										  ac-source-words-in-same-mode-buffers
-										  ac-source-yasnippet
-										  ac-source-abbrev))
-									  (setq ac-omni-completion-sources
-										'((cons "\\.\\=" '(ac-source-rcodetools))
-										  (cons "\\.[A-Za-z0-9_]*" '(ac-source-rsense-method))
-										  (cons "[ :][A-Z][A-Za-z0-9_]*" '(ac-source-rsense-constant)) ))
-									  (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
-									  (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
-									  ;; Type inference auto completion
-									  (if (project-current)
-									      (rsense-open-project (project-default-directory (project-current)))))))
-				   (add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
-				   (add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
-				   (add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
-				   (add-to-list 'auto-mode-alist '("Rakefile$" . ruby-mode))
-				   (add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode)))))
+	       :after (progn
+			(eval-after-load "ruby-mode" '(load (expand-file-name "~/.emacs.d/ruby-mode-indent.fix.el")))
+			(add-hook 'ruby-mode-hook 'turn-on-font-lock)
+			(add-hook 'ruby-mode-hook 'friendly-whitespace)
+			(add-hook 'ruby-mode-hook '(lambda() (progn
+							       (ruby-electric-mode t)
+							       ;; Don't want flymake mode for ruby regions in rhtml files, not on read only files, or remote files
+							       (if (and (not (null buffer-file-name))
+									(file-writable-p buffer-file-name)
+									(not (file-remote-p buffer-file-name)))
+								   (flymake-mode))
+							       ;; Indenting options
+							       (set (make-local-variable 'indent-tabs-mode) 'nil)
+							       (set (make-local-variable 'tab-width) 2)
+							       (local-set-key (kbd "<return>") 'newline-and-indent)
+							       ;; Auto completion
+							       (imenu-add-to-menubar "IMENU")
+							       (setq ac-sources
+								     '(ac-source-rsense-method
+								       ac-source-rsense-constant
+								       ac-source-semantic
+								       ac-source-words-in-same-mode-buffers
+								       ac-source-yasnippet
+								       ac-source-abbrev))
+							       (setq ac-omni-completion-sources
+								     '((cons "\\.\\=" '(ac-source-rcodetools))
+								       (cons "\\.[A-Za-z0-9_]*" '(ac-source-rsense-method))
+								       (cons "[ :][A-Z][A-Za-z0-9_]*" '(ac-source-rsense-constant)) ))
+							       (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
+							       (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
+							       ;; Type inference auto completion
+							       (if (project-current)
+								   (rsense-open-project (project-default-directory (project-current)))))))
+			(add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
+			(add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
+			(add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
+			(add-to-list 'auto-mode-alist '("Rakefile$" . ruby-mode))
+			(add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode))))
 
 	(:name cucumber
 	       :type git
@@ -212,51 +216,51 @@
 	       :load-path "."
 	       :features feature-mode
 	       :depends yasnippet
-	       :after (lambda () (progn
+	       :after (progn
 				   ;; load bundle snippets
 				   (yas/load-directory (expand-file-name (concat el-get-dir "/cucumber/snippets")))
-				   (add-to-list 'auto-mode-alist '("\\.feature" . feature-mode)))))
+				   (add-to-list 'auto-mode-alist '("\\.feature" . feature-mode))))
 
 	(:name rsense
 	       :type git
 	       :url "git://github.com/m2ym/rsense.git"
-	       :prepare (lambda () (setq rsense-home (expand-file-name (concat el-get-dir "/rsense"))))
+	       :prepare (progn (setq rsense-home (expand-file-name (concat el-get-dir "/rsense"))))
 	       :features rsense
 	       :load-path "etc")
 
 	(:name js2-mode
-	       :after (lambda () (progn
-				   (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
-				   (add-hook 'js2-mode-hook
-					     (lambda () (progn
-							  (setq imenu-create-index-function 'javascript-imenu-create-index)
-							  (local-set-key (kbd "<return>") 'newline-and-indent)
-							  (setq javascript-indent-level 2)))
-					     t))))
+	       :after (progn
+			(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+			(add-hook 'js2-mode-hook
+				  (lambda () (progn
+					       (setq imenu-create-index-function 'javascript-imenu-create-index)
+					       (local-set-key (kbd "<return>") 'newline-and-indent)
+					       (setq javascript-indent-level 2)))
+				  t)))
 
 	(:name textmate
 	       :type git
 	       :url "git://github.com/defunkt/textmate.el.git"
 	       :load "textmate.el"
-	       :after (lambda () (progn
-				   (textmate-mode 1)
-				   ;; Commenting blocks
-				   (global-set-key [(control /)] 'comment-or-uncomment-region-or-line))))
+	       :after (progn
+			(textmate-mode 1)
+			;; Commenting blocks
+			(global-set-key [(control /)] 'comment-or-uncomment-region-or-line)))
 
 	(:name magit
 	       :features (magit magit-svn)
-	       :after (lambda () (global-set-key (kbd "C-x C-z") 'magit-status)))
+	       :after (progn (global-set-key (kbd "C-x C-z") 'magit-status)))
 
 	(:name project-mode
 	       :type git
 	       :url "http://github.com/timfel/emacs-project-mode.git"
 	       :load-path "."
 	       :features project-mode
-	       :after (lambda () (progn
+	       :after (progn
 				   (project-mode 1)
 				   (project-mode-menu)
 				   (project-load-all)
-				   (global-set-key "\C-t" 'project-fuzzy-search))))
+				   (global-set-key "\C-t" 'project-fuzzy-search)))
 
 	;; (:name dictionary-el    :type apt-get)
 	;; (:name emacs-goodies-el :type apt-get)
@@ -268,23 +272,31 @@
 	       :features showoff-mode)
 
 	(:name org-mode
-	       :after (lambda () (progn
-				   (add-hook 'org-mode-hook (lambda () (progn
-				      (local-set-key (kbd "<return>") 'org-insert-heading)
-				      (local-set-key (kbd "M-<return>") 'org-insert-subheading))))
-				   (setq org-hide-leading-stars t)
-				   (setq org-agenda-files '())
-				   (add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
-				   (setq org-agenda-files (append (file-expand-wildcards
-								   (expand-file-name "~/Documents/HPI/11SS/*"))
-								  org-agenda-files))
-				   (setq org-insert-mode-line-in-empty-file t))))
+	       :after (progn
+			(add-hook 'org-mode-hook (lambda ()
+						   (progn
+						     (local-set-key (kbd "<return>") 'org-insert-heading)
+						     (local-set-key (kbd "M-<return>") 'org-insert-subheading))))
+			(setq org-hide-leading-stars t)
+			(setq org-agenda-files '())
+			(add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
+			(setq org-agenda-files (append (file-expand-wildcards
+							(expand-file-name "~/Documents/HPI/11SS/*"))
+						       org-agenda-files))
+			(setq org-insert-mode-line-in-empty-file t)))
 
 	(:name helm
 	       :description "Emacs incremental and narrowing framework"
 	       :type git
 	       :url "https://github.com/emacs-helm/helm"
 	       :features helm-config)
+
+	(:name fill-column-indicator
+	       :after (progn
+				   (setq fci-rule-column 81)
+				   (setq fci-always-use-textual-rule t)
+				   (define-globalized-minor-mode global-fci-mode fci-mode (lambda () (fci-mode 1)))
+				   (global-fci-mode 1)))
 
 	;; (:name emacs-evernote-mode
 	;;        :description "Emacs Evernote Mode"
@@ -389,7 +401,7 @@
 				    (concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs)
 				    "make"))
 		    (:name reftex
-			   :after (lambda () (progn
+			   :after (progn
 					       (setq-default TeX-master nil)
 					       (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
 					       (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
@@ -401,7 +413,7 @@
 					       (setq TeX-auto-save t)
 					       (setq TeX-save-query nil)
 					       (setq TeX-parse-self t)
-					       (setq-default TeX-master nil)))))
+					       (setq-default TeX-master nil))))
 		  el-get-sources)))
 
 (let ((new_path (expand-file-name (concat el-get-dir "/emacsmirror-rcp"))))
@@ -416,7 +428,7 @@
 					    gist ruby-electric autopair haml-mode nxhtml
 					    rspec-mode sass-mode cssh el-get switch-window vkill
 					    markdown-mode
-					    yasnippet xcscope sudo-save)
+					    xcscope sudo-save)
 		      (mapcar 'el-get-source-name el-get-sources))))
 (el-get 'sync my-packages)
 (el-get 'wait)
