@@ -63,6 +63,7 @@
     ;; redefine toggle-fullscreen
     (defun toggle-fullscreen ()
       (interactive)
+      (menu-bar-mode (if menu-bar-mode 0 1))
       (shell-command (format
 		      "%s --topmost" 
 		      (concat
