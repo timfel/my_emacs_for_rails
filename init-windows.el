@@ -60,6 +60,15 @@
     ;;; Use Unix-style line endings.
     (setq-default buffer-file-coding-system 'undecided-unix)
 
+    ;; redefine toggle-fullscreen
+    (defun toggle-fullscreen ()
+      (interactive)
+      (shell-command (format
+		      "%s --topmost" 
+		      (concat
+		       (file-name-as-directory default-directory)
+		       "emacs_fullscreen.exe"))))
+
     ;; Setup a useable LaTeX PDF viewer
     (let* ((sumatra-download "https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.2.1.zip")
 	   (target-dir "~/.emacs.d")
