@@ -5,7 +5,7 @@
 ;; Run el-get
 (load-init-files '(el-get-packages))
 ;; Some global functions, settings and modes
-(load-init-files '(useful-functions global-settings))
+(load-init-files '(windows useful-functions global-settings))
 ;; Now setup packages that weren't loaded and/or setup through el-get
 (load-init-files '(irc flyspell flymake tabbar term-mode ido server tramp bibtex skeletons))
 
@@ -27,11 +27,15 @@
  '(ecb-layout-name "left8")
  '(ecb-layout-window-sizes (quote (("left8" (ecb-directories-buffer-name 0.23671497584541062 . 0.29310344827586204) (ecb-sources-buffer-name 0.23671497584541062 . 0.22413793103448276) (ecb-methods-buffer-name 0.23671497584541062 . 0.25862068965517243) (ecb-history-buffer-name 0.23671497584541062 . 0.20689655172413793)))))
  '(ecb-options-version "2.40")
+ '(column-number-mode t)
+ '(scroll-bar-mode nil)
+ '(show-paren-mode t)
+ '(tool-bar-mode nil)
  '(ecb-source-path (quote (("~/Devel/projects" "Dev") ("~/Documents/HPI/11SS/" "Uni") ("~/Finnlabs/Finnlabs/" "Finn"))))
  '(ecb-tree-indent 2)
  '(ecb-windows-width 0.2)
  '(org-file-apps (quote ((auto-mode . emacs) ("\\.mm\\'" . default) ("\\.x?html?\\'" . default) ("\\.pdf\\'" . "evince %s"))))
- '(safe-local-variable-values (quote ((Â mode . Â orgÂ ) (encoding . us-ascii) (encoding . utf-8)))))
+ '(safe-local-variable-values (quote (( mode .  org ) (encoding . us-ascii) (encoding . utf-8)))))
 ;; resize the windows on emacs and run ecb-store-window-sizes
 (custom-set-faces
   ;; custom-set-faces was added by Custom.

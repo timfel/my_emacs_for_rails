@@ -19,22 +19,34 @@
 ;; Get back font antialiasing
 (push '(font-backend xft x) default-frame-alist)
 (setq font-lock-maximum-decoration t)
+(if (eq window-system 'x)
+    (set-face-attribute 'default nil :font "DejaVu Sans Mono-11"))
+
+;; Start server on windows, if not happened already
+(if (eq 'windows-nt system-type)
+    (progn
+      (if (not (file-exists-p "~/.emacs.d/server/server"))
+	  (server-start))))
+
+;; Always start in HOME
 (setq default-directory "~/")
 ;; Get rid of toolbar and scrollbar
-(tool-bar-mode nil)
+;; (tool-bar-mode nil)
 ;; (menu-bar-mode)
-(scroll-bar-mode nil)
+;; (scroll-bar-mode nil)
 ;; wheel mouse
 (mouse-wheel-mode t)
 ;; Standard copy'n'paste
 ;; (cua-mode 1)
 ;; fix clipboard
-(setq x-select-enable-clipboard t)
-(setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
+(if (eq window-system 'x)
+    (progn
+      (setq x-select-enable-clipboard t)
+      (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)))
 (column-number-mode t)
 
 ;; Enable fullscreen on first load
-(condition-case nil (toggle-fullscreen) (error nil))
+;; (condition-case nil (toggle-fullscreen) (error nil))
 
 ;; Use the default browser on linux
 (if (eq system-type 'gnu/linux)
@@ -59,11 +71,6 @@
 
 (global-set-key (kbd "C->") 'forward-list)
 (global-set-key (kbd "C-<") 'backward-list)
-
-(setq evernote-username "timfelgentreff") ; optional: you can use this username as default.
-(setq evernote-enml-formatter-command '("w3m" "-dump" "-I" "UTF8" "-O" "UTF8")) ; optional
-(add-to-list 'helm-sources anything-c-source-evernote-title)
-(defalias 'evernote-find 'anything-evernote-title)
 
 (setq lpr-command "xpp")
 (setq ps-lpr-command "xpp")
