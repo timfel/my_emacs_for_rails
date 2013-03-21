@@ -148,7 +148,7 @@
       )))
 
 (add-hook 'isearch-mode-hook 'my-isearch-yank-word-hook)
-(global-set-key (kbd "C-s") 'my-isearch-word-at-point)
+(global-set-key (kbd "C-S-s") 'my-isearch-word-at-point)
 (define-key isearch-mode-map [backspace] 'isearch-edit-string)
 
 
