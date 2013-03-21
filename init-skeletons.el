@@ -1,30 +1,14 @@
-(define-skeleton latex-llncs
+(define-skeleton latex-paper
   "Creates a standard SWA style presentation"
   ""
-  "% Copyright (C) 2012, Tim Felgentreff
+  "% Copyright (C) " (format-time-string "%Y") ", Tim Felgentreff
+% All rights reserved.
 
-% Permission is hereby granted, free of charge, to any person obtaining a 
-% copy of this text and associated files (the \"Document\"), to deal in the
-% Document without restriction, including without limitation the rights to
-% use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
-% copies of the Document, and to permit persons to whom the Document is 
-% furnished to do so, subject to the following conditions: 
-%
-% The above copyright notice and this permission notice shall be included in 
-% all copies or substantial portions of the Document. 
-%
-% THE DOCUMENT IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.	 IN NO EVENT SHALL 
-% THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-% FROM, OUT OF OR IN CONNECTION WITH THE DOCUMENT OR THE USE OR OTHER 
-% DEALINGS IN THE DOCUMENT. 
-
-\\documentclass{llncs}
+\\documentclass[draft]{" (skeleton-read "Document class: ") "}
 \\usepackage{makeidx}  % allows for indexgeneration
 \\usepackage[pdftex]{graphicx} % PNGs
 \\usepackage{amsmath, amssymb} % algebra
+\\usepackage[english]{babel} % deutsch
 % \\usepackage[ngerman]{babel} % deutsch
 \\usepackage[utf8x]{inputenc}
 \\usepackage[T1]{fontenc} 
@@ -33,6 +17,8 @@
 \\usepackage{array} % tables
 \\usepackage{afterpage} % figures
 \\usepackage{float} % figures
+\\usepackage{paralist} % figures
+\\usepackage[shortcuts]{extdash} % figures
 
 \\lstset{%
   	language=Java,
@@ -43,15 +29,32 @@
 	}
 \\restylefloat{figure}
 
+\\usepackage{glossaries}
+\\newcommand{\\ac}[1]{\\gls{#1}}
+\\newcommand{\\acp}[1]{\\glspl{#1}}
+
+% Acronyms
+\\newacronym{api}{\\textsc{api}}{application programming interface}
+
+
+\\newcommand\hairspace{\ifmmode\mskip1mu\else\kern0.08em\fi}
+\\RequirePackage{xspace}
+\\newcommand{\\eg}{e.\\hairspace{}g.,\\xspace}
+\\newcommand{\\Eg}{E.\\hairspace{}g.,\\xspace}
+\\newcommand{\\Ie}{I.\\hairspace{}e.,\\xspace}
+\\newcommand{\\ie}{i.\\hairspace{}e.,\\xspace}
+\\newcommand{\\cf}[1]{cf.\\,{#1}\\xspace}
+\\newcommand{\\todo}[1]{\\framebox{\\textsc{todo} #1}}
+
+
 \\begin{document}
 \\frontmatter          % for the preliminaries
 \\pagestyle{headings}  % switches on printing of running heads
 \\mainmatter           % start of the contributions
-\\title{" (skeleton-read "Title: ") "}
-\\subtitle{" (skeleton-read "Subtitle: ") "}
-\\titlerunning{" (skeleton-read "Abbreviated Title: ") "}  % abbreviated title (for running head)
-                                                          % also used for the TOC unless
-                                                          % \\toctitle is used
+
+\\title{TITLE}
+\\subtitle{Subtitle}
+\\titlerunning{Abbreviated Title}
 \\author{" (skeleton-read "Author(s): ") "}
 \\authorrunning{" (skeleton-read "Abbreviated Authors: ") "}   % abbreviated author list (for running head)
 %
@@ -61,7 +64,7 @@
 % \\tocauthor{Tim Felgentreff (Hasso-Plattner-Institute)}
 %
 \\institute{Hasso-Plattner-Institut, Universität Potsdam, D-14482 Potsdam, Germany,\\\\
-\\email{" (skeleton-read "Email(s) for HPI students: ") "@student.hpi.uni-potsdam.de}}
+\\email{" (skeleton-read "Email(s) for HPI: ") "@hpi.uni-potsdam.de}}
 
 \\maketitle              % typeset the title of the contribution
 
@@ -73,12 +76,18 @@
 
 " _ "
 
-\\section*{Acknowledgments}
+% \\section*{Acknowledgments}
 \\bibliographystyle{splncs.bst}
 % Possibly change this
 \\bibliography{" (expand-file-name (car reftex-default-bibliography)) "}
 \\clearpage
-\\end{document}"
+\\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
+"
 )
 
 (define-skeleton latex-letter

@@ -71,5 +71,9 @@
 	    (shell-command (format "wget --quiet --no-check-certificate -O %s %s" target-file sumatra-download))
 	    (shell-command (format "unzip %s -d %s" target-file target-dir))
 	    (shell-command (format "rm -f %s" target-file))))
-      (setq TeX-view-program-list (list (list "SumatraPDF" (format "%s/%s %s" target-dir exe "%o")))))
+
+      (setq TeX-view-program-selection '((output-pdf "SumatraPDF")))
+      ;; (setq TeX-view-program-list '(("SumatraPDF" "okular %o")))
+      (setq TeX-view-program-list (list (list "SumatraPDF"
+					      (format "%s/%s %s" (expand-file-name target-dir) exe "%o")))))
 ))
