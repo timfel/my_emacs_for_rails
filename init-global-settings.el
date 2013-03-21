@@ -109,3 +109,5 @@
 (add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
 (add-to-list 'desktop-modes-not-to-save 'grep-mode)
 (add-to-list 'desktop-modes-not-to-save 'magit-mode)
+
+(load (expand-file-name "~/.emacs.d/pypytrace-mode.el"))
