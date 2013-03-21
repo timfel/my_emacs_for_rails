@@ -22,6 +22,8 @@
 (if (eq window-system 'x)
     (set-face-attribute 'default nil :font "DejaVu Sans Mono-11"))
 
+(global-set-key [f11] 'toggle-fullscreen)
+
 ;; Don't even blink
 (blink-cursor-mode 0)
 
