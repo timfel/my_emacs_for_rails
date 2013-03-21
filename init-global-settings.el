@@ -182,3 +182,17 @@
 
 ;; PyPyTrace Mode
 (load (expand-file-name "~/.emacs.d/pypytrace-mode.el"))
+
+;; Python hooks
+(add-hook 'python-mode-hook 'turn-on-font-lock)
+(add-hook 'python-mode-hook 'friendly-whitespace)
+(add-hook 'python-mode-hook
+	  '(lambda() (progn
+		       ;; Auto completion
+		       (imenu-add-to-menubar "IMENU")
+		       (setq ac-sources
+			     '(ac-source-python
+			       ac-source-semantic
+			       ac-source-words-in-same-mode-buffers
+			       ac-source-yasnippet
+			       ac-source-abbrev)))))
