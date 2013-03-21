@@ -80,8 +80,11 @@
 (global-set-key (kbd "C->") 'forward-list)
 (global-set-key (kbd "C-<") 'backward-list)
 
-(setq lpr-command "xpp")
-(setq ps-lpr-command "xpp")
+;; Use generic printer dialiog on linux
+(if (eq system-type 'gnu/linux)
+    (progn 
+      (setq lpr-command "xpp")
+      (setq ps-lpr-command "xpp")))
 
 (global-set-key (kbd "s-c") 'capitalize-word)
 
