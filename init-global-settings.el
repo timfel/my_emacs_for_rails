@@ -179,3 +179,6 @@
 ;; Taggs....
 (defadvice find-tag (before c-tag-file activate)
   (ensure-tags-file))
+
+;; PyPyTrace Mode
+(load (expand-file-name "~/.emacs.d/pypytrace-mode.el"))
