@@ -65,10 +65,11 @@
       (interactive)
       (menu-bar-mode (if menu-bar-mode 0 1))
       (shell-command (format
-		      "%s" 
+		      "%s%s"
 		      (concat
 		       (file-name-as-directory default-directory)
-		       "emacs_fullscreen.exe"))))
+		       "emacs_fullscreen.exe")
+		      (if menu-bar-mode " --topmost" ""))))
 
     ;; Setup a useable LaTeX PDF viewer
     (let* ((sumatra-download "https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.2.1.zip")
