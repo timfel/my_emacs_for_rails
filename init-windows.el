@@ -65,7 +65,7 @@
       (interactive)
       (menu-bar-mode (if menu-bar-mode 0 1))
       (shell-command (format
-		      "%s --topmost" 
+		      "%s" 
 		      (concat
 		       (file-name-as-directory default-directory)
 		       "emacs_fullscreen.exe"))))
