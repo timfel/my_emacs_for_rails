@@ -75,8 +75,14 @@
     (load (expand-file-name "~/.emacs.d/w32-fullscreen.el"))
     (defun toggle-fullscreen ()
       (interactive)
+      (if (eq nil (frame-parameter nil 'fullscreen))
+	  (progn
+	    (menu-bar-mode 0)
+	    (set-frame-parameter nil 'fullscreen 'fullboth))
+	(progn
+	  (menu-bar-mode 1)
+	  (set-frame-parameter nil 'fullscreen nil)))
       (w32-fullscreen-toggle-titlebar)
-      (menu-bar-mode (if menu-bar-mode 0 1))
       (w32-fullscreen-restore-frame)
       (w32-fullscreen-maximize-frame))
 

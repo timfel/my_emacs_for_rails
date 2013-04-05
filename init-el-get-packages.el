@@ -427,7 +427,7 @@
 					    mo-git-blame ;; magithub 
 					    gist ruby-electric autopair haml-mode nxhtml
 					    rspec-mode sass-mode cssh el-get switch-window vkill
-					    markdown-mode ac-python
+					    markdown-mode ac-python frame-fns frame-cmds
 					    xcscope sudo-save)
 		      (mapcar 'el-get-source-name el-get-sources))))
 (el-get 'sync my-packages)
