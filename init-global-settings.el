@@ -20,7 +20,7 @@
 (push '(font-backend xft x) default-frame-alist)
 (setq font-lock-maximum-decoration t)
 (if (eq window-system 'x)
-    (set-face-attribute 'default nil :font "DejaVu Sans Mono-11"))
+    (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
 
 ;; Don't even blink
 (blink-cursor-mode 0)
