@@ -10,7 +10,7 @@
   "A full-screen mode for distraction-free editing."
   :group 'convenience)
 
-(defcustom darkroom-mode-left-margin 20
+(defcustom darkroom-mode-left-margin 15
   "Margin to add to the left side of the screen."
   :type 'integer
   :group 'darkroom)
@@ -20,9 +20,9 @@
   :type 'integer
   :group 'darkroom)
 
-(defcustom darkroom-mode-font-increase 7
+(defcustom darkroom-mode-font-increase 9
   "Increase for font size
-   XXX: This needs to be 7 on my Windows setup for fullscreen to cover
+   XXX: This needs to be 9 on my Windows setup for fullscreen to cover
    the taskbar"
   :type 'integer
   :group 'darkroom)
