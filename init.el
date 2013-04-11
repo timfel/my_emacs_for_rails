@@ -7,7 +7,7 @@
 ;; Some global functions, settings and modes
 (load-init-files '(windows useful-functions global-settings))
 ;; Now setup packages that weren't loaded and/or setup through el-get
-(load-init-files '(irc flyspell flymake tabbar term-mode ido server tramp bibtex skeletons))
+(load-init-files '(irc flyspell flymake term-mode ido server tramp bibtex skeletons))
 
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
