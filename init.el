@@ -5,7 +5,7 @@
 ;; Run el-get
 (load-init-files '(el-get-packages))
 ;; Some global functions, settings and modes
-(load-init-files '(windows useful-functions global-settings))
+(load-init-files '(useful-functions windows global-settings))
 ;; Now setup packages that weren't loaded and/or setup through el-get
 (load-init-files '(irc flyspell flymake term-mode ido server tramp bibtex skeletons))
 
@@ -14,6 +14,7 @@
   ;; If you edit it by hand, you could mess it up, so be careful.
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
+ '(LaTeX-command "pdflatex")
  '(TeX-source-correlate-method (quote synctex))
  '(TeX-source-correlate-mode t)
  '(TeX-source-correlate-start-server t)

@@ -22,6 +22,8 @@
 (if (eq window-system 'x)
     (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
 
+(global-set-key [f11] 'toggle-fullscreen)
+
 ;; Don't even blink
 (blink-cursor-mode 0)
 
@@ -78,8 +80,11 @@
 (global-set-key (kbd "C->") 'forward-list)
 (global-set-key (kbd "C-<") 'backward-list)
 
-(setq lpr-command "xpp")
-(setq ps-lpr-command "xpp")
+;; Use generic printer dialiog on linux
+(if (eq system-type 'gnu/linux)
+    (progn 
+      (setq lpr-command "xpp")
+      (setq ps-lpr-command "xpp")))
 
 (global-set-key (kbd "s-c") 'capitalize-word)
 
@@ -182,3 +187,17 @@
 
 ;; PyPyTrace Mode
 (load (expand-file-name "~/.emacs.d/pypytrace-mode.el"))
+
+;; Python hooks
+(add-hook 'python-mode-hook 'turn-on-font-lock)
+(add-hook 'python-mode-hook 'friendly-whitespace)
+(add-hook 'python-mode-hook
+	  '(lambda() (progn
+		       ;; Auto completion
+		       (imenu-add-to-menubar "IMENU")
+		       (setq ac-sources
+			     '(ac-source-python
+			       ac-source-semantic
+			       ac-source-words-in-same-mode-buffers
+			       ac-source-yasnippet
+			       ac-source-abbrev)))))

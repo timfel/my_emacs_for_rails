@@ -60,6 +60,26 @@
     ;;; Use Unix-style line endings.
     (setq-default buffer-file-coding-system 'undecided-unix)
 
+    ;; redefine toggle-fullscreen with emacs_fullscreen.exe
+    ;; (defun toggle-fullscreen ()
+    ;;   (interactive)
+    ;;   (menu-bar-mode (if menu-bar-mode 0 1))
+    ;;   (shell-command (format
+    ;; 		      "%s%s"
+    ;; 		      (concat
+    ;; 		       (file-name-as-directory (expand-file-name "~/.emacs.d/"))
+    ;; 		       "emacs_fullscreen.exe")
+    ;; 		      (if menu-bar-mode ;; we just toggled it
+    ;; 			  ""
+    ;; 			" --topmost"))))
+    (load (expand-file-name "~/.emacs.d/w32-fullscreen.el"))
+    (defun toggle-fullscreen ()
+      (interactive)
+      (w32-fullscreen-toggle-titlebar)
+      (menu-bar-mode (if menu-bar-mode 0 1))
+      (w32-fullscreen-restore-frame)
+      (w32-fullscreen-maximize-frame))
+
     ;; Setup a useable LaTeX PDF viewer
     (let* ((sumatra-download "https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.2.1.zip")
 	   (target-dir "~/.emacs.d")
