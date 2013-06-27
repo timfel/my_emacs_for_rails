@@ -106,6 +106,33 @@
   "\\end{letter}\n"
   "\\end{document}\n")
 
+(define-skeleton latex-brief
+  "Inserts the g-brief skeleton"
+  "\\documentclass[12pt,german]{g-brief}\n"
+  "\\usepackage[latin1]{inputenc}\n"
+  "\\usepackage{pdfpages}\n"
+  "\\usepackage{times}\n"
+  "\\fenstermarken\n"
+  "\\trennlinien\n\n"
+  "\\Name{Tim Felgentreff}\n"
+  "\\Strasse{Patrizierweg 20}\n"
+  "\\Ort{14480 Potsdam}\n"
+  "\\Telefon{+49 (0)177 - 3381 411}\n"
+  "\\EMail{timfelgentreff@gmail.com}\n"
+  "\\Unterschrift{Tim Felgentreff}\n\n"
+  "\\Adresse{Semmelhaack GmbH\\\\\n"
+  "Am Tempelberg 7\\\\\n"
+  "14469 Potsdam}\n\n"
+  "\\Betreff{" _ "}\n"
+  "\\Datum{\\today}\n"
+  "\\Anrede{Sehr geehrte Damen und Herren,}\n"
+  "\\Gruss{Mit freundlichen Gr\\\"u\ss{}en,}{1cm}\n"
+  "% \\Anlagen{Anlage: ....}\n\n"
+  "\\begin{document}\n"
+  "\\begin{g-brief}\n"
+  "\\end{g-brief}\n"
+  "\\end{document}\n")
+
 (define-skeleton beamer-presentation
   "Creates a standard SWA style presentation"
   ""
