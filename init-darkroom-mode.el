@@ -33,6 +33,11 @@ also be enabled on entering `darkroom-mode'?"
   :type 'boolean
   :group 'darkroom)
 
+(defcustom darkroom-mode-enable-fullscreen t
+  "Whether to enable fullscreen mode"
+  :type 'boolean
+  :group 'darkroom)
+
 (defcustom darkroom-mode-enable-hook nil
   "Hook called by darkroom-mode-enable."
   :type 'hook
@@ -119,10 +124,11 @@ also be enabled on entering `darkroom-mode'?"
   (darkroom-mode-set-enabled t)
 
   ; ---- frame size
-  (if (eq nil (frame-parameter nil 'fullscreen))
-      (progn
-  	(toggle-fullscreen)
-  	(set-frame-parameter nil 'fullscreen 'fullboth)))
+  (if darkroom-mode-enable-fullscreen
+      (if (eq nil (frame-parameter nil 'fullscreen))
+	  (progn
+	    (toggle-fullscreen)
+	    (set-frame-parameter nil 'fullscreen 'fullboth))))
 
   (message (format "darkroom mode enabled on %s" (selected-frame))))
 
@@ -154,10 +160,11 @@ also be enabled on entering `darkroom-mode'?"
   (enlarge-font (- 0 darkroom-mode-font-increase))
 
   ; - restore frame size
-  (if (frame-parameter nil 'fullscreen)
-      (progn
-	(toggle-fullscreen)
-	(set-frame-parameter nil 'fullscreen nil)))
+  (if darkroom-mode-enable-fullscreen
+      (if (frame-parameter nil 'fullscreen)
+	  (progn
+	    (toggle-fullscreen)
+	    (set-frame-parameter nil 'fullscreen nil))))
 
   (darkroom-mode-set-enabled nil)
   (message (format "darkroom-mode disabled on %s" (selected-frame))))
