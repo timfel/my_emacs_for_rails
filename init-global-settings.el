@@ -161,6 +161,7 @@
   (let* ((last (if current previous (file-truename previous)))
 	 (dir (if current current (expand-file-name ".." last))))
     (if (or (file-directory-p (concat (file-name-as-directory dir) ".git"))
+	    (file-directory-p (concat (file-name-as-directory dir) ".bzr"))
 	    (file-directory-p (concat (file-name-as-directory dir) ".hg")))
 	dir
       (my-get-top-vcs-dir dir (expand-file-name ".." dir)))))
