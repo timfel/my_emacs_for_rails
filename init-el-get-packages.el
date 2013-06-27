@@ -64,9 +64,8 @@
 
 	(:name yasnippet
 	       :after (progn
-			 (yas/load-directory (expand-file-name "../snippets" el-get-dir))
-			 (yas/global-mode t)
-			 (global-auto-complete-mode t)))
+			 (yas-load-directory (expand-file-name "../snippets" el-get-dir))
+			 (yas-global-mode t)))
 
 	(:name redo+
 	       :type http
@@ -396,10 +395,7 @@
 ;; Auctex depends on pdflatex being available, only install if desired on this system
 (if (executable-find "pdflatex")
     (setq el-get-sources
-	  (append '((:name auctex
-			   :build `("./autogen.sh" ,
-				    (concat "./configure --with-lispdir=`pwd` --with-texmf-dir=$HOME/texmf --with-emacs=" el-get-emacs)
-				    "make"))
+	  (append '(auctex 
 		    (:name reftex
 			   :after (progn
 					       (setq-default TeX-master nil)
@@ -427,7 +423,10 @@
 					    mo-git-blame ;; magithub 
 					    gist ruby-electric autopair haml-mode nxhtml
 					    rspec-mode sass-mode cssh el-get switch-window vkill
-					    markdown-mode ac-python frame-fns frame-cmds
+                                            frame-fns frame-cmds
+					    popup fuzzy tabulated-list pcache gh
+					    logito
+					    markdown-mode ac-python
 					    xcscope sudo-save)
 		      (mapcar 'el-get-source-name el-get-sources))))
 (el-get 'sync my-packages)
