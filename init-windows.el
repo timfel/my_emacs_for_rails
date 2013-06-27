@@ -11,6 +11,14 @@
 	     (not (eq 'x window-system))
   	     (file-readable-p cygwin-root))
 
+    ;; Prevent issues with the Windows null device (NUL)
+    ;; when using cygwin find with rgrep.
+    (defadvice grep-compute-defaults (around grep-compute-defaults-advice-null-device)
+      "Use cygwin's /dev/null as the null-device."
+      (let ((null-device "/dev/null"))
+	ad-do-it))
+    (ad-activate 'grep-compute-defaults)
+
     (load (expand-file-name "~/.emacs.d/cygwin-mount.el"))
     (setq exec-path (cons cygwin-bin exec-path))
     (setenv "PATH" (concat cygwin-bin ";" (getenv "PATH")))
