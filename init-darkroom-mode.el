@@ -84,6 +84,12 @@ also be enabled on entering `darkroom-mode'?"
 
 (defun darkroom-mode-enable()
   (interactive)
+  ; - set font size
+  (enlarge-font darkroom-mode-font-increase)
+  (if (and (eq 'w32 window-system) ; HACK for windows fullscreen behaviour
+	   (= (display-pixel-height) 1080))
+      (enlarge-font 1))
+
   ; ----- margins
   ; note: margins are buffer local, so if multi-monitor support is
   ;       enabled, frame-locals are used. Otherwise, it's set
@@ -94,12 +100,12 @@ also be enabled on entering `darkroom-mode'?"
   (darkroom-remember 'right-margin-width
 		     (default-value 'right-margin-width))
   ; - set margins
-  (setq-default left-margin-width darkroom-mode-left-margin)
-  (setq-default right-margin-width darkroom-mode-right-margin)
+  (let* ((charw (frame-char-width (selected-frame)))
+	 (marginpx (- (display-pixel-width) (* 80 charw)))
+	 (margin (/ marginpx charw)))
+    (setq-default left-margin-width (/ margin 2))
+    (setq-default right-margin-width 0))
   (darkroom-mode-update-window)
-
-  ; - set font size
-  (enlarge-font darkroom-mode-font-increase)
 
   ; ----- other settings
   ; - remember
@@ -158,6 +164,9 @@ also be enabled on entering `darkroom-mode'?"
 
   ; - set font size
   (enlarge-font (- 0 darkroom-mode-font-increase))
+  (if (and (eq 'w32 window-system)
+	   (= (display-pixel-height) 1080))
+      (enlarge-font -1))
 
   ; - restore frame size
   (if darkroom-mode-enable-fullscreen
