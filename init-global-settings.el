@@ -202,3 +202,6 @@
 			       ac-source-words-in-same-mode-buffers
 			       ac-source-yasnippet
 			       ac-source-abbrev)))))
+
+;; Magit mode hooks
+(add-hook 'magit-mode-hook 'magit-load-config-extensions)
