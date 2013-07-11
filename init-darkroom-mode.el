@@ -107,6 +107,12 @@ also be enabled on entering `darkroom-mode'?"
     (setq-default right-margin-width 0))
   (darkroom-mode-update-window)
 
+  ; Get rid of lines
+  (darkroom-remember 'fringe-mode fringe-mode)
+  (set-fringe-mode 0)
+  (darkroom-remember 'fci-mode fci-mode)
+  (fci-mode -1)
+
   ; ----- other settings
   ; - remember
   (darkroom-remember 'line-spacing (frame-parameter nil 'line-spacing))
@@ -161,6 +167,9 @@ also be enabled on entering `darkroom-mode'?"
   (setq-default right-margin-width
 		(darkroom-recall 'right-margin-width))
   (darkroom-mode-update-window)
+
+  (set-fringe-mode (darkroom-recall 'fringe-mode))
+  (if (darkroom-recall 'fci-mode) (fci-mode 1))
 
   ; - set font size
   (enlarge-font (- 0 darkroom-mode-font-increase))
