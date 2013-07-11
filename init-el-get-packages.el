@@ -424,7 +424,8 @@
 					    gist ruby-electric autopair haml-mode nxhtml
 					    rspec-mode sass-mode cssh el-get switch-window vkill
                                             frame-fns frame-cmds
-					    popup fuzzy tabulated-list pcache gh
+					    ;; tabulated-list 
+					    popup fuzzy pcache gh
 					    logito
 					    markdown-mode ac-python
 					    xcscope sudo-save)
