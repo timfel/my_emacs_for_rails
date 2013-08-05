@@ -14,10 +14,10 @@
 (defun irc-start-or-switch ()
   "Connect to ERC, or switch to last active buffer"
   (interactive)
-  (if (get-buffer "rkh.im:1337")   ;; ERC already active?
+  (if (get-buffer "bithug.org:1337")   ;; ERC already active?
       (erc-track-switch-buffer 1)  ;; yes: switch to last active
     (when (y-or-n-p "Start ERC? ") ;; no: maybe start ERC
-      (erc-tls :server "rkh.im" :port 1337 :nick "phlebas"
+      (erc-tls :server "bithug.org" :port 1337 :nick "phlebas"
 	       :full-name "Tim Felgentreff"))))
 
 ;; A hook for when our keywords or text are matched
@@ -42,13 +42,18 @@ matches a regexp in `erc-keywords'."
 ;; Pop-ups for highlights
 (defun my-erc-page-popup-notification (nick msg)
   (when window-system
-    ;; must set default directory, otherwise start-process is unhappy
-    ;; when this is something remote or nonexistent
-    (let ((default-directory "~/"))
-      ;; 8640000 milliseconds = 1 day
-      (start-process "page-me" nil "notify-send"
-                     "-u" "normal" "-t" "8640000"
-		     nick msg))))
+    (if (eq window-system 'w32)
+	(let ((default-directory "~/.emacs.d"))
+	  ;; 8640000 milliseconds = 1 day
+	  (start-process "page-me" nil "~/.emacs.d/notifu.exe"
+			 "/d" "5000" "/p" nick "/m" msg))
+      ;; must set default directory, otherwise start-process is unhappy
+      ;; when this is something remote or nonexistent
+      (let ((default-directory "~/"))
+	;; 8640000 milliseconds = 1 day
+	(start-process "page-me" nil "notify-send"
+		       "-u" "normal" "-t" "8640000"
+		       nick msg)))))
 
 (setq tls-program '("openssl s_client -connect %h:%p -no_ssl2 -ign_eof"
 		    "gnutls-cli --priority secure256 -p %p %h" 
