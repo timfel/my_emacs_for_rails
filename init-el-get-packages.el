@@ -395,8 +395,7 @@
 ;; Auctex depends on pdflatex being available, only install if desired on this system
 (if (executable-find "pdflatex")
     (setq el-get-sources
-	  (append '(auctex 
-		    (:name reftex
+	  (append '((:name auctex
 			   :after (progn
 					       (setq-default TeX-master nil)
 					       (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
@@ -409,7 +408,8 @@
 					       (setq TeX-auto-save t)
 					       (setq TeX-save-query nil)
 					       (setq TeX-parse-self t)
-					       (setq-default TeX-master nil))))
+					       (setq-default TeX-master nil)))
+		    reftex)
 		  el-get-sources)))
 
 (let ((new_path (expand-file-name (concat el-get-dir "/emacsmirror-rcp"))))
