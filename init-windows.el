@@ -7,6 +7,50 @@
 ;;
 (let* ((cygwin-root "c:/cygwin")
        (cygwin-bin (concat cygwin-root "/bin")))
+  (when (eq 'w32 window-system)
+    ;; redefine toggle-fullscreen with emacs_fullscreen.exe
+    ;; (defun toggle-fullscreen ()
+    ;;   (interactive)
+    ;;   (menu-bar-mode (if menu-bar-mode 0 1))
+    ;;   (shell-command (format
+    ;; 		      "%s%s"
+    ;; 		      (concat
+    ;; 		       (file-name-as-directory (expand-file-name "~/.emacs.d/"))
+    ;; 		       "emacs_fullscreen.exe")
+    ;; 		      (if menu-bar-mode ;; we just toggled it
+    ;; 			  ""
+    ;; 			" --topmost"))))
+    (load (expand-file-name "~/.emacs.d/w32-fullscreen.el"))
+    (defun toggle-fullscreen ()
+      (interactive)
+      (if (eq nil (frame-parameter nil 'fullscreen))
+	  (progn
+	    (menu-bar-mode 0)
+	    (set-frame-parameter nil 'fullscreen 'fullboth))
+	(progn
+	  (menu-bar-mode 1)
+	  (set-frame-parameter nil 'fullscreen nil)))
+      (w32-fullscreen-toggle-titlebar)
+      (w32-fullscreen-restore-frame)
+      (w32-fullscreen-maximize-frame))
+
+    ;; Setup a useable LaTeX PDF viewer
+    (let* ((sumatra-download "https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.2.1.zip")
+	   (target-dir "~/.emacs.d")
+	   (target-file (format "%s/sumatrapdf.zip" target-dir))
+	   (exe "SumatraPDF.exe"))
+      (if (not (file-exists-p (format "%s/%s" target-dir exe)))
+	  (progn
+	    (message "Downloading and setting up SumatraPDF as LaTeX PDF Viewer")
+	    (shell-command (format "wget --quiet --no-check-certificate -O %s %s" target-file sumatra-download))
+	    (shell-command (format "unzip %s -d %s" target-file target-dir))
+	    (shell-command (format "rm -f %s" target-file))))
+
+      (setq TeX-view-program-selection '((output-pdf "SumatraPDF")))
+      ;; (setq TeX-view-program-list '(("SumatraPDF" "okular %o")))
+      (setq TeX-view-program-list (list (list "SumatraPDF"
+					      (format "%s/%s %s" (expand-file-name target-dir) exe "%o"))))))
+
   (when (and (eq 'windows-nt system-type)
 	     (not (eq 'x window-system))
   	     (file-readable-p cygwin-root))
@@ -67,47 +111,4 @@
 
     ;;; Use Unix-style line endings.
     (setq-default buffer-file-coding-system 'undecided-unix)
-
-    ;; redefine toggle-fullscreen with emacs_fullscreen.exe
-    ;; (defun toggle-fullscreen ()
-    ;;   (interactive)
-    ;;   (menu-bar-mode (if menu-bar-mode 0 1))
-    ;;   (shell-command (format
-    ;; 		      "%s%s"
-    ;; 		      (concat
-    ;; 		       (file-name-as-directory (expand-file-name "~/.emacs.d/"))
-    ;; 		       "emacs_fullscreen.exe")
-    ;; 		      (if menu-bar-mode ;; we just toggled it
-    ;; 			  ""
-    ;; 			" --topmost"))))
-    (load (expand-file-name "~/.emacs.d/w32-fullscreen.el"))
-    (defun toggle-fullscreen ()
-      (interactive)
-      (if (eq nil (frame-parameter nil 'fullscreen))
-	  (progn
-	    (menu-bar-mode 0)
-	    (set-frame-parameter nil 'fullscreen 'fullboth))
-	(progn
-	  (menu-bar-mode 1)
-	  (set-frame-parameter nil 'fullscreen nil)))
-      (w32-fullscreen-toggle-titlebar)
-      (w32-fullscreen-restore-frame)
-      (w32-fullscreen-maximize-frame))
-
-    ;; Setup a useable LaTeX PDF viewer
-    (let* ((sumatra-download "https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.2.1.zip")
-	   (target-dir "~/.emacs.d")
-	   (target-file (format "%s/sumatrapdf.zip" target-dir))
-	   (exe "SumatraPDF.exe"))
-      (if (not (file-exists-p (format "%s/%s" target-dir exe)))
-	  (progn
-	    (message "Downloading and setting up SumatraPDF as LaTeX PDF Viewer")
-	    (shell-command (format "wget --quiet --no-check-certificate -O %s %s" target-file sumatra-download))
-	    (shell-command (format "unzip %s -d %s" target-file target-dir))
-	    (shell-command (format "rm -f %s" target-file))))
-
-      (setq TeX-view-program-selection '((output-pdf "SumatraPDF")))
-      ;; (setq TeX-view-program-list '(("SumatraPDF" "okular %o")))
-      (setq TeX-view-program-list (list (list "SumatraPDF"
-					      (format "%s/%s %s" (expand-file-name target-dir) exe "%o")))))
 ))
