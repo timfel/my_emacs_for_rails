@@ -88,7 +88,7 @@ also be enabled on entering `darkroom-mode'?"
   (enlarge-font darkroom-mode-font-increase)
   (if (and (eq 'w32 window-system) ; HACK for windows fullscreen behaviour
 	   (= (display-pixel-height) 1080))
-      (enlarge-font 1))
+      (enlarge-font -1))
 
   ; ----- margins
   ; note: margins are buffer local, so if multi-monitor support is
@@ -175,7 +175,7 @@ also be enabled on entering `darkroom-mode'?"
   (enlarge-font (- 0 darkroom-mode-font-increase))
   (if (and (eq 'w32 window-system)
 	   (= (display-pixel-height) 1080))
-      (enlarge-font -1))
+      (enlarge-font 1))
 
   ; - restore frame size
   (if darkroom-mode-enable-fullscreen
