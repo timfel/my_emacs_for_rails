@@ -171,7 +171,6 @@
 
 	(:name ruby-mode
 	       :after (progn
-			(eval-after-load "ruby-mode" '(load (expand-file-name "~/.emacs.d/ruby-mode-indent.fix.el")))
 			(add-hook 'ruby-mode-hook 'turn-on-font-lock)
 			(add-hook 'ruby-mode-hook 'friendly-whitespace)
 			(add-hook 'ruby-mode-hook '(lambda() (progn
