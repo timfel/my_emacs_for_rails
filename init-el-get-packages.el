@@ -64,7 +64,7 @@
 
 	(:name yasnippet
 	       :after (progn
-			 (yas-load-directory (expand-file-name "../snippets" el-get-dir))
+			 ;; (yas-load-directory (expand-file-name "../snippets" el-get-dir))
 			 (yas-global-mode t)))
 
 	(:name redo+
@@ -229,6 +229,7 @@
 	(:name js2-mode
 	       :after (progn
 			(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+			(add-hook 'js2-mode-hook 'friendly-whitespace)
 			(add-hook 'js2-mode-hook
 				  (lambda () (progn
 					       (setq imenu-create-index-function 'javascript-imenu-create-index)
@@ -396,18 +397,16 @@
     (setq el-get-sources
 	  (append '((:name auctex
 			   :after (progn
-					       (setq-default TeX-master nil)
 					       (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
 					       (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
 					       (add-hook 'LaTeX-mode-hook 'reftex-mode)
-					       (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+					       ;; (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
 					       (add-hook 'LaTeX-mode-hook 'flyspell-mode)
 					       (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
 					       (setq reftex-plug-into-AUCTeX t)
 					       (setq TeX-auto-save t)
 					       (setq TeX-save-query nil)
-					       (setq TeX-parse-self t)
-					       (setq-default TeX-master nil)))
+					       (setq TeX-parse-self t)))
 		    reftex)
 		  el-get-sources)))
 

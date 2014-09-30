@@ -15,7 +15,7 @@
   :type 'integer
   :group 'darkroom)
 
-(defcustom darkroom-mode-right-margin 0
+(defcustom darkroom-mode-right-margin 15
   "Margin to add to the right side of the screen."
   :type 'integer
   :group 'darkroom)
@@ -103,8 +103,8 @@ also be enabled on entering `darkroom-mode'?"
   (let* ((charw (frame-char-width (selected-frame)))
 	 (marginpx (- (display-pixel-width) (* 80 charw)))
 	 (margin (/ marginpx charw)))
-    (setq-default left-margin-width (/ margin 2))
-    (setq-default right-margin-width 0))
+    (setq-default left-margin-width (/ margin 3))
+    (setq-default right-margin-width (/ margin 3)))
   (darkroom-mode-update-window)
 
   ; Get rid of lines

@@ -189,6 +189,9 @@
 ;; PyPyTrace Mode
 (load (expand-file-name "~/.emacs.d/pypytrace-mode.el"))
 
+;; Yacc Mode
+(load (expand-file-name "~/.emacs.d/yacc.el"))
+
 ;; Python hooks
 (add-hook 'python-mode-hook 'turn-on-font-lock)
 (add-hook 'python-mode-hook 'friendly-whitespace)
@@ -211,10 +214,22 @@
 (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
 (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
 (add-hook 'LaTeX-mode-hook 'reftex-mode)
-(add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+;; (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+(add-hook 'LaTeX-mode-hook (lambda () (auto-fill-mode -1)))
 (add-hook 'LaTeX-mode-hook 'flyspell-mode)
-(add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+(add-hook 'LaTeX-mode-hook (lambda () (setq longlines-wrap-follows-window-size t)))
+;; (add-hook 'LaTeX-mode-hook 'longlines-mode)
+;; (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
 (setq reftex-plug-into-AUCTeX t)
 (setq TeX-auto-save t)
 (setq TeX-save-query nil)
 (setq TeX-parse-self t)
+
+
+;; Javascript/JSON
+(add-hook 'javascript-mode-hook 'friendly-whitespace)
+(add-hook 'js-mode-hook 'friendly-whitespace)
+
+
+;; RML mode
+(load (expand-file-name "~/.emacs.d/rml/rml-mode.el"))
