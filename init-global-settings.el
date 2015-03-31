@@ -128,6 +128,11 @@
 (add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
 (add-to-list 'desktop-modes-not-to-save 'grep-mode)
 (add-to-list 'desktop-modes-not-to-save 'magit-mode)
+(run-with-idle-timer
+ 30 ; seconds
+ t  ; repeat
+ 'desktop-save-in-desktop-dir)
+
 
 ;; ISearch word under cursor
 (defun my-isearch-word-at-point ()
