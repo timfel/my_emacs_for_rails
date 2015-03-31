@@ -36,6 +36,10 @@
       (if (not (file-exists-p "~/.emacs.d/server/server"))
 	  (server-start))))
 
+;; Include Texlive path
+(if (file-exists-p "/usr/local/texlive/2014/bin/x86_64-linux/")
+    (setenv "PATH" (concat "/usr/local/texlive/2014/bin/x86_64-linux/:" (getenv "PATH"))))
+
 ;; Always start in HOME
 (setq default-directory "~/")
 ;; Get rid of toolbar and scrollbar
@@ -221,6 +225,7 @@
 ;; (add-hook 'LaTeX-mode-hook 'longlines-mode)
 ;; (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
 (setq reftex-plug-into-AUCTeX t)
+(add-to-list 'reftex-bibliography-commands "addbibresource")
 (setq TeX-auto-save t)
 (setq TeX-save-query nil)
 (setq TeX-parse-self t)
