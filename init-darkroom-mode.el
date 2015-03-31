@@ -103,8 +103,8 @@ also be enabled on entering `darkroom-mode'?"
   (let* ((charw (frame-char-width (selected-frame)))
 	 (marginpx (- (display-pixel-width) (* 80 charw)))
 	 (margin (/ marginpx charw)))
-    (setq-default left-margin-width (/ margin 3))
-    (setq-default right-margin-width (/ margin 3)))
+    (setq-default left-margin-width (/ margin 5))
+    (setq-default right-margin-width (/ margin 5)))
   (darkroom-mode-update-window)
 
   ; Get rid of lines
