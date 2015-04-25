@@ -228,7 +228,7 @@
 (add-hook 'LaTeX-mode-hook 'flyspell-mode)
 (add-hook 'LaTeX-mode-hook (lambda () (setq longlines-wrap-follows-window-size t)))
 ;; (add-hook 'LaTeX-mode-hook 'longlines-mode)
-;; (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+(add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
 (setq reftex-plug-into-AUCTeX t)
 (add-to-list 'reftex-bibliography-commands "addbibresource")
 (setq TeX-auto-save t)
