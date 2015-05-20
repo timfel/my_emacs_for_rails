@@ -243,3 +243,6 @@
 
 ;; RML mode
 (load (expand-file-name "~/.emacs.d/rml/rml-mode.el"))
+
+;; Thesaurus
+(setq thesaurus-bhl-api-key "b3d571e9e275682cf7830b0f9c241199")

@@ -426,6 +426,7 @@
 					    popup fuzzy pcache gh
 					    logito
 					    markdown-mode ac-python
+					    thesaurus
 					    xcscope sudo-save)
 		      (mapcar 'el-get-source-name el-get-sources))))
 (el-get 'sync my-packages)

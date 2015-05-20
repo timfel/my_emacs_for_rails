@@ -33,7 +33,7 @@ also be enabled on entering `darkroom-mode'?"
   :type 'boolean
   :group 'darkroom)
 
-(defcustom darkroom-mode-enable-fullscreen t
+(defcustom darkroom-mode-enable-fullscreen nil
   "Whether to enable fullscreen mode"
   :type 'boolean
   :group 'darkroom)
@@ -84,6 +84,17 @@ also be enabled on entering `darkroom-mode'?"
 
 (defun darkroom-mode-enable()
   (interactive)
+  (let* ((curbuf (current-buffer))
+	 (new-frame (make-frame))
+	 (old-frame (selected-frame)))
+    (select-frame new-frame)
+    (switch-to-buffer curbuf)
+    (select-frame old-frame)
+    (switch-to-prev-buffer)
+    (select-frame new-frame)
+    (private-darkroom-mode-enable)))
+
+(defun private-darkroom-mode-enable()
   ; - set font size
   (enlarge-font darkroom-mode-font-increase)
   (if (and (eq 'w32 window-system) ; HACK for windows fullscreen behaviour
@@ -103,8 +114,8 @@ also be enabled on entering `darkroom-mode'?"
   (let* ((charw (frame-char-width (selected-frame)))
 	 (marginpx (- (display-pixel-width) (* 80 charw)))
 	 (margin (/ marginpx charw)))
-    (setq-default left-margin-width (/ margin 5))
-    (setq-default right-margin-width (/ margin 5)))
+    (setq-local left-margin-width (/ margin 5))
+    (setq-local right-margin-width (/ margin 5)))
   (darkroom-mode-update-window)
 
   ; Get rid of lines
@@ -162,9 +173,9 @@ also be enabled on entering `darkroom-mode'?"
 	  (darkroom-recall 'longlines-wrap-follow))
     (longlines-mode 1))
   ; - restore margins
-  (setq-default left-margin-width
+  (setq-local left-margin-width
 		(darkroom-recall 'left-margin-width))
-  (setq-default right-margin-width
+  (setq-local right-margin-width
 		(darkroom-recall 'right-margin-width))
   (darkroom-mode-update-window)
 
