@@ -1,3 +1,5 @@
+;; don't ding
+(setq visible-bell t)
 (recentf-mode t)
 ;; stops me killing emacs by accident!
 (setq confirm-kill-emacs 'yes-or-no-p)
