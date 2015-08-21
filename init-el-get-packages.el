@@ -113,26 +113,19 @@
 	;; 				 (message "Not activating ECB, window height to small"))
 	;; 			     (message "Not activating ECB, not using a window system")))))
 
-	(:name color-theme
-	       :load-path "."
-	       :load "color-theme.el")
 	(:name color-theme-solarized
-	       :depends color-theme
-	       :type git
-	       :url "https://github.com/sellout/emacs-color-theme-solarized.git"
-	       :load "color-theme-solarized.el"
 	       :after (progn
-				   (color-theme-solarized-light)
-				   ;; Re-initialize colors when creating a new frame, to fix color-palette incompats between terminal and X
-				   (defun setup-window-system-frame-colours (&rest frame)
-				     (color-theme-solarized-light))
-				   (defadvice server-create-window-system-frame
-				     (after set-window-system-frame-colours ())
-				     "Set custom frame colours when creating the first frame on a display"
-				     (message "Running after frame-initialize")
-				     (setup-window-system-frame-colours))
-				   (ad-activate 'server-create-window-system-frame)
-				   (add-hook 'after-make-frame-functions 'setup-window-system-frame-colours t)))
+			;; Color theme
+			(add-hook 'after-make-frame-functions
+				  (lambda (frame)
+				    (let ((mode (if (display-graphic-p frame) 'light 'dark)))
+				      (set-frame-parameter frame 'background-mode mode)
+				      (set-terminal-parameter frame 'background-mode mode))
+				    (enable-theme 'solarized)))))
+
+	;; (:name solarized-emacs
+	;;        :after (progn
+	;; 		(load-theme 'solarized-light)))
 
 	(:name coffee-mode
 	       :after (progn (add-hook 'coffee-mode-hook
@@ -247,7 +240,6 @@
 			(global-set-key [(control /)] 'comment-or-uncomment-region-or-line)))
 
 	(:name magit
-	       :features (magit magit-svn)
 	       :after (progn (global-set-key (kbd "C-x C-z") 'magit-status)))
 
 	(:name project-mode
@@ -422,7 +414,8 @@
 					    gist ruby-electric autopair haml-mode nxhtml
 					    rspec-mode sass-mode cssh el-get switch-window vkill
                                             frame-fns frame-cmds
-					    ;; tabulated-list 
+					    ;; tabulated-list
+					    magit-svn
 					    popup fuzzy pcache gh
 					    logito
 					    markdown-mode ac-python

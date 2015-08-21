@@ -24,6 +24,9 @@
 (if (eq window-system 'x)
     (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
 
+(global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph 1)))
+(global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph)))
+
 (global-set-key [f11] 'toggle-fullscreen)
 
 ;; Don't even blink
@@ -248,3 +251,15 @@
 
 ;; Thesaurus
 (setq thesaurus-bhl-api-key "b3d571e9e275682cf7830b0f9c241199")
+
+;; (defun fresh-frame()
+;;   (interactive)
+;;   (let* ((curbuf (current-buffer))
+;; 	 (new-frame (make-frame))
+;; 	 (old-frame (selected-frame)))
+;;     (select-frame new-frame)
+;;     (switch-to-buffer curbuf)
+;;     (set-frame-parameter new-frame 'background-mode 'light)
+;;     (enable-theme 'solarized)
+;;     (delete-frame old-frame)))
+;; (fresh-frame)
