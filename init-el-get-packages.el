@@ -279,8 +279,19 @@
 	(:name helm
 	       :description "Emacs incremental and narrowing framework"
 	       :type git
+	       :build ("make")
 	       :url "https://github.com/emacs-helm/helm"
 	       :features helm-config)
+
+	(:name nxhtml
+	       :type emacsmirror
+	       :description "An addon for Emacs mainly for web development."
+	       :build `((,el-get-emacs
+                 "-batch" "-q" "-no-site-file" "-L" "elisp"
+                 "-l" "nxhtmlmaint.el"
+                 "--eval" "(setq inhibit-read-only t)" ; `web-vcs-message-with-face' writes to `*Messages*' buffer.
+                 "-f" "nxhtmlmaint-start-byte-compilation"))
+	       :load "elisp/autostart.el")
 
 	(:name fill-column-indicator
 	       :after (progn
@@ -411,8 +422,8 @@
       (mapcar 'el-get-as-symbol
 	      (append '(auto-complete-clang auto-complete-etags auto-complete-extension
 					    mo-git-blame ;; magithub 
-					    gist ruby-electric autopair haml-mode nxhtml
-					    rspec-mode sass-mode cssh el-get switch-window vkill
+					    gist ruby-electric autopair haml-mode
+					    rspec-mode sass-mode cssh switch-window vkill
                                             frame-fns frame-cmds
 					    ;; tabulated-list
 					    magit-svn
