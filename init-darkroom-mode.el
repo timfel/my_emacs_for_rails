@@ -70,6 +70,7 @@ also be enabled on entering `darkroom-mode'?"
   (darkroom-recall 'darkroom-mode-enabled))
 
 (defun darkroom-mode-update-window()
+  (interactive)
   (set-window-margins (selected-window)
 		      left-margin-width
 		      right-margin-width))
@@ -123,7 +124,6 @@ also be enabled on entering `darkroom-mode'?"
   (set-fringe-mode 0)
   (darkroom-remember 'fci-mode fci-mode)
   (fci-mode -1)
-
   ; ----- other settings
   ; - remember
   (darkroom-remember 'line-spacing (frame-parameter nil 'line-spacing))

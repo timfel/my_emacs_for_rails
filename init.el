@@ -26,6 +26,10 @@
      (output-pdf "Okular")
      (output-html "xdg-open"))))
  '(column-number-mode t)
+ '(custom-enabled-themes (quote (sanityinc-solarized-light)))
+ '(custom-safe-themes
+   (quote
+    ("4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" default)))
  '(darkroom-mode-enable-fullscreen nil)
  '(doc-view-continuous t)
  '(ecb-compilation-buffer-names
@@ -87,7 +91,6 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
-(put 'dired-find-alternate-file 'disabled nil)
 
 
 ;;; This was installed by package-install.el.
@@ -99,3 +102,4 @@
     (load
      (expand-file-name "~/.emacs.d/elpa/package.el"))
   (package-initialize))
+(put 'dired-find-alternate-file 'disabled nil)

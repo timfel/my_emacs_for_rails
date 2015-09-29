@@ -24,6 +24,7 @@
 (if (eq window-system 'x)
     (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
 
+(setq-default fill-column 80)
 (global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph 1)))
 (global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph)))
 
@@ -222,6 +223,7 @@
 
 ;; Magit mode hooks
 (add-hook 'magit-mode-hook 'magit-load-config-extensions)
+(setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
 
 ;; Latex
 (setq-default TeX-master nil)
@@ -234,11 +236,47 @@
 (add-hook 'LaTeX-mode-hook (lambda () (setq longlines-wrap-follows-window-size t)))
 ;; (add-hook 'LaTeX-mode-hook 'longlines-mode)
 (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+(add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-t" 'thesaurus-choose-synonym-and-replace)))
 (setq reftex-plug-into-AUCTeX t)
 (add-to-list 'reftex-bibliography-commands "addbibresource")
 (setq TeX-auto-save t)
 (setq TeX-save-query nil)
 (setq TeX-parse-self t)
+(require 'dbus)
+(defun un-urlify (fname-or-url)
+  "A trivial function that replaces a prefix of file:/// with just /."
+  (if (string= (substring fname-or-url 0 8) "file:///")
+      (substring fname-or-url 7)
+    fname-or-url))
+(defun th-evince-sync (file linecol &rest ignored)
+  (let* ((fname (url-unhex-string (un-urlify file)))
+         (buf (find-buffer-visiting fname))
+         (line (car linecol))
+         (col (cadr linecol)))
+    (if (null buf)
+        (message "[Synctex]: %s is not opened..." fname)
+      (switch-to-buffer buf)
+      (goto-line (car linecol))
+      (unless (= col -1)
+        (move-to-column col)))))
+(defvar *dbus-evince-signal* nil)
+;; (defun enable-evince-sync ()
+;;   (require 'dbus)  
+;;   (when (and
+;;          (eq window-system 'x)
+;;          (fboundp 'dbus-register-signal))
+;;     (if (not (getenv "DBUS_SESSION_BUS_ADDRESS"))
+;; 	(let* ((output (shell-command-to-string "dbus-launch")))
+;; 	  (string-match "DBUS_SESSION_BUS_ADDRESS=\\(.*\\)" output)
+;; 	  (setenv "DBUS_SESSION_BUS_ADDRESS" (match-string 1 output))))))
+;; (enable-evince-sync)
+;; (unless *dbus-evince-signal*
+;;   (setf *dbus-evince-signal*
+;; 	(dbus-register-signal
+;; 	 :session nil "/org/gnome/evince/Window/0"
+;; 	 "org.gnome.evince.Window" "SyncSource"
+;; 	 'th-evince-sync)))
+;; (add-hook 'LaTeX-mode-hook 'enable-evince-sync)
 
 
 ;; Javascript/JSON
@@ -263,3 +301,13 @@
 ;;     (enable-theme 'solarized)
 ;;     (delete-frame old-frame)))
 ;; (fresh-frame)
+
+;; Workaround the annoying warnings:
+;;    Warning (mumamo-per-buffer-local-vars):
+;;    Already 'permanent-local t: buffer-file-name
+(when (or (> emacs-major-version 24)
+      	  (and (= emacs-major-version 24)
+                (= emacs-minor-version 2)))
+  (eval-after-load "mumamo"
+    '(setq mumamo-per-buffer-local-vars
+           (delq 'buffer-file-name mumamo-per-buffer-local-vars))))

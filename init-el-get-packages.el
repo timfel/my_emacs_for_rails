@@ -114,15 +114,43 @@
 	;; 			     (message "Not activating ECB, not using a window system")))))
 
 	(:name color-theme-solarized
+	       :depends color-theme
+	       :type git
+	       :url "https://github.com/sellout/emacs-color-theme-solarized.git"
+	       :load "color-theme-solarized.el"
+	       :build ("git checkout old-and-busted")
 	       :after (progn
-			;; Color theme
-			(add-hook 'after-make-frame-functions
-				  (lambda (frame)
-				    (let ((mode (if (display-graphic-p frame) 'light 'dark)))
-				      (set-frame-parameter frame 'background-mode mode)
-				      (set-terminal-parameter frame 'background-mode mode))
-				    (enable-theme 'solarized)))))
+			(color-theme-solarized-light)
+			;; Re-initialize colors when creating a new frame, to fix color-palette incompats between terminal and X
+			(defun setup-window-system-frame-colours (&rest frame)
+			  (color-theme-solarized-light))
+			(defadvice server-create-window-system-frame
+			    (after set-window-system-frame-colours ())
+			  "Set custom frame colours when creating the first frame on a display"
+			  (message "Running after frame-initialize")
+			  (setup-window-system-frame-colours))
+			(ad-activate 'server-create-window-system-frame)
+			(add-hook 'after-make-frame-functions 'setup-window-system-frame-colours t)))
 
+	;; (:name color-theme-solarized
+	;;        :after (progn
+	;; 		;; Color theme
+	;; 		(color-theme-solarized-light)))
+
+	;; (:name color-theme-sanityinc-solarized
+	;;        :type github
+	;;        :pkgname "purcell/color-theme-sanityinc-solarized"
+	;;        :depends color-theme
+	;;        :after (progn
+	;; 		(require 'color-theme-sanityinc-solarized)
+	;; 		(add-hook 'after-make-frame-functions
+	;; 			  color-theme-sanityinc-solarized-light)))
+
+	;; (:name color-theme-sanityinc
+	;;        :after (progn
+	;; 		(add-hook 'after-make-frame-functions
+	;; 			  color-theme-sanityinc-light)))
+	
 	;; (:name solarized-emacs
 	;;        :after (progn
 	;; 		(load-theme 'solarized-light)))
@@ -430,7 +458,7 @@
 					    popup fuzzy pcache gh
 					    logito
 					    markdown-mode ac-python
-					    thesaurus
+					    thesaurus lua-mode
 					    xcscope sudo-save)
 		      (mapcar 'el-get-source-name el-get-sources))))
 (el-get 'sync my-packages)
