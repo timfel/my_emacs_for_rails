@@ -311,3 +311,18 @@
   (eval-after-load "mumamo"
     '(setq mumamo-per-buffer-local-vars
            (delq 'buffer-file-name mumamo-per-buffer-local-vars))))
+
+(global-set-key (kbd "M-[") 'insert-pair)
+(global-set-key (kbd "M-{") 'insert-pair)
+(global-set-key (kbd "M-\"") 'insert-pair)
+
+(require 'vlf-setup)
+(defun my-find-file-check-make-large-file-read-only-hook ()
+  "If a file is over a given size, make the buffer read only."
+  (setq buffer-read-only t)
+  (buffer-disable-undo)
+  (vlf-stop-follow)
+  (vlf-toggle-follow)
+  (fundamental-mode))
+(add-hook 'vlf-mode-hook 'my-find-file-check-make-large-file-read-only-hook)
+
