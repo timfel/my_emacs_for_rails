@@ -53,7 +53,7 @@
 ;; (menu-bar-mode)
 ;; (scroll-bar-mode nil)
 ;; wheel mouse
-(mouse-wheel-mode t)
+;; (mouse-wheel-mode t)
 ;; Standard copy'n'paste
 ;; (cua-mode 1)
 ;; fix clipboard
@@ -223,7 +223,7 @@
 
 ;; Magit mode hooks
 (add-hook 'magit-mode-hook 'magit-load-config-extensions)
-(setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
+;; (setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
 
 ;; Latex
 (setq-default TeX-master nil)
