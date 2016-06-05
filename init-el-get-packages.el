@@ -78,24 +78,6 @@
 	       :url "git://github.com/DamienCassou/textlint.git"
 	       :load "textlint.el")
 
-	;; (:name slack-rtm
-	;;        :type git
-	;;        :url "git://github.com/slackorama/slack-rtm.git"
-	;;        :load-path "lisp"
-	;;        :depends org-mode
-	;;        :after (lambda () (progn
-	;; 			   (load "rtm.el")
-	;; 			   (load "slack-rtm.el"))))
-
-	(:name simple-rtm
-	       :type git
-	       :url "git://github.com/mbunkus/simple-rtm.git"
-	       :load-path "lisp"
-	       :depends org-mode
-	       :after (progn
-				   (load "rtm.el")
-				   (load "simple-rtm.el")))
-
 	;; (:name ecb
 	;;        :load-path "."
 	;;        :features ecb
@@ -284,11 +266,11 @@
 	;; (:name dictionary-el    :type apt-get)
 	;; (:name emacs-goodies-el :type apt-get)
 
-	(:name showoff-mode
-	       :type git
-	       :url "https://github.com/developernotes/showoff-mode.git"
-	       :load-path "."
-	       :features showoff-mode)
+	;; (:name showoff-mode
+	;;        :type git
+	;;        :url "https://github.com/developernotes/showoff-mode.git"
+	;;        :load-path "."
+	;;        :features showoff-mode)
 
 	(:name org-mode
 	       :after (progn
@@ -310,16 +292,6 @@
 	       :build ("make")
 	       :url "https://github.com/emacs-helm/helm"
 	       :features helm-config)
-
-	(:name nxhtml
-	       :type emacsmirror
-	       :description "An addon for Emacs mainly for web development."
-	       :build `((,el-get-emacs
-                 "-batch" "-q" "-no-site-file" "-L" "elisp"
-                 "-l" "nxhtmlmaint.el"
-                 "--eval" "(setq inhibit-read-only t)" ; `web-vcs-message-with-face' writes to `*Messages*' buffer.
-                 "-f" "nxhtmlmaint-start-byte-compilation"))
-	       :load "elisp/autostart.el")
 
 	(:name fill-column-indicator
 	       :after (progn
