@@ -53,12 +53,15 @@
 ;; (menu-bar-mode)
 ;; (scroll-bar-mode nil)
 ;; wheel mouse
-;; (mouse-wheel-mode t)
 ;; Standard copy'n'paste
 ;; (cua-mode 1)
 ;; fix clipboard
-(if (eq window-system 'x)
+(if window-system
     (progn
+      (global-set-key (kbd "M-[") 'insert-pair)
+      (global-set-key (kbd "M-{") 'insert-pair)
+      (global-set-key (kbd "M-\"") 'insert-pair)))
+      (mouse-wheel-mode t)
       (setq x-select-enable-clipboard t)
       (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)))
 (column-number-mode t)
@@ -87,8 +90,13 @@
 (add-hook 'css-mode-hook (lambda()
                            (local-set-key (kbd "<return>") 'newline-and-indent)))
 
-(global-set-key (kbd "C->") 'forward-list)
-(global-set-key (kbd "C-<") 'backward-list)
+(if window-system
+    (progn
+      (global-set-key (kbd "C->") 'forward-list)
+      (global-set-key (kbd "C-<") 'backward-list))
+  (progn
+    (global-set-key (kbd "M->") 'forward-list)
+    (global-set-key (kbd "M-<") 'backward-list)))
 
 ;; Use generic printer dialiog on linux
 (if (eq system-type 'gnu/linux)
@@ -311,10 +319,6 @@
   (eval-after-load "mumamo"
     '(setq mumamo-per-buffer-local-vars
            (delq 'buffer-file-name mumamo-per-buffer-local-vars))))
-
-(global-set-key (kbd "M-[") 'insert-pair)
-(global-set-key (kbd "M-{") 'insert-pair)
-(global-set-key (kbd "M-\"") 'insert-pair)
 
 (require 'vlf-setup)
 (defun my-vlf-setup-hook ()

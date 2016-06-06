@@ -102,17 +102,19 @@
 	       :load "color-theme-solarized.el"
 	       :build ("git checkout old-and-busted")
 	       :after (progn
-			(color-theme-solarized-light)
-			;; Re-initialize colors when creating a new frame, to fix color-palette incompats between terminal and X
-			(defun setup-window-system-frame-colours (&rest frame)
-			  (color-theme-solarized-light))
-			(defadvice server-create-window-system-frame
-			    (after set-window-system-frame-colours ())
-			  "Set custom frame colours when creating the first frame on a display"
-			  (message "Running after frame-initialize")
-			  (setup-window-system-frame-colours))
-			(ad-activate 'server-create-window-system-frame)
-			(add-hook 'after-make-frame-functions 'setup-window-system-frame-colours t)))
+			(if window-system
+			    (progn
+			      (color-theme-solarized-light)
+			      ;; Re-initialize colors when creating a new frame, to fix color-palette incompats between terminal and X
+			      (defun setup-window-system-frame-colours (&rest frame)
+				(color-theme-solarized-light))
+			      (defadvice server-create-window-system-frame
+				  (after set-window-system-frame-colours ())
+				"Set custom frame colours when creating the first frame on a display"
+				(message "Running after frame-initialize")
+				(setup-window-system-frame-colours))
+			      (ad-activate 'server-create-window-system-frame)
+			      (add-hook 'after-make-frame-functions 'setup-window-system-frame-colours t)))))
 
 	;; (:name color-theme-solarized
 	;;        :after (progn
