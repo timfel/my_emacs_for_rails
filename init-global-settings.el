@@ -60,7 +60,7 @@
     (progn
       (global-set-key (kbd "M-[") 'insert-pair)
       (global-set-key (kbd "M-{") 'insert-pair)
-      (global-set-key (kbd "M-\"") 'insert-pair)))
+      (global-set-key (kbd "M-\"") 'insert-pair)
       (mouse-wheel-mode t)
       (setq x-select-enable-clipboard t)
       (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)))
@@ -95,8 +95,8 @@
       (global-set-key (kbd "C->") 'forward-list)
       (global-set-key (kbd "C-<") 'backward-list))
   (progn
-    (global-set-key (kbd "M->") 'forward-list)
-    (global-set-key (kbd "M-<") 'backward-list)))
+    (global-set-key (kbd "M-,") 'forward-list)
+    (global-set-key (kbd "M-.") 'backward-list)))
 
 ;; Use generic printer dialiog on linux
 (if (eq system-type 'gnu/linux)

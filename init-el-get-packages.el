@@ -252,7 +252,9 @@
 			(global-set-key [(control /)] 'comment-or-uncomment-region-or-line)))
 
 	(:name magit
-	       :after (progn (global-set-key (kbd "C-x C-z") 'magit-status)))
+	       :after (progn
+			(global-set-key (kbd "C-x C-z") 'magit-status)
+			(setq magit-auto-revert-mode nil)))
 
 	(:name project-mode
 	       :type git
