@@ -112,4 +112,4 @@ Non-interactive arguments are Begin End Regexp"
 		c-basic-offset 4
 		tab-width 4)
 	  (message "using tabs for indentation")))))
-
+(add-hook 'c++-mode-hook 'infer-indentation-style)
