@@ -104,10 +104,10 @@
 	       :after (progn
 			(if window-system
 			    (progn
-			      (color-theme-solarized-light)
+			      (color-theme-solarized-dark)
 			      ;; Re-initialize colors when creating a new frame, to fix color-palette incompats between terminal and X
 			      (defun setup-window-system-frame-colours (&rest frame)
-				(color-theme-solarized-light))
+				(color-theme-solarized-dark))
 			      (defadvice server-create-window-system-frame
 				  (after set-window-system-frame-colours ())
 				"Set custom frame colours when creating the first frame on a display"
@@ -297,6 +297,10 @@
 	       :url "https://github.com/emacs-helm/helm"
 	       :features helm-config)
 
+	(:name helm-etags-plus
+	       :after (progn
+			(global-set-key (kbd "M-.") 'helm-etags-plus-select)))
+
 	(:name fill-column-indicator
 	       :after (progn
 				   (setq fci-rule-column 81)
@@ -405,16 +409,21 @@
     (setq el-get-sources
 	  (append '((:name auctex
 			   :after (progn
-					       (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-					       (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-					       (add-hook 'LaTeX-mode-hook 'reftex-mode)
-					       ;; (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
-					       (add-hook 'LaTeX-mode-hook 'flyspell-mode)
-					       (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
-					       (setq reftex-plug-into-AUCTeX t)
-					       (setq TeX-auto-save t)
-					       (setq TeX-save-query nil)
-					       (setq TeX-parse-self t)))
+				    (defun nodbus-TeX-evince-dbus-p (de app &rest options)
+				      nil)
+				    (advice-add 'TeX-evince-dbus-p :override #'nodbus-TeX-evince-dbus-p)
+				    (defun dbus-register-signal (&rest args)
+				      nil)
+				    (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+				    (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+				    (add-hook 'LaTeX-mode-hook 'reftex-mode)
+				    ;; (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+				    (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+				    (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+				    (setq reftex-plug-into-AUCTeX t)
+				    (setq TeX-auto-save t)
+				    (setq TeX-save-query nil)
+				    (setq TeX-parse-self t)))
 		    reftex)
 		  el-get-sources)))
 

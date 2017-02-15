@@ -164,8 +164,7 @@
       (if (and isearch-case-fold-search
                (eq 'not-yanks search-upper-case))
           (setq string (downcase string)))
-      (if (equal string "\\<\\>")
-	  	  (setq string ""))
+      (setq string (regexp-quote (substring string 2 (- (length string) 2))))
       (setq isearch-string string
             isearch-message
             (concat isearch-message
@@ -181,6 +180,7 @@
 
 
 (defun my-get-top-vcs-dir (previous &optional current)
+  (interactive)
   (let* ((last (if current previous (file-truename previous)))
 	 (dir (if current current (expand-file-name ".." last))))
     (if (or (file-directory-p (concat (file-name-as-directory dir) ".git"))
@@ -250,24 +250,24 @@
 (setq TeX-auto-save t)
 (setq TeX-save-query nil)
 (setq TeX-parse-self t)
-(require 'dbus)
-(defun un-urlify (fname-or-url)
-  "A trivial function that replaces a prefix of file:/// with just /."
-  (if (string= (substring fname-or-url 0 8) "file:///")
-      (substring fname-or-url 7)
-    fname-or-url))
-(defun th-evince-sync (file linecol &rest ignored)
-  (let* ((fname (url-unhex-string (un-urlify file)))
-         (buf (find-buffer-visiting fname))
-         (line (car linecol))
-         (col (cadr linecol)))
-    (if (null buf)
-        (message "[Synctex]: %s is not opened..." fname)
-      (switch-to-buffer buf)
-      (goto-line (car linecol))
-      (unless (= col -1)
-        (move-to-column col)))))
-(defvar *dbus-evince-signal* nil)
+;; (require 'dbus)
+;; (defun un-urlify (fname-or-url)
+;;   "A trivial function that replaces a prefix of file:/// with just /."
+;;   (if (string= (substring fname-or-url 0 8) "file:///")
+;;       (substring fname-or-url 7)
+;;     fname-or-url))
+;; (defun th-evince-sync (file linecol &rest ignored)
+;;   (let* ((fname (url-unhex-string (un-urlify file)))
+;;          (buf (find-buffer-visiting fname))
+;;          (line (car linecol))
+;;          (col (cadr linecol)))
+;;     (if (null buf)
+;;         (message "[Synctex]: %s is not opened..." fname)
+;;       (switch-to-buffer buf)
+;;       (goto-line (car linecol))
+;;       (unless (= col -1)
+;;         (move-to-column col)))))
+;; (defvar *dbus-evince-signal* nil)
 ;; (defun enable-evince-sync ()
 ;;   (require 'dbus)  
 ;;   (when (and
@@ -332,6 +332,15 @@
 
 (defun my-find-file-check-make-small-files-fci ()
   "If a file is under a given size draw a nice fci indicator."
-  (if (< (buffer-size) (* 1024 1024))
+  (if (and (< (buffer-size) (* 1024 1024))
+	   window-system)
       (fci-mode 1)))
 (add-hook 'find-file-hook 'my-find-file-check-make-small-files-fci)
+
+
+(defun xclip-paste ()
+  (interactive)
+  (insert (shell-command-to-string "timeout 0.1 xsel")))
+(advice-add 'x-clipboard-yank :override #'xclip-paste)
+
+(x-clipboard-yank)
