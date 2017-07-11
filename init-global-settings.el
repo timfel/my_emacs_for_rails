@@ -49,9 +49,9 @@
 ;; Always start in HOME
 (setq default-directory "~/")
 ;; Get rid of toolbar and scrollbar
-;; (tool-bar-mode nil)
-;; (menu-bar-mode)
-;; (scroll-bar-mode nil)
+(tool-bar-mode 0)
+(menu-bar-mode t)
+(scroll-bar-mode 0)
 ;; wheel mouse
 ;; Standard copy'n'paste
 ;; (cua-mode 1)
