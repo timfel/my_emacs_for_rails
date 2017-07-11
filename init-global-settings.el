@@ -246,7 +246,10 @@
 (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
 (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-t" 'thesaurus-choose-synonym-and-replace)))
 (setq reftex-plug-into-AUCTeX t)
-(add-to-list 'reftex-bibliography-commands "addbibresource")
+(condition-case nil
+    (when
+	(add-to-list 'reftex-bibliography-commands "addbibresource"))
+  (error nil))
 (setq TeX-auto-save t)
 (setq TeX-save-query nil)
 (setq TeX-parse-self t)
