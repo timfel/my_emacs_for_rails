@@ -435,7 +435,7 @@
 (setq my-packages
       (mapcar 'el-get-as-symbol
 	      (append '(auto-complete-clang auto-complete-etags auto-complete-extension
-					    mo-git-blame ;; magithub 
+					    ;; mo-git-blame ;; magithub 
 					    gist ruby-electric autopair haml-mode
 					    rspec-mode sass-mode cssh switch-window vkill
                                             frame-fns frame-cmds
