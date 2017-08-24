@@ -347,3 +347,5 @@
 (advice-add 'x-clipboard-yank :override #'xclip-paste)
 
 (x-clipboard-yank)
+
+(setq-default indent-tabs-mode nil)

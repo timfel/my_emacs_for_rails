@@ -1,21 +1,21 @@
-(condition-case nil
-    (when
-	(load
-	 (expand-file-name "~/.emacs.d/elpa/package.el"))
-      (package-initialize))
-  (error (let ((buffer (url-retrieve-synchronously
-			"http://tromey.com/elpa/package-install.el")))
-	   (save-excursion
-	     (set-buffer buffer)
-	     (goto-char (point-min))
-	     (re-search-forward "^$" nil 'move)
-	     (eval-region (point) (point-max))
-	     (kill-buffer (current-buffer))
-	     (when
-		 (load
-		  (expand-file-name "~/.emacs.d/elpa/package.el"))
-	       (package-initialize))))))
-(setq package-archives '("tromey" . "http://tromey.com/elpa/"))
+; (condition-case nil
+;     (when
+; 	(load
+; 	 (expand-file-name "~/.emacs.d/elpa/package.el"))
+;       (package-initialize))
+;   (error (let ((buffer (url-retrieve-synchronously
+; 			"http://tromey.com/elpa/package-install.el")))
+; 	   (save-excursion
+; 	     (set-buffer buffer)
+; 	     (goto-char (point-min))
+; 	     (re-search-forward "^$" nil 'move)
+; 	     (eval-region (point) (point-max))
+; 	     (kill-buffer (current-buffer))
+; 	     (when
+; 		 (load
+; 		  (expand-file-name "~/.emacs.d/elpa/package.el"))
+; 	       (package-initialize))))))
+; (setq package-archives '("tromey" . "http://tromey.com/elpa/"))
 
 (add-to-list 'load-path "~/.emacs.d/el-get/el-get")
 
