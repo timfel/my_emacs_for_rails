@@ -1,4 +1,11 @@
 
+
+;; Added by Package.el.  This must come before configurations of
+;; installed packages.  Don't delete this line.  If you don't want it,
+;; just comment it out by adding a semicolon to the start of the line.
+;; You may delete these explanatory comments.
+(package-initialize)
+
 (defun load-init-files (list)
   (mapcar (lambda (e) (load (expand-file-name (format "~/.emacs.d/init-%s.el" e))))
           list))
@@ -71,15 +78,31 @@
  '(ecb-tree-indent 2)
  '(ecb-windows-width 0.2)
  '(frame-background-mode (quote light))
+ '(meghanada-full-text-search-enable t)
  '(org-file-apps
    (quote
     ((auto-mode . emacs)
      ("\\.mm\\'" . default)
      ("\\.x?html?\\'" . default)
      ("\\.pdf\\'" . "evince %s"))))
+ '(package-selected-packages (quote (oauth2)))
  '(safe-local-variable-values
    (quote
-    ((mode . org)
+    ((reftex-default-bibliography "fallback.bib")
+     (whitespace-line-column . 80)
+     (eval ignore-errors "Write-contents-functions is a buffer-local alternative to before-save-hook"
+           (add-hook
+            (quote write-contents-functions)
+            (lambda nil
+              (delete-trailing-whitespace)
+              nil))
+           (require
+            (quote whitespace))
+           "Sometimes the mode needs to be toggled off and on."
+           (whitespace-mode 0)
+           (whitespace-mode 1))
+     (whitespace-style face tabs trailing lines-tail)
+     (mode . org)
      (encoding . us-ascii)
      (encoding . utf-8))))
  '(scroll-bar-mode nil)
@@ -92,3 +115,4 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+(put 'dired-find-alternate-file 'disabled nil)

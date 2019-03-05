@@ -30,6 +30,9 @@
 
 (global-set-key [f11] 'toggle-fullscreen)
 
+;; if run in terminal, use the mouse
+(xterm-mouse-mode 1)
+
 ;; Don't even blink
 (blink-cursor-mode 0)
 
@@ -229,67 +232,6 @@
 			       ac-source-yasnippet
 			       ac-source-abbrev)))))
 
-;; Magit mode hooks
-(add-hook 'magit-mode-hook 'magit-load-config-extensions)
-;; (setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
-
-;; Latex
-(setq-default TeX-master nil)
-(add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-(add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-(add-hook 'LaTeX-mode-hook 'reftex-mode)
-;; (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
-(add-hook 'LaTeX-mode-hook (lambda () (auto-fill-mode -1)))
-(add-hook 'LaTeX-mode-hook 'flyspell-mode)
-(add-hook 'LaTeX-mode-hook (lambda () (setq longlines-wrap-follows-window-size t)))
-;; (add-hook 'LaTeX-mode-hook 'longlines-mode)
-(add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
-(add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-t" 'thesaurus-choose-synonym-and-replace)))
-(setq reftex-plug-into-AUCTeX t)
-(condition-case nil
-    (when
-	(add-to-list 'reftex-bibliography-commands "addbibresource"))
-  (error nil))
-(setq TeX-auto-save t)
-(setq TeX-save-query nil)
-(setq TeX-parse-self t)
-;; (require 'dbus)
-;; (defun un-urlify (fname-or-url)
-;;   "A trivial function that replaces a prefix of file:/// with just /."
-;;   (if (string= (substring fname-or-url 0 8) "file:///")
-;;       (substring fname-or-url 7)
-;;     fname-or-url))
-;; (defun th-evince-sync (file linecol &rest ignored)
-;;   (let* ((fname (url-unhex-string (un-urlify file)))
-;;          (buf (find-buffer-visiting fname))
-;;          (line (car linecol))
-;;          (col (cadr linecol)))
-;;     (if (null buf)
-;;         (message "[Synctex]: %s is not opened..." fname)
-;;       (switch-to-buffer buf)
-;;       (goto-line (car linecol))
-;;       (unless (= col -1)
-;;         (move-to-column col)))))
-;; (defvar *dbus-evince-signal* nil)
-;; (defun enable-evince-sync ()
-;;   (require 'dbus)  
-;;   (when (and
-;;          (eq window-system 'x)
-;;          (fboundp 'dbus-register-signal))
-;;     (if (not (getenv "DBUS_SESSION_BUS_ADDRESS"))
-;; 	(let* ((output (shell-command-to-string "dbus-launch")))
-;; 	  (string-match "DBUS_SESSION_BUS_ADDRESS=\\(.*\\)" output)
-;; 	  (setenv "DBUS_SESSION_BUS_ADDRESS" (match-string 1 output))))))
-;; (enable-evince-sync)
-;; (unless *dbus-evince-signal*
-;;   (setf *dbus-evince-signal*
-;; 	(dbus-register-signal
-;; 	 :session nil "/org/gnome/evince/Window/0"
-;; 	 "org.gnome.evince.Window" "SyncSource"
-;; 	 'th-evince-sync)))
-;; (add-hook 'LaTeX-mode-hook 'enable-evince-sync)
-
-
 ;; Javascript/JSON
 (add-hook 'javascript-mode-hook 'friendly-whitespace)
 (add-hook 'js-mode-hook 'friendly-whitespace)
@@ -349,3 +291,74 @@
 (x-clipboard-yank)
 
 (setq-default indent-tabs-mode nil)
+
+;; mail
+(load-library "smtpmail")
+(setq send-mail-function 'smtpmail-send-it
+      send-mail-function 'smtpmail-send-it
+      gnutls-algorithm-priority "NORMAL:%COMPAT"
+      mail-setup_with_from nil
+      user-full-name "Tim Felgentreff"
+      ;; user-mail-address "tim.felgentreff@hpi.de"
+      ;; smtpmail-smtp-server "owa.hpi.de"
+      ;; smtpmail-default-smtp-server "owa.hpi.de"
+      ;; smtpmail-stream-type  'starttls
+      ;; smtpmail-smtp-service 587
+      ;; mail-host-address "hpi.de")
+      user-mail-address "timfelgentreff@gmail.com"
+      smtpmail-smtp-server "smtp.gmail.com"
+      smtpmail-default-smtp-server "smtp.gmail.com"
+      smtpmail-stream-type  'ssl
+      smtpmail-smtp-service 465
+      mail-host-address "timfelgentreff.gmail.com")
+(add-hook 'mail-mode-hook 'mail-abbrevs-setup)
+;; (setq mail-yank-prefix "> "
+;;       mail-signature ""
+;;       mail-default-headers "")
+
+
+
+
+;; (setq split-height-threshold 120
+;;       split-width-threshold 160)
+
+;; (defun my-split-window-sensibly (&optional window)
+;;     "replacement `split-window-sensibly' function which prefers vertical splits"
+;;     (interactive)
+;;     (let ((window (or window (selected-window))))
+;;         (or (and (window-splittable-p window t)
+;;                  (with-selected-window window
+;;                      (split-window-right)))
+;;             (and (window-splittable-p window)
+;;                  (with-selected-window window
+;;                      (split-window-below))))))
+
+;; (setq split-window-preferred-function #'my-split-window-sensibly)
+
+
+;; ------------------------------------------------------------------
+;; display-buffer
+
+;; The default behaviour of `display-buffer' is to always create a new
+;; window. As I normally use a large display sporting a number of
+;; side-by-side windows, this is a bit obnoxious.
+;;
+;; The code below will make Emacs reuse existing windows, with the
+;; exception that if have a single window open in a large display, it
+;; will be split horisontally.
+(setq pop-up-windows nil)
+
+(defun my-display-buffer-function (buf not-this-window)
+  (if (and (not pop-up-frames)
+           (one-window-p)
+           (or not-this-window
+               (not (eq (window-buffer (selected-window)) buf)))
+           (> (frame-width) 162))
+      (split-window-horizontally))
+  ;; Note: Some modules sets `pop-up-windows' to t before calling
+  ;; `display-buffer' -- Why, oh, why!
+  (let ((display-buffer-function nil)
+        (pop-up-windows nil))
+    (display-buffer buf not-this-window)))
+
+(setq display-buffer-function 'my-display-buffer-function)

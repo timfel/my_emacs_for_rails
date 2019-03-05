@@ -27,6 +27,8 @@
        (end-of-buffer)
        (eval-print-last-sexp)))))
 
+(require 'el-get-elpa)
+;; (el-get-elpa-build-local-recipes)
 
 ;; ;; CEDET hack
 ;; (defun inversion-test (p v)
@@ -35,34 +37,7 @@
 (require 'compile) ;; Needed for some reason or other. el-get fails for me, otherwise
 
 (setq el-get-sources
-      '((:name auto-complete
-	       :after (progn
-				   (require 'auto-complete-config)
-				   (global-auto-complete-mode t)     ;; enable global-mode
-				   (setq ac-auto-start nil)            ;; automatically start
-				   (setq ac-dwim 3)                  ;; Do what i mean
-				   (setq ac-override-local-map nil)  ;; don't override local map
-				   (ac-flyspell-workaround)
-				   (setq ac-delay 5)
-				   (setq ac-auto-show-menu 1)
-				   (set-default 'ac-sources '(ac-source-yasnippet ac-source-semantic ac-source-abbrev ac-source-words-in-buffer))
-
-				   (setq ac-modes (append ac-modes '(eshell-mode)))
-				   (global-set-key (kbd "M-?") 'auto-complete)
-				   (add-hook 'emacs-lisp-mode-hook
-					     (lambda ()
-					       (setq ac-sources '(ac-source-yasnippet
-								  ac-source-abbrev
-								  ac-source-words-in-buffer
-								  ac-source-symbols))))
-				   (add-hook 'eshell-mode-hook
-					     (lambda ()
-					       (setq ac-sources '(ac-source-yasnippet
-								  ac-source-abbrev
-								  ac-source-files-in-current-dir
-								  ac-source-words-in-buffer))))))
-
-	(:name yasnippet
+      '((:name yasnippet
 	       :after (progn
 			 ;; (yas-load-directory (expand-file-name "../snippets" el-get-dir))
 			 (yas-global-mode t)))
@@ -78,23 +53,6 @@
 	       :url "git://github.com/DamienCassou/textlint.git"
 	       :load "textlint.el")
 
-	;; (:name ecb
-	;;        :load-path "."
-	;;        :features ecb
-	;;        :after (lambda () (progn
-	;; 			   (global-ede-mode 1)
-	;; 			   (semantic-mode t)
-	;; 			   (setq semantic-load-turn-everything-on t)
-	;; 			   (setq ecb-tip-of-the-day nil)
-	;; 			   (setq ecb-primary-secondary-mouse-buttons (quote mouse-1--mouse-2))
-	;; 			   (if window-system
-	;; 			       (if (>= (window-height) 16)
-	;; 				   (progn
-	;; 				     (ecb-activate)
-	;; 				     (add-hook 'window-setup-hook 'ecb-redraw-layout t))
-	;; 				 (message "Not activating ECB, window height to small"))
-	;; 			     (message "Not activating ECB, not using a window system")))))
-
 	(:name color-theme-solarized
 	       :depends color-theme
 	       :type git
@@ -104,10 +62,10 @@
 	       :after (progn
 			(if window-system
 			    (progn
-			      (color-theme-solarized-dark)
+			      (color-theme-solarized-light)
 			      ;; Re-initialize colors when creating a new frame, to fix color-palette incompats between terminal and X
 			      (defun setup-window-system-frame-colours (&rest frame)
-				(color-theme-solarized-dark))
+				(color-theme-solarized-light))
 			      (defadvice server-create-window-system-frame
 				  (after set-window-system-frame-colours ())
 				"Set custom frame colours when creating the first frame on a display"
@@ -115,29 +73,6 @@
 				(setup-window-system-frame-colours))
 			      (ad-activate 'server-create-window-system-frame)
 			      (add-hook 'after-make-frame-functions 'setup-window-system-frame-colours t)))))
-
-	;; (:name color-theme-solarized
-	;;        :after (progn
-	;; 		;; Color theme
-	;; 		(color-theme-solarized-light)))
-
-	;; (:name color-theme-sanityinc-solarized
-	;;        :type github
-	;;        :pkgname "purcell/color-theme-sanityinc-solarized"
-	;;        :depends color-theme
-	;;        :after (progn
-	;; 		(require 'color-theme-sanityinc-solarized)
-	;; 		(add-hook 'after-make-frame-functions
-	;; 			  color-theme-sanityinc-solarized-light)))
-
-	;; (:name color-theme-sanityinc
-	;;        :after (progn
-	;; 		(add-hook 'after-make-frame-functions
-	;; 			  color-theme-sanityinc-light)))
-	
-	;; (:name solarized-emacs
-	;;        :after (progn
-	;; 		(load-theme 'solarized-light)))
 
 	(:name coffee-mode
 	       :after (progn (add-hook 'coffee-mode-hook
@@ -159,9 +94,6 @@
 	(:name maxframe
 	       :features maxframe
 	       :after (progn (add-hook 'window-setup-hook 'maximize-frame t)))
-
-	;; (:name rinari
-	;;       :after (lambda () (setq rinari-tags-file-name "TAGS")))
 
 	(:name ri-emacs
 	       :after (progn (setq ri-ruby-script (expand-file-name (concat el-get-dir "/ri-emacs/ri-emacs.rb")))))
@@ -224,13 +156,6 @@
 				   (yas/load-directory (expand-file-name (concat el-get-dir "/cucumber/snippets")))
 				   (add-to-list 'auto-mode-alist '("\\.feature" . feature-mode))))
 
-	(:name rsense
-	       :type git
-	       :url "git://github.com/m2ym/rsense.git"
-	       :prepare (progn (setq rsense-home (expand-file-name (concat el-get-dir "/rsense"))))
-	       :features rsense
-	       :load-path "etc")
-
 	(:name js2-mode
 	       :after (progn
 			(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
@@ -254,6 +179,8 @@
 	(:name magit
 	       :after (progn
 			(global-set-key (kbd "C-x C-z") 'magit-status)
+                        (add-hook 'magit-mode-hook 'magit-load-config-extensions)
+                        ;; (setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
 			(setq magit-auto-revert-mode nil)))
 
 	(:name project-mode
@@ -266,15 +193,6 @@
 				   (project-mode-menu)
 				   (project-load-all)
 				   (global-set-key "\C-t" 'project-fuzzy-search)))
-
-	;; (:name dictionary-el    :type apt-get)
-	;; (:name emacs-goodies-el :type apt-get)
-
-	;; (:name showoff-mode
-	;;        :type git
-	;;        :url "https://github.com/developernotes/showoff-mode.git"
-	;;        :load-path "."
-	;;        :features showoff-mode)
 
 	(:name org-mode
 	       :after (progn
@@ -309,100 +227,89 @@
 				   ;; (global-fci-mode 1)
 				   ))
 
-	;; (:name emacs-evernote-mode
-	;;        :description "Emacs Evernote Mode"
-	;;        :type git
-	;;        :url "https://github.com/awasira/emacs-evernote-mode.git"
-	;;        :load-path "."
-	;;        :features evernote-mode
-	;;        :compile "emacs-evernote-mode.el"
-	;;        :build `("ruby ruby/setup.rb")
+        (:name org-journal
+               :type github
+               :pkgname "bastibe/org-journal"
+               :before (setq org-journal-dir "~/OneDrive/Documents/journal/"))
+
+        ;; (:name auto-complete
 	;;        :after (progn
-	;; 		(setq evernote-username "timfelgentreff") ; optional: you can use this username as default.
-	;; 		(setq evernote-enml-formatter-command '("w3m" "-dump" "-I" "UTF8" "-O" "UTF8")) ; optional
-	;; 		(add-to-list 'helm-sources anything-c-source-evernote-title)
-	;; 		(defalias 'evernote-find 'anything-evernote-title)))
+        ;;                 (require 'auto-complete-config)
+        ;;                 (ac-config-default)
+        ;;                 (global-auto-complete-mode t)     ;; enable global-mode
+        ;;                 (setq ac-auto-start nil)            ;; automatically start
+        ;;                 (setq ac-dwim 3)                  ;; Do what i mean
+        ;;                 (setq ac-override-local-map nil)  ;; don't override local map
+        ;;                 (ac-flyspell-workaround)
+        ;;                 (setq ac-delay 5)
+        ;;                 (setq ac-auto-show-menu 1)
+        ;;                 (set-default 'ac-sources '(ac-source-yasnippet ac-source-semantic ac-source-abbrev ac-source-words-in-buffer))
+
+        ;;                 (setq ac-modes (append ac-modes '(eshell-mode)))
+        ;;                 (global-set-key (kbd "M-?") 'auto-complete)
+        ;;                 (add-hook 'emacs-lisp-mode-hook
+        ;;                           (lambda ()
+        ;;                             (setq ac-sources '(ac-source-yasnippet
+        ;;                                                ac-source-abbrev
+        ;;                                                ac-source-words-in-buffer
+        ;;                                                ac-source-symbols))))
+        ;;                 (add-hook 'eshell-mode-hook
+        ;;                           (lambda ()
+        ;;                             (setq ac-sources '(ac-source-yasnippet
+        ;;                                                ac-source-abbrev
+        ;;                                                ac-source-files-in-current-dir
+        ;;                                                ac-source-words-in-buffer))))))
+
+        (:name company-mode
+               :after (progn
+                        (global-company-mode t)
+                        (global-set-key (kbd "M-?") 'company-complete)))
+
+        (:name meghanada
+               :type github
+               :pkgname "mopemope/meghanada-emacs"
+               :description "A Better Java Development Environment for Emacs"
+               :minimum-emacs-version "24"
+               :depends (yasnippet company-mode flycheck cl-lib)
+               :compile "."
+               :after (progn
+                        (meghanada-full-text-search-enable t)
+                        (setq c-basic-offset 4)
+                        (add-hook 'java-mode-hook
+                                  (lambda ()
+                                    ;; meghanada-mode on
+                                    (meghanada-mode t)
+                                    (flycheck-mode +1)
+                                    (setq c-basic-offset 4)
+                                    ;; use code format
+                                    ;; (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)
+                                    ))))
+
+        ;; (:name emacs-eclim
+        ;;        :features company-emacs-eclim
+        ;;        :depends company-mode
+        ;;        :after (progn
+        ;;                 (global-eclim-mode)
+        ;;                 (setq eclim-eclipse-dirs '("/opt/eclipse-ide-java/"))
+        ;;                 (setq eclim-executable "/home/tim/.eclipse/org.eclipse.platform_4.7.2_479262390_linux_gtk_x86_64/plugins/org.eclim_2.7.2/bin/eclim")
+        ;;                 (setq eclimd-autostart t)
+
+        ;;                 ;; Displaying compilation error messages in the echo area
+        ;;                 (setq help-at-pt-display-when-idle t)
+        ;;                 (setq help-at-pt-timer-delay 0.1)
+        ;;                 (help-at-pt-set-timer)
+
+        ;;                 ;; Configuring company-mode
+        ;;                 (company-emacs-eclim-setup)
+        ;;                 (setq company-emacs-eclim-ignore-case t)
+
+        ;;                 (defun my-java-mode-hook ()
+        ;;                   (eclim-mode t))
+        ;;                 (add-hook 'java-mode-hook 'my-java-mode-hook)))
 
 	(:name emacsmirror-rcp
 	       :type git
-	       :url "https://github.com/edenc/emacsmirror-rcp")
-
-	;; (:name ajc-java-complete
-	;;        :depends (emacsmirror-rcp)
-	;;        :after (lambda () (progn
-	;; 			   (require 'ajc-java-complete)
-	;; 			   (require 'ajc-java-complete-config)
-	;; 			   (add-hook 'java-mode-hook
-	;; 				     (lambda () (progn
-	;; 						  (ajc-java-complete-mode t)
-	;; 						  (setq ac-omni-completion-sources
-	;; 							'((cons "\\.[A-Za-z0-9_]*" '(ac-source-ajc-method))
-	;; 							  (cons "\s[A-Z][A-Za-z]+" '(ac-source-ajc-class))
-	;; 							  (cons "new [A-Za-z]+(" '(ac-source-ajc-constructor)) )) ))) )))
-
-	;; (:name jdee
-	;;        :type git
-	;;        :url "https://github.com/timfel/jdee.git"
-	;;        :build ("ant configure" "ant")
-	;;        :load-path ("lisp")
-	;;        :depends (ecb)
-	;;        :after (lambda () (progn
-	;; 			   			   (setq jde-auto-parse-enable nil)
-	;; 			   			   (setq jde-enable-senator nil)
-	;; 			   			   (setq defer-loading-jde t)
-	;; 			   			   (if defer-loading-jde
-	;; 			   			       (progn
-	;; 			   			   	 (autoload 'jde-mode "jde" "JDE mode." t)
-	;; 			   			   	 (setq auto-mode-alist
-	;; 			   			   	       (append
-	;; 			   			   		'(("\\.java\\'" . jde-mode))
-	;; 			   			   		auto-mode-alist)))
-	;; 			   			     (require 'jde))
-	;; 			   			   (let ((java-dir
-	;; 			   				  (substring
-	;; 			   				   (shell-command-to-string "dirname $(dirname $(readlink -f $(which java)))")
-	;; 			   				   0 -1)))
-	;; 			   			     (setq
-	;; 			   			      jde-web-browser "xdg-open"
-	;; 			   			      jde-doc-dir (concat java-dir "/doc")
-	;; 			   			      jde-sourcepath '( (expand-file-name "~/Devel/" ) )
-	;; 			   			      jde-db-option-connect-socket '(nil "28380")
-	;; 			   			      jde-jdk-registry (quote (("1.7" . java-dir)))
-	;; 			   			      jde-jdk `("1.7")
-	;; 			   			      )
-	;; 			   			     )
-	;; 			   			   ;; (require 'jdibug)
-	;; 			   			   ;; (define-key jde-mode-map [f8]   'jdibug-step-over)
-	;; 			   			   ;; (define-key jde-mode-map [M-f8] 'jdibug-step-into)
-	;; 			   			   ;; (define-key jde-mode-map [f7]   'jdibug-step-out)
-	;; 			   			   ;; (define-key jde-mode-map [M-f7] 'jdibug-resume)
-	;; 			   			   (defun flymake-java-ecj-init ()
-	;; 			   			     (let* ((temp-file   (flymake-init-create-temp-buffer-copy
-	;; 			   			   			  'jde-ecj-create-temp-file))
-	;; 			   			   	    (local-file  (file-relative-name
-	;; 			   			   			  temp-file
-	;; 			   			   			  (file-name-directory buffer-file-name))))
-	;; 			   			       ;; Change your ecj.jar location here
-	;; 			   			       (list "java" (list "-jar" "/usr/share/java/ecj.jar" "-Xemacs" "-d" "/dev/null"
-	;; 			   			   			  "-source" "1.6" "-target" "1.6" "-proceedOnError"
-	;; 			   			   			  "-classpath"
-	;; 			   			   			  (jde-build-classpath jde-global-classpath) local-file))))
-	;; 			   			   (defun flymake-java-ecj-cleanup ()
-	;; 			   			     "Cleanup after `flymake-java-ecj-init' -- delete temp file and dirs."
-	;; 			   			     (flymake-safe-delete-file flymake-temp-source-file-name)
-	;; 			   			     (when flymake-temp-source-file-name
-	;; 			   			       (flymake-safe-delete-directory (file-name-directory flymake-temp-source-file-name))))
-
-	;; 			   			   (defun jde-ecj-create-temp-file (file-name prefix)
-	;; 			   			     "Create the file FILE-NAME in a unique directory in the temp directory."
-	;; 			   			     (file-truename (expand-file-name (file-name-nondirectory file-name)
-	;; 			   			   				      (expand-file-name  (int-to-string (random)) (flymake-get-temp-dir)))))
-	;; 			   			   (push '("\\(.*?\\):\\([0-9]+\\): error: \\(.*?\\)\n" 1 2 nil 2 3 (6 compilation-error-face))
-	;; 			   			   	 compilation-error-regexp-alist)
-	;; 			   			   (push '("\\(.*?\\):\\([0-9]+\\): warning: \\(.*?\\)\n" 1 2 nil 1 3 (6 compilation-warning-face))
-	;; 			   			   	 compilation-error-regexp-alist)
-	;; 			   )))
-	))
+	       :url "https://github.com/edenc/emacsmirror-rcp")))
 
 ;; Auctex depends on pdflatex being available, only install if desired on this system
 (if (executable-find "pdflatex")
@@ -414,16 +321,67 @@
 				    (advice-add 'TeX-evince-dbus-p :override #'nodbus-TeX-evince-dbus-p)
 				    (defun dbus-register-signal (&rest args)
 				      nil)
-				    (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
-				    (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
-				    (add-hook 'LaTeX-mode-hook 'reftex-mode)
+                                    (setq-default TeX-master nil)
+                                    (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
+                                    (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+                                    (add-hook 'LaTeX-mode-hook 'reftex-mode)
+                                    ;; (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
+                                    (add-hook 'LaTeX-mode-hook (lambda () (auto-fill-mode -1)))
+                                    (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+                                    (add-hook 'LaTeX-mode-hook (lambda () (setq longlines-wrap-follows-window-size t)))
+                                    ;; (add-hook 'LaTeX-mode-hook 'longlines-mode)
+                                    (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+                                    (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-t" 'thesaurus-choose-synonym-and-replace)))
 				    ;; (add-hook 'LaTeX-mode-hook 'auto-fill-mode)
 				    (add-hook 'LaTeX-mode-hook 'flyspell-mode)
 				    (add-hook 'LaTeX-mode-hook (lambda () (local-set-key "\M-i" 'ispell-word)))
+                                    (setq reftex-plug-into-AUCTeX t)
+                                    (condition-case nil
+                                        (when
+                                            (add-to-list 'reftex-bibliography-commands "addbibresource"))
+                                      (error nil))
 				    (setq reftex-plug-into-AUCTeX t)
 				    (setq TeX-auto-save t)
 				    (setq TeX-save-query nil)
-				    (setq TeX-parse-self t)))
+				    (setq TeX-parse-self t)
+
+                                    ;; Latex
+                                    ;; (require 'dbus)
+                                    ;; (defun un-urlify (fname-or-url)
+                                    ;;   "A trivial function that replaces a prefix of file:/// with just /."
+                                    ;;   (if (string= (substring fname-or-url 0 8) "file:///")
+                                    ;;       (substring fname-or-url 7)
+                                    ;;     fname-or-url))
+                                    ;; (defun th-evince-sync (file linecol &rest ignored)
+                                    ;;   (let* ((fname (url-unhex-string (un-urlify file)))
+                                    ;;          (buf (find-buffer-visiting fname))
+                                    ;;          (line (car linecol))
+                                    ;;          (col (cadr linecol)))
+                                    ;;     (if (null buf)
+                                    ;;         (message "[Synctex]: %s is not opened..." fname)
+                                    ;;       (switch-to-buffer buf)
+                                    ;;       (goto-line (car linecol))
+                                    ;;       (unless (= col -1)
+                                    ;;         (move-to-column col)))))
+                                    ;; (defvar *dbus-evince-signal* nil)
+                                    ;; (defun enable-evince-sync ()
+                                    ;;   (require 'dbus)  
+                                    ;;   (when (and
+                                    ;;          (eq window-system 'x)
+                                    ;;          (fboundp 'dbus-register-signal))
+                                    ;;     (if (not (getenv "DBUS_SESSION_BUS_ADDRESS"))
+                                    ;; 	(let* ((output (shell-command-to-string "dbus-launch")))
+                                    ;; 	  (string-match "DBUS_SESSION_BUS_ADDRESS=\\(.*\\)" output)
+                                    ;; 	  (setenv "DBUS_SESSION_BUS_ADDRESS" (match-string 1 output))))))
+                                    ;; (enable-evince-sync)
+                                    ;; (unless *dbus-evince-signal*
+                                    ;;   (setf *dbus-evince-signal*
+                                    ;; 	(dbus-register-signal
+                                    ;; 	 :session nil "/org/gnome/evince/Window/0"
+                                    ;; 	 "org.gnome.evince.Window" "SyncSource"
+                                    ;; 	 'th-evince-sync)))
+                                    ;; (add-hook 'LaTeX-mode-hook 'enable-evince-sync)
+                                    ))
 		    reftex)
 		  el-get-sources)))
 
@@ -434,16 +392,19 @@
 
 (setq my-packages
       (mapcar 'el-get-as-symbol
-	      (append '(auto-complete-clang auto-complete-etags auto-complete-extension
+	      (append '(;; auto-complete-clang auto-complete-etags auto-complete-extension
 					    ;; mo-git-blame ;; magithub 
 					    gist ruby-electric autopair haml-mode
 					    rspec-mode sass-mode cssh switch-window vkill
                                             frame-fns frame-cmds
 					    ;; tabulated-list
 					    magit-svn
-					    popup fuzzy pcache gh
+					    popup
+                                            fuzzy pcache gh
 					    logito
-					    markdown-mode ac-python
+					    markdown-mode
+                                            ;; ac-python
+                                            ggtags
 					    thesaurus lua-mode
 					    xcscope sudo-save
 					    vlfi)
