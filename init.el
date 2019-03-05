@@ -85,7 +85,9 @@
      ("\\.mm\\'" . default)
      ("\\.x?html?\\'" . default)
      ("\\.pdf\\'" . "evince %s"))))
- '(package-selected-packages (quote (oauth2)))
+ '(package-selected-packages
+   (quote
+    (lsp-java dap-mode lsp-ui lsp-mode tree-mode oauth2)))
  '(safe-local-variable-values
    (quote
     ((reftex-default-bibliography "fallback.bib")
