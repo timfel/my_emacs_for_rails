@@ -265,25 +265,26 @@
                         (global-company-mode t)
                         (global-set-key (kbd "M-?") 'company-complete)))
 
-        (:name meghanada
-               :type github
-               :pkgname "mopemope/meghanada-emacs"
-               :description "A Better Java Development Environment for Emacs"
-               :minimum-emacs-version "24"
-               :depends (yasnippet company-mode flycheck cl-lib)
-               :compile "."
-               :after (progn
-                        (meghanada-full-text-search-enable t)
-                        (setq c-basic-offset 4)
-                        (add-hook 'java-mode-hook
-                                  (lambda ()
-                                    ;; meghanada-mode on
-                                    (meghanada-mode t)
-                                    (flycheck-mode +1)
-                                    (setq c-basic-offset 4)
-                                    ;; use code format
-                                    ;; (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)
-                                    ))))
+        ;; (:name meghanada
+        ;;        :type github
+        ;;        :pkgname "mopemope/meghanada-emacs"
+        ;;        :description "A Better Java Development Environment for Emacs"
+        ;;        :minimum-emacs-version "24"
+        ;;        :depends (yasnippet company-mode flycheck cl-lib)
+        ;;        :compile "."
+        ;;        :after (progn
+        ;;                 (setq c-basic-offset 4)
+        ;;                 ;; (add-hook 'java-mode-hook
+        ;;                 ;;           (lambda ()
+        ;;                 ;;             ;; meghanada-mode on
+        ;;                 ;;             (meghanada-mode t)
+        ;;                 ;;             (flycheck-mode +1)
+        ;;                 ;;             (setq c-basic-offset 4)
+        ;;                 ;;             ;; use code format
+        ;;                 ;;             ;; (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)
+        ;;                 ;; ))
+        ;;                 )
+        ;;        )
 
         ;; (:name emacs-eclim
         ;;        :features company-emacs-eclim
@@ -407,7 +408,62 @@
                                             ggtags
 					    thesaurus lua-mode
 					    xcscope sudo-save
-					    vlfi)
+
+                                            vlfi)
 		      (mapcar 'el-get-source-name el-get-sources))))
 (el-get 'sync my-packages)
 (el-get 'wait)
+
+
+(require 'cc-mode)
+
+(condition-case nil
+    (require 'use-package)
+  (file-error
+   (require 'package)
+   (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+   (package-initialize)
+   (package-refresh-contents)
+   (package-install 'use-package)
+   (require 'use-package)))
+
+(use-package projectile :ensure t)
+(use-package treemacs :ensure t)
+(use-package yasnippet :ensure t)
+(use-package lsp-mode :ensure t)
+(use-package hydra :ensure t)
+(use-package company-lsp :ensure t)
+(use-package lsp-ui :ensure t)
+(use-package lsp-java :ensure t :after lsp
+  :config (add-hook 'java-mode-hook 'lsp))
+
+(use-package dap-mode
+  :ensure t :after lsp-mode
+  :config
+  (dap-mode t)
+  (dap-ui-mode t))
+
+(use-package dap-java :after (lsp-java))
+(use-package lsp-java-treemacs :after (treemacs))
+
+(defun lsp-goto-type-definition-interactive (name)
+  (interactive "MGoto definition: ")
+  (lsp-find-locations "textDocument/typeDefinition" name))
+
+(define-key lsp-mode-map (kbd "C-i") 'lsp-ui-imenu)
+(define-key lsp-mode-map (kbd "C-t") 'lsp-ui-find-workspace-symbol)
+
+
+(defun project-fuzzy-search (name)
+  (interactive "MFind file FUZZY: ")
+  (project-ensure-current)
+  (let ((matches (project-search-fuzzy (project-current) name)))
+    (if matches
+        (if (= 1 (length matches))
+            (find-file (car matches))
+          (progn
+            (setq matches (mapcar (lambda (x) (list x)) matches))
+            (let ((choice (completing-read "Choose: " matches nil nil nil)))
+              (when choice
+                (find-file choice)))))
+      (message "No reasonable matches found."))))
