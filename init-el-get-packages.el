@@ -62,10 +62,10 @@
 	       :after (progn
 			(if window-system
 			    (progn
-			      (color-theme-solarized-light)
+			      (color-theme-emacs-21)
 			      ;; Re-initialize colors when creating a new frame, to fix color-palette incompats between terminal and X
 			      (defun setup-window-system-frame-colours (&rest frame)
-				(color-theme-solarized-light))
+				(color-theme-emacs-21))
 			      (defadvice server-create-window-system-frame
 				  (after set-window-system-frame-colours ())
 				"Set custom frame colours when creating the first frame on a display"
