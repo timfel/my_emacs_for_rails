@@ -93,13 +93,9 @@
 (add-hook 'css-mode-hook (lambda()
                            (local-set-key (kbd "<return>") 'newline-and-indent)))
 
-(if window-system
-    (progn
-      (global-set-key (kbd "C->") 'forward-list)
-      (global-set-key (kbd "C-<") 'backward-list))
-  (progn
-    (global-set-key (kbd "M-,") 'forward-list)
-    (global-set-key (kbd "M-.") 'backward-list)))
+(progn
+  (global-set-key (kbd "C->") 'forward-list)
+  (global-set-key (kbd "C-<") 'backward-list))
 
 ;; Use generic printer dialiog on linux
 (if (eq system-type 'gnu/linux)
