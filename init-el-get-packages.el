@@ -290,13 +290,76 @@
             (add-hook 'java-mode-hook (lambda () (company-mode t)))
             (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
             (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))))
+
+
+
+;; Custom Debug minor mode
+(define-minor-mode my/dap-mode
+  "My own minor mode when using the dap debugger."
+  ;; The initial value - Set to 1 to enable by default
+  nil
+  ;; The indicator for the mode line.
+  " My/DBG"
+  ;; The minor mode keymap
+  `(
+    (,(kbd "C-c C-s") . dap-step-in)
+    (,(kbd "C-c C-f") . dap-step-out)
+    (,(kbd "C-c C-n") . dap-next)
+    (,(kbd "C-c C-r") . dap-continue)
+    (,(kbd "C-c C-d") . dap-disconnect)
+    (,(kbd "C-c C-e") . dap-ui-repl)
+   )
+   ;; Make mode global rather than buffer local
+   :global 1
+)
+
 (use-package dap-mode
   :ensure t :after lsp-mode
   :config (progn
             (dap-mode t)
-            (dap-ui-mode t)))
+            (dap-ui-mode t)
+
+            (defun my/window-visible (b-name)
+              "Return whether B-NAME is visible."
+              (-> (-compose 'buffer-name 'window-buffer)
+                  (-map (window-list))
+                  (-contains? b-name)))
+
+            (defun my/show-debug-windows (session)
+              "Show debug windows."
+              (my/dap-mode 1)
+              (let ((lsp--cur-workspace (dap--debug-session-workspace session)))
+                (save-excursion
+                  ;; display locals
+                  (unless (my/window-visible dap-ui--locals-buffer)
+                    (dap-ui-locals))
+                  ;; display sessions
+                  (unless (my/window-visible dap-ui--sessions-buffer)
+                    (dap-ui-sessions)))))
+
+            (add-hook 'dap-stopped-hook 'my/show-debug-windows)
+
+            (defun my/hide-debug-windows (&optional session)
+              "Hide debug windows when all debug sessions are dead."
+              (my/dap-mode 0)
+              (kill-buffer dap-ui--sessions-buffer)
+              (kill-buffer dap-ui--locals-buffer))
+
+            (add-hook 'dap-terminated-hook 'my/hide-debug-windows)))
 (use-package dap-java
-  :after (dap-mode lsp-java))
+  :after (dap-mode lsp-java)
+  :config (progn
+            (setq dap-java-default-debug-port 8000)
+            (define-key java-mode-map (kbd "C-c C-d") 'dap-debug)
+            (define-key java-mode-map (kbd "C-c C-x t") 'dap-breakpoint-toggle)))
+
+
+(defun my/dap-java-debug
+  "Start debug session with DEBUG-ARGS."
+  (interactive (list (dap-java--populate-default-args nil)))
+  (dap-start-debugging debug-args))
+
+  
 (use-package lsp-java-treemacs
   :after treemacs
   :config
