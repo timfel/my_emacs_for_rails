@@ -441,3 +441,45 @@
   (error
    (package-install 'spacemacs-theme)
    (load-theme 'spacemacs-light t)))
+
+
+;; Flyspell options
+(use-package ispell :ensure t)
+(use-package flyspell :ensure t)
+(add-to-list 'ispell-dictionary-alist
+             '("de"
+               "[a-zA-Z\304\326\334\344\366\337\374]"
+               "[^a-zA-Z\304\326\334\344\366\337\374]"
+               "[']" t ("-C" "-d" "de_DE") "~latin1" iso-8859-15))
+(setq ispell-program-name "aspell")
+(setq ispell-list-command "list")
+(setq ispell-extra-args '("--sug-mode=fast"))
+(setq flyspell-issue-message-flag nil)
+(defun fd-switch-dictionary()
+  (interactive)
+  (let* ((dic ispell-current-dictionary)
+         (change (if (string= dic "de") "english" "de")))
+    (ispell-change-dictionary change)
+    (message "Dictionary switched from %s to %s" dic change)
+    ))
+(global-set-key (kbd "<f8>") 'fd-switch-dictionary)
+
+
+;; Term mode
+;; enable cua and transient mark modes in term-line-mode
+(defadvice term-line-mode (after term-line-mode-fixes ())
+  (set (make-local-variable 'truncate-lines) nil)
+  (set (make-local-variable 'cua-mode) nil)
+  (set (make-local-variable 'transient-mark-mode) t)
+  (local-set-key "\C-c\C-n" 'term-char-mode))
+(ad-activate 'term-line-mode)
+;; disable cua and transient mark modes in term-char-mode
+(defadvice term-char-mode (after term-char-mode-fixes ())
+  (set (make-local-variable 'truncate-lines) nil)
+  (set (make-local-variable 'cua-mode) nil)
+  (set (make-local-variable 'transient-mark-mode) nil))
+(ad-activate 'term-char-mode)
+
+
+;; Tramp
+(use-package tramp :ensure t)

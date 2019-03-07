@@ -39,11 +39,15 @@
 ;; Narrow (C-x n n)
 (put 'narrow-to-region 'disabled nil)
 
-;; Start server on windows, if not happened already
-(if (eq 'windows-nt system-type)
-    (progn
-      (if (not (file-exists-p "~/.emacs.d/server/server"))
-	  (server-start))))
+;; Start the emacs server
+;; (setq server-use-tcp t) ;; Use TCP mode, my socket is often unavailable
+;; (setq server-host "127.0.0.1")
+(if (functionp 'server-running-p)
+    (if (server-running-p)
+        (server-force-stop))
+    (if (file-exists-p "~/.emacs.d/server/server")
+        (delete-file "~/.emacs.d/server/server"))
+    (server-start))
 
 ;; Include Texlive path
 (if (file-exists-p "/usr/local/texlive/2014/bin/x86_64-linux/")

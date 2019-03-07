@@ -13,9 +13,9 @@
 ;; Run el-get
 (load-init-files '(el-get-packages))
 ;; Some global functions, settings and modes
-(load-init-files '(useful-functions windows global-settings))
+(load-init-files '(useful-functions global-settings))
 ;; Now setup packages that weren't loaded and/or setup through el-get
-(load-init-files '(irc flyspell term-mode ido server tramp skeletons darkroom-mode))
+(load-init-files '(ido skeletons darkroom-mode))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
