@@ -1,10 +1,18 @@
 (require 'compile)
 (require 'cc-mode)
+(require 'cl)
+
+
+(add-to-list 'load-path (locate-user-emacs-file "lisp"))
+(autoload  'darkroom-mode "darkroom-mode" "Darkroom Mode" t)
+(require 'redo+)
+(progn (global-set-key [(control -)] 'redo))
+(require 'sudo-save)
+
 
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-(add-to-list 'package-archives
-             '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
+(add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
 (package-initialize)
 
 (condition-case nil
@@ -14,35 +22,6 @@
    (package-install 'use-package)
    (require 'use-package)))
 
-;; el-get
-(add-to-list 'load-path "~/.emacs.d/el-get/el-get")
-
-(unless (require 'el-get nil t)
-  (url-retrieve
-   "https://github.com/dimitri/el-get/raw/master/el-get-install.el"
-   (lambda (s)
-     (let (el-get-master-branch)
-       (end-of-buffer)
-       (eval-print-last-sexp)))))
-
-(setq el-get-sources
-      '((:name redo+
-               :type http
-               :url "http://www.emacswiki.org/emacs/download/redo%2b.el"
-               :load "redo_2b.el"
-               :after (progn (global-set-key [(control -)] 'redo)))))
-
-(el-get 'sync '(frame-fns
-                frame-cmds
-                sudo-save
-                vlfi
-                redo+))
-(el-get 'wait)
-
-;; packages
-(use-package yasnippet
-  :ensure t
-  :config (yas-global-mode t))
 
 ;; additional modes I like
 (use-package yaml-mode :ensure t
@@ -69,6 +48,14 @@
 (use-package ruby-electric :ensure t)
 (use-package ruby-mode :ensure t
   :config (progn
+            ;; Patch ruby-mode
+            (defun ruby-accurate-end-of-block (&optional end)
+              "(tfel): Fixes an issue I had with ruby-mode."
+              (let (state
+                    (end (or end (point-max))))
+                (while (and (setq state (apply 'ruby-parse-partial end state))
+                            (nth 2 state) (>= (nth 2 state) 0) (< (point) end)))))
+            
             (add-hook 'ruby-mode-hook 'turn-on-font-lock)
             (add-hook 'ruby-mode-hook 'friendly-whitespace)
             (add-hook 'ruby-mode-hook '(lambda() (progn
@@ -137,6 +124,9 @@
 
 
 ;; Auto completion
+(use-package yasnippet
+  :ensure t
+  :config (yas-global-mode t))
 (use-package company
   :ensure t
   :config (progn
@@ -483,3 +473,42 @@
 
 ;; Tramp
 (use-package tramp :ensure t)
+
+
+;; Interactively Do Things (highly recommended, but not strictly required)
+(use-package ido
+  :ensure t
+  :config (progn
+            (ido-mode t)
+            (defun ido-goto-symbol ()
+              "Will update the imenu index and then use ido to select a symbol to navigate to."
+              (interactive)
+              (imenu--make-index-alist)
+              (let ((name-and-pos '())
+                    (symbol-names '()))
+                (flet ((addsymbols (symbol-list)
+                                   (when (listp symbol-list)
+                                     (dolist (symbol symbol-list)
+                                       (let ((name nil) (position nil))
+                                         (cond
+                                          ((and (listp symbol) (imenu--subalist-p symbol))
+                                           (addsymbols symbol))
+
+                                          ((listp symbol)
+                                           (setq name (car symbol))
+                                           (setq position (if (overlayp (cdr symbol))
+                                                              (overlay-start (cdr symbol))
+                                                            (cdr symbol))))
+
+                                          ((stringp symbol)
+                                           (setq name symbol)
+                                           (setq position (get-text-property 1 'org-imenu-marker symbol))))
+
+                                         (unless (or (null position) (null name))
+                                           (add-to-list 'symbol-names name)
+                                           (add-to-list 'name-and-pos (cons name position))))))))
+                  (addsymbols imenu--index-alist))
+                (let* ((selected-symbol (ido-completing-read "Symbol? " symbol-names))
+                       (position (cdr (assoc selected-symbol name-and-pos))))
+                  (goto-char position))))
+            (global-set-key [(control .)] 'ido-goto-symbol)))
