@@ -8,63 +8,14 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(TeX-source-correlate-method (quote synctex))
- '(TeX-source-correlate-mode t)
- '(TeX-source-correlate-start-server t)
- '(TeX-view-program-list (quote (("Okular" "okular --unique %o#src:%n%b"))))
- '(TeX-view-program-selection
-   (quote
-    (((output-dvi style-pstricks)
-      "xdg-open")
-     (output-dvi "xdg-open")
-     (output-pdf "Okular")
-     (output-html "xdg-open"))))
  '(ansi-color-names-vector
    ["#d2ceda" "#f2241f" "#67b11d" "#b1951d" "#3a81c3" "#a31db1" "#21b8c7" "#655370"])
  '(column-number-mode t)
- '(custom-enabled-themes (quote (sanityinc-solarized-light)))
  '(custom-safe-themes
    (quote
     ("274fa62b00d732d093fc3f120aca1b31a6bb484492f31081c1814a858e25c72e" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" default)))
  '(darkroom-mode-enable-fullscreen nil)
  '(doc-view-continuous t)
- '(ecb-compilation-buffer-names
-   (quote
-    (("*Calculator*")
-     ("*vc*")
-     ("*vc-diff*")
-     ("*Apropos*")
-     ("*Occur*")
-     ("*shell*")
-     ("\\*[cC]ompilation.*\\*" . t)
-     ("\\*i?grep.*\\*" . t)
-     ("*JDEE Compile Server*")
-     ("*Help*")
-     ("*Completions*")
-     ("*Backtrace*")
-     ("*Compile-log*")
-     ("*bsh*")
-     ("*Messages*")
-     ("*Buffer List*"))))
- '(ecb-compile-window-height 8)
- '(ecb-compile-window-temporally-enlarge (quote both))
- '(ecb-compile-window-width (quote edit-window))
- '(ecb-layout-name "left8")
- '(ecb-layout-window-sizes
-   (quote
-    (("left8"
-      (ecb-directories-buffer-name 0.23671497584541062 . 0.29310344827586204)
-      (ecb-sources-buffer-name 0.23671497584541062 . 0.22413793103448276)
-      (ecb-methods-buffer-name 0.23671497584541062 . 0.25862068965517243)
-      (ecb-history-buffer-name 0.23671497584541062 . 0.20689655172413793)))))
- '(ecb-options-version "2.40")
- '(ecb-source-path
-   (quote
-    (("~/Devel/projects" "Dev")
-     ("~/Documents/HPI/11SS/" "Uni")
-     ("~/Finnlabs/Finnlabs/" "Finn"))))
- '(ecb-tree-indent 2)
- '(ecb-windows-width 0.2)
  '(frame-background-mode (quote light))
  '(hl-todo-keyword-faces
    (quote
@@ -84,7 +35,6 @@
      ("XXX" . "#dc752f")
      ("XXXX" . "#dc752f")
      ("???" . "#dc752f"))))
- '(meghanada-full-text-search-enable t)
  '(org-file-apps
    (quote
     ((auto-mode . emacs)
