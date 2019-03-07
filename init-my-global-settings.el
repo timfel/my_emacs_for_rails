@@ -73,9 +73,6 @@
       (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)))
 (column-number-mode t)
 
-;; Enable fullscreen on first load
-;; (condition-case nil (toggle-fullscreen) (error nil))
-
 ;; Use the default browser on linux
 (if (eq system-type 'gnu/linux)
     (setq browse-url-generic-program
@@ -210,9 +207,6 @@
 (defadvice find-tag (before c-tag-file activate)
   (ensure-tags-file))
 
-;; PyPyTrace Mode
-(load (expand-file-name "~/.emacs.d/pypytrace-mode.el"))
-
 ;; Python hooks
 (add-hook 'python-mode-hook 'turn-on-font-lock)
 (add-hook 'python-mode-hook 'friendly-whitespace)
@@ -231,12 +225,6 @@
 (add-hook 'javascript-mode-hook 'friendly-whitespace)
 (add-hook 'js-mode-hook 'friendly-whitespace)
 
-
-;; RML mode
-(load (expand-file-name "~/.emacs.d/rml/rml-mode.el"))
-
-;; Thesaurus
-(setq thesaurus-bhl-api-key "b3d571e9e275682cf7830b0f9c241199")
 
 ;; (defun fresh-frame()
 ;;   (interactive)
@@ -260,15 +248,6 @@
     '(setq mumamo-per-buffer-local-vars
            (delq 'buffer-file-name mumamo-per-buffer-local-vars))))
 
-(require 'vlf-setup)
-(defun my-vlf-setup-hook ()
-  "If a file is over a given size, make the buffer read only."
-  (setq buffer-read-only t)
-  (buffer-disable-undo)
-  (vlf-stop-follow)
-  (vlf-toggle-follow)
-  (fci-mode 0))
-(add-hook 'vlf-mode-hook 'my-vlf-setup-hook)
 
 (defun my-find-file-check-make-small-files-fci ()
   "If a file is under a given size draw a nice fci indicator."

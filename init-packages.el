@@ -11,6 +11,7 @@
 (require 'redo+)
 (progn (global-set-key [(control -)] 'redo))
 (require 'sudo-save)
+(autoload 'pypytrace-mode "pypytrace-mode" "PyPy JIT Trace mode" t)
 
 
 (require 'package)
@@ -135,6 +136,46 @@
   :config (progn
             (global-company-mode t)
             (global-set-key (kbd "M-?") 'company-complete)))
+(use-package flycheck
+  :ensure t
+  :init
+  (progn
+    (define-fringe-bitmap 'my-flycheck-fringe-indicator
+      (vector #b00000000
+              #b00000000
+              #b00000000
+              #b00000000
+              #b00000000
+              #b00000000
+              #b00000000
+              #b00011100
+              #b00111110
+              #b00111110
+              #b00111110
+              #b00011100
+              #b00000000
+              #b00000000
+              #b00000000
+              #b00000000
+              #b00000000))
+
+    (flycheck-define-error-level 'error
+      :severity 2
+      :overlay-category 'flycheck-error-overlay
+      :fringe-bitmap 'my-flycheck-fringe-indicator
+      :fringe-face 'flycheck-fringe-error)
+
+    (flycheck-define-error-level 'warning
+      :severity 1
+      :overlay-category 'flycheck-warning-overlay
+      :fringe-bitmap 'my-flycheck-fringe-indicator
+      :fringe-face 'flycheck-fringe-warning)
+
+    (flycheck-define-error-level 'info
+      :severity 0
+      :overlay-category 'flycheck-info-overlay
+      :fringe-bitmap 'my-flycheck-fringe-indicator
+      :fringe-face 'flycheck-fringe-info)))
 
 
 ;; Git(hub)
@@ -153,7 +194,10 @@
 
 ;; Tools
 (use-package fic-mode :ensure t)
-(use-package mw-thesaurus :ensure t)
+(use-package request :ensure t)
+(use-package mw-thesaurus
+  :ensure t
+  :after request)
 (use-package cssh :ensure t)
 (use-package switch-window :ensure t)
 (use-package autopair :ensure t)
@@ -256,7 +300,7 @@
 
 
 ;; LSP and especially Java
-(use-package treemacs :ensure t)
+;; (use-package treemacs :ensure t)
 (use-package lsp-mode
   :ensure t)
   ;; :config (progn
@@ -300,7 +344,7 @@
                   lsp-ui-sideline-update-mode 'point)))
 (use-package lsp-java
   :ensure t
-  :after lsp
+  :after (lsp flycheck company)
   :defer 3
   :config (progn
             (require 'lsp-ui-flycheck)
@@ -381,52 +425,12 @@
   (dap-start-debugging debug-args))
 
   
-(use-package lsp-java-treemacs
-  :after treemacs
-  :config
-  (define-key lsp-mode-map (kbd "C-x t t") (lambda () (unless (eq 'visible (treemacs-current-visibility))
-                                                        (lsp-java-treemacs-register)
-                                                        (treemacs-select-window)))))
-(use-package flycheck
-  :ensure t
-  :init
-  (progn
-    (define-fringe-bitmap 'my-flycheck-fringe-indicator
-      (vector #b00000000
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00011100
-              #b00111110
-              #b00111110
-              #b00111110
-              #b00011100
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00000000))
-
-    (flycheck-define-error-level 'error
-      :severity 2
-      :overlay-category 'flycheck-error-overlay
-      :fringe-bitmap 'my-flycheck-fringe-indicator
-      :fringe-face 'flycheck-fringe-error)
-
-    (flycheck-define-error-level 'warning
-      :severity 1
-      :overlay-category 'flycheck-warning-overlay
-      :fringe-bitmap 'my-flycheck-fringe-indicator
-      :fringe-face 'flycheck-fringe-warning)
-
-    (flycheck-define-error-level 'info
-      :severity 0
-      :overlay-category 'flycheck-info-overlay
-      :fringe-bitmap 'my-flycheck-fringe-indicator
-      :fringe-face 'flycheck-fringe-info)))
+;; (use-package lsp-java-treemacs
+;;   :after (treemacs lsp-java)
+;;   :config
+;;   (define-key lsp-mode-map (kbd "C-x t t") (lambda () (unless (eq 'visible (treemacs-current-visibility))
+;;                                                         (lsp-java-treemacs-register)
+;;                                                         (treemacs-select-window)))))
 
 
 ;; The spacemacs default colors
