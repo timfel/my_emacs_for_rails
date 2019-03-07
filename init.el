@@ -1,21 +1,7 @@
-
-
-;; Added by Package.el.  This must come before configurations of
-;; installed packages.  Don't delete this line.  If you don't want it,
-;; just comment it out by adding a semicolon to the start of the line.
-;; You may delete these explanatory comments.
 (package-initialize)
-
-(defun load-init-files (list)
-  (mapcar (lambda (e) (load (expand-file-name (format "~/.emacs.d/init-%s.el" e))))
-          list))
-
-;; Run el-get
-(load-init-files '(el-get-packages))
-;; Some global functions, settings and modes
-(load-init-files '(useful-functions global-settings))
-;; Now setup packages that weren't loaded and/or setup through el-get
-(load-init-files '(ido skeletons darkroom-mode))
+(load (expand-file-name (locate-user-emacs-file "init-packages.el")))
+(load (expand-file-name (locate-user-emacs-file "init-my-functions.el")))
+(load (expand-file-name (locate-user-emacs-file "init-my-global-settings.el")))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -138,8 +124,3 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
-(put 'dired-find-alternate-file 'disabled nil)
-
-(add-to-list 'term-file-aliases
-             '("st-256color" . "xterm-256color")
-             '("screen-256color" . "xterm-256color"))

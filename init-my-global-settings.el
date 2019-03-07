@@ -215,9 +215,6 @@
 ;; PyPyTrace Mode
 (load (expand-file-name "~/.emacs.d/pypytrace-mode.el"))
 
-;; Yacc Mode
-(load (expand-file-name "~/.emacs.d/yacc.el"))
-
 ;; Python hooks
 (add-hook 'python-mode-hook 'turn-on-font-lock)
 (add-hook 'python-mode-hook 'friendly-whitespace)
@@ -362,3 +359,9 @@
     (display-buffer buf not-this-window)))
 
 (setq display-buffer-function 'my-display-buffer-function)
+
+(put 'dired-find-alternate-file 'disabled nil)
+
+(add-to-list 'term-file-aliases
+             '("st-256color" . "xterm-256color")
+             '("screen-256color" . "xterm-256color"))
