@@ -25,7 +25,6 @@
     (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
 
 (setq-default fill-column 80)
-(global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph 1)))
 (global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph)))
 
 (global-set-key [f11] 'toggle-fullscreen)
@@ -90,10 +89,6 @@
 ;; C/C++/Java Options
 (setq-default c-basic-offset 4)
 
-;; CSS mode tweak
-(add-hook 'css-mode-hook (lambda()
-                           (local-set-key (kbd "<return>") 'newline-and-indent)))
-
 (progn
   (global-set-key (kbd "C->") 'forward-list)
   (global-set-key (kbd "C-<") 'backward-list))
@@ -103,8 +98,6 @@
     (progn 
       (setq lpr-command "xpp")
       (setq ps-lpr-command "xpp")))
-
-(global-set-key (kbd "s-c") 'capitalize-word)
 
 (defun scroll-down-in-place (n)
   (interactive "p")
@@ -238,15 +231,15 @@
 ;;     (delete-frame old-frame)))
 ;; (fresh-frame)
 
-;; Workaround the annoying warnings:
-;;    Warning (mumamo-per-buffer-local-vars):
-;;    Already 'permanent-local t: buffer-file-name
-(when (or (> emacs-major-version 24)
-      	  (and (= emacs-major-version 24)
-                (= emacs-minor-version 2)))
-  (eval-after-load "mumamo"
-    '(setq mumamo-per-buffer-local-vars
-           (delq 'buffer-file-name mumamo-per-buffer-local-vars))))
+;; ;; Workaround the annoying warnings:
+;; ;;    Warning (mumamo-per-buffer-local-vars):
+;; ;;    Already 'permanent-local t: buffer-file-name
+;; (when (or (> emacs-major-version 24)
+;;       	  (and (= emacs-major-version 24)
+;;                 (= emacs-minor-version 2)))
+;;   (eval-after-load "mumamo"
+;;     '(setq mumamo-per-buffer-local-vars
+;;            (delq 'buffer-file-name mumamo-per-buffer-local-vars))))
 
 
 (defun my-find-file-check-make-small-files-fci ()
@@ -267,25 +260,25 @@
 (setq-default indent-tabs-mode nil)
 
 ;; mail
-(load-library "smtpmail")
-(setq send-mail-function 'smtpmail-send-it
-      send-mail-function 'smtpmail-send-it
-      gnutls-algorithm-priority "NORMAL:%COMPAT"
-      mail-setup_with_from nil
-      user-full-name "Tim Felgentreff"
-      ;; user-mail-address "tim.felgentreff@hpi.de"
-      ;; smtpmail-smtp-server "owa.hpi.de"
-      ;; smtpmail-default-smtp-server "owa.hpi.de"
-      ;; smtpmail-stream-type  'starttls
-      ;; smtpmail-smtp-service 587
-      ;; mail-host-address "hpi.de")
-      user-mail-address "timfelgentreff@gmail.com"
-      smtpmail-smtp-server "smtp.gmail.com"
-      smtpmail-default-smtp-server "smtp.gmail.com"
-      smtpmail-stream-type  'ssl
-      smtpmail-smtp-service 465
-      mail-host-address "timfelgentreff.gmail.com")
-(add-hook 'mail-mode-hook 'mail-abbrevs-setup)
+;; (load-library "smtpmail")
+;; (setq send-mail-function 'smtpmail-send-it
+;;       send-mail-function 'smtpmail-send-it
+;;       gnutls-algorithm-priority "NORMAL:%COMPAT"
+;;       mail-setup_with_from nil
+;;       user-full-name "Tim Felgentreff"
+;;       ;; user-mail-address "tim.felgentreff@hpi.de"
+;;       ;; smtpmail-smtp-server "owa.hpi.de"
+;;       ;; smtpmail-default-smtp-server "owa.hpi.de"
+;;       ;; smtpmail-stream-type  'starttls
+;;       ;; smtpmail-smtp-service 587
+;;       ;; mail-host-address "hpi.de")
+;;       user-mail-address "timfelgentreff@gmail.com"
+;;       smtpmail-smtp-server "smtp.gmail.com"
+;;       smtpmail-default-smtp-server "smtp.gmail.com"
+;;       smtpmail-stream-type  'ssl
+;;       smtpmail-smtp-service 465
+;;       mail-host-address "timfelgentreff.gmail.com")
+;; (add-hook 'mail-mode-hook 'mail-abbrevs-setup)
 ;; (setq mail-yank-prefix "> "
 ;;       mail-signature ""
 ;;       mail-default-headers "")
@@ -320,22 +313,22 @@
 ;; The code below will make Emacs reuse existing windows, with the
 ;; exception that if have a single window open in a large display, it
 ;; will be split horisontally.
-(setq pop-up-windows nil)
+;; (setq pop-up-windows nil)
 
-(defun my-display-buffer-function (buf not-this-window)
-  (if (and (not pop-up-frames)
-           (one-window-p)
-           (or not-this-window
-               (not (eq (window-buffer (selected-window)) buf)))
-           (> (frame-width) 162))
-      (split-window-horizontally))
-  ;; Note: Some modules sets `pop-up-windows' to t before calling
-  ;; `display-buffer' -- Why, oh, why!
-  (let ((display-buffer-function nil)
-        (pop-up-windows nil))
-    (display-buffer buf not-this-window)))
+;; (defun my-display-buffer-function (buf not-this-window)
+;;   (if (and (not pop-up-frames)
+;;            (one-window-p)
+;;            (or not-this-window
+;;                (not (eq (window-buffer (selected-window)) buf)))
+;;            (> (frame-width) 162))
+;;       (split-window-horizontally))
+;;   ;; Note: Some modules sets `pop-up-windows' to t before calling
+;;   ;; `display-buffer' -- Why, oh, why!
+;;   (let ((display-buffer-function nil)
+;;         (pop-up-windows nil))
+;;     (display-buffer buf not-this-window)))
 
-(setq display-buffer-function 'my-display-buffer-function)
+;; (setq display-buffer-function 'my-display-buffer-function)
 
 (put 'dired-find-alternate-file 'disabled nil)
 
