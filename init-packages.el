@@ -3,8 +3,11 @@
 (require 'cl)
 
 
+;; local lisp code
+(add-to-list 'load-path (locate-user-emacs-file "lisp/rml"))
+(autoload 'rml-mode "rml-mode" "RML Mode" t)
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
-(autoload  'darkroom-mode "darkroom-mode" "Darkroom Mode" t)
+(autoload 'darkroom-mode "darkroom-mode" "Darkroom Mode" t)
 (require 'redo+)
 (progn (global-set-key [(control -)] 'redo))
 (require 'sudo-save)
@@ -149,6 +152,7 @@
 
 
 ;; Tools
+(use-package fic-mode :ensure t)
 (use-package mw-thesaurus :ensure t)
 (use-package cssh :ensure t)
 (use-package switch-window :ensure t)
