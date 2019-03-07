@@ -167,17 +167,17 @@
 
 
 ;; Git(hub)
-(use-package gist :ensure t)
-(use-package magit-popup :ensure t)
+;; (use-package gist :ensure t)
+;; (use-package magit-popup :ensure t)
 (use-package magit
   :ensure t
   :config (progn
             (global-set-key (kbd "C-x C-z") 'magit-status)
-            (add-hook 'magit-mode-hook 'magit-load-config-extensions)
+            ;; (add-hook 'magit-mode-hook 'magit-load-config-extensions)
             ;; (setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
             (setq magit-auto-revert-mode nil)))
-(use-package magit-svn :ensure t)
-(use-package gh :ensure t)
+;; (use-package magit-svn :ensure t)
+;; (use-package gh :ensure t)
 
 
 ;; Tools
