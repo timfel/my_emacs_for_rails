@@ -345,6 +345,26 @@
             (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))))
 
 
+(defun find-eclipse-projects-recursively (directory)
+  (interactive "D")
+  (let ((current-directory-list (directory-files directory)))
+    (if (seq-some (lambda (elt) (string-equal ".project" elt)) current-directory-list)
+        (list directory)
+      (seq-mapcat (lambda (elt) (find-eclipse-projects-recursively (concat (file-name-as-directory directory) elt)))
+                  (seq-filter (lambda (elt) (and (file-directory-p (concat (file-name-as-directory directory) elt))
+                                                 (not (string-prefix-p "." elt))
+                                                 (not (string-prefix-p "mx." elt)))) current-directory-list)))))
+
+
+(defun add-eclipse-projects-to-workspace (directory)
+  (interactive "D")
+  (let ((projects (find-eclipse-projects-recursively directory))
+        (workspace-folders (lsp-session-folders (lsp-session))))
+    (seq-do (lambda (elt) 
+              (if (not (seq-contains workspace-folders projects))
+                  (lsp-workspace-folders-add elt)))
+            projects)))
+
 
 ;; Custom Debug minor mode
 (define-minor-mode my/dap-mode
