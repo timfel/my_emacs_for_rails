@@ -1,17 +1,5 @@
 (require 'compile)
 (require 'cc-mode)
-(require 'cl)
-
-
-;; local lisp code
-(add-to-list 'load-path (locate-user-emacs-file "lisp/rml"))
-(autoload 'rml-mode "rml-mode" "RML Mode" t)
-(add-to-list 'load-path (locate-user-emacs-file "lisp"))
-(autoload 'darkroom-mode "darkroom-mode" "Darkroom Mode" t)
-(require 'redo+)
-(progn (global-set-key [(control -)] 'redo))
-(require 'sudo-save)
-(autoload 'pypytrace-mode "pypytrace-mode" "PyPy JIT Trace mode" t)
 
 
 (require 'package)
@@ -300,7 +288,7 @@
 
 
 ;; LSP and especially Java
-;; (use-package treemacs :ensure t)
+(use-package treemacs :ensure t)
 (use-package lsp-mode
   :ensure t)
   ;; :config (progn
@@ -425,12 +413,12 @@
   (dap-start-debugging debug-args))
 
   
-;; (use-package lsp-java-treemacs
-;;   :after (treemacs lsp-java)
-;;   :config
-;;   (define-key lsp-mode-map (kbd "C-x t t") (lambda () (unless (eq 'visible (treemacs-current-visibility))
-;;                                                         (lsp-java-treemacs-register)
-;;                                                         (treemacs-select-window)))))
+(use-package lsp-java-treemacs
+  :after (treemacs lsp-java)
+  :config
+  (define-key lsp-mode-map (kbd "C-x t t") (lambda () (unless (eq 'visible (treemacs-current-visibility))
+                                                        (lsp-java-treemacs-register)
+                                                        (treemacs-select-window)))))
 
 
 ;; The spacemacs default colors
@@ -520,3 +508,14 @@
                        (position (cdr (assoc selected-symbol name-and-pos))))
                   (goto-char position))))
             (global-set-key [(control .)] 'ido-goto-symbol)))
+
+
+;; local lisp code
+(add-to-list 'load-path (locate-user-emacs-file "lisp/rml"))
+(autoload 'rml-mode "rml-mode" "RML Mode" t)
+(add-to-list 'load-path (locate-user-emacs-file "lisp"))
+(autoload 'darkroom-mode "darkroom-mode" "Darkroom Mode" t)
+(require 'redo+)
+(progn (global-set-key [(control -)] 'redo))
+(require 'sudo-save)
+(autoload 'pypytrace-mode "pypytrace-mode" "PyPy JIT Trace mode" t)
