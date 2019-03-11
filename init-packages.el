@@ -167,6 +167,10 @@
 
 
 ;; Tools
+(use-package ace-window
+  :ensure t
+  :config (progn
+            (global-set-key (kbd "C-x o") 'ace-window)))
 (use-package fic-mode :ensure t)
 (use-package request :ensure t)
 (use-package mw-thesaurus
