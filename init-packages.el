@@ -382,15 +382,18 @@
     (,(kbd "C-c C-d") . dap-disconnect)
     (,(kbd "C-c C-e") . dap-ui-repl)
    )
-   ;; Make mode global rather than buffer local
-   :global 1
-)
+  )
+
+(define-globalized-minor-mode global-my/dap-mode my/dap-mode
+  (lambda () (my/dap-mode 1)))
 
 (use-package dap-mode
   :ensure t :after lsp-mode
   :config (progn
             (dap-mode t)
             (dap-ui-mode t)
+
+            (setq dap-auto-show-output nil)
 
             (defun my/window-visible (b-name)
               "Return whether B-NAME is visible."
@@ -400,7 +403,7 @@
 
             (defun my/show-debug-windows (session)
               "Show debug windows."
-              (my/dap-mode 1)
+              (global-my/dap-mode 1)
               (let ((lsp--cur-workspace (dap--debug-session-workspace session)))
                 (save-excursion
                   ;; display locals
@@ -410,29 +413,30 @@
                   (unless (my/window-visible dap-ui--sessions-buffer)
                     (dap-ui-sessions)))))
 
-            (add-hook 'dap-stopped-hook 'my/show-debug-windows)
+            (add-hook 'dap-session-created-hook 'my/show-debug-windows)
 
             (defun my/hide-debug-windows (&optional session)
               "Hide debug windows when all debug sessions are dead."
-              (my/dap-mode 0)
+              (global-my/dap-mode 0)
               (kill-buffer dap-ui--sessions-buffer)
               (kill-buffer dap-ui--locals-buffer))
 
             (add-hook 'dap-terminated-hook 'my/hide-debug-windows)))
+
 (use-package dap-java
   :after (dap-mode lsp-java)
   :config (progn
             (setq dap-java-default-debug-port 8000)
             (define-key java-mode-map (kbd "C-c C-d") 'dap-debug)
-            (define-key java-mode-map (kbd "C-c C-x t") 'dap-breakpoint-toggle)))
+            (define-key java-mode-map (kbd "C-c C-x t") 'dap-breakpoint-toggle)
 
+            (dap-register-debug-template "Java Attach graalpython"
+                                         (list :type "java"
+                                               :request "attach"
+                                               :hostName "localhost"
+                                               :projectName "com.oracle.graal.python"
+                                               :port 8000))))
 
-(defun my/dap-java-debug
-  "Start debug session with DEBUG-ARGS."
-  (interactive (list (dap-java--populate-default-args nil)))
-  (dap-start-debugging debug-args))
-
-  
 (use-package lsp-java-treemacs
   :after (treemacs lsp-java)
   :config
