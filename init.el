@@ -43,7 +43,7 @@
      ("\\.pdf\\'" . "evince %s"))))
  '(package-selected-packages
    (quote
-    (dracula-theme magit-popup thesaurus flycheck company-lsp treemacs fill-column-indicator textmate logito pcache fuzzy popup autopair switch-window cssh gh magithub magit-svn magit gist helm-etags-plus projectile xcscope org-mode ruby-electric lua-mode markdown-mode sass-mode rspec-mode haml-mode yaml-mode org-link-minor-mode helm-projectile helm maxframe markdown-preview-mode markdown-mode+ spacemacs-theme term-keys lsp-java dap-mode lsp-ui lsp-mode tree-mode oauth2)))
+    (dracula-theme magit-popup thesaurus flycheck company-lsp treemacs fill-column-indicator textmate logito pcache fuzzy popup autopair switch-window cssh gh magithub magit-svn magit gist helm-etags-plus projectile xcscope org-mode ruby-electric lua-mode markdown-mode sass-mode rspec-mode haml-mode yaml-mode org-link-minor-mode helm-projectile helm markdown-preview-mode markdown-mode+ spacemacs-theme term-keys lsp-java dap-mode lsp-ui lsp-mode tree-mode oauth2)))
  '(pdf-view-midnight-colors (quote ("#655370" . "#fbf8ef")))
  '(safe-local-variable-values
    (quote

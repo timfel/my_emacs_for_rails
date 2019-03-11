@@ -63,22 +63,8 @@
                                                    (local-set-key (kbd "<return>") 'newline-and-indent)
                                                    ;; Auto completion
                                                    (imenu-add-to-menubar "IMENU")
-                                                   (setq ac-sources
-                                                         '(ac-source-rsense-method
-                                                           ac-source-rsense-constant
-                                                           ac-source-semantic
-                                                           ac-source-words-in-same-mode-buffers
-                                                           ac-source-yasnippet
-                                                           ac-source-abbrev))
-                                                   (setq ac-omni-completion-sources
-                                                         '((cons "\\.\\=" '(ac-source-rcodetools))
-                                                           (cons "\\.[A-Za-z0-9_]*" '(ac-source-rsense-method))
-                                                           (cons "[ :][A-Z][A-Za-z0-9_]*" '(ac-source-rsense-constant)) ))
                                                    (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
-                                                   (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol)
-                                                   ;; Type inference auto completion
-                                                   (if (project-current)
-                                                       (rsense-open-project (project-default-directory (project-current)))))))
+                                                   (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol))))
             (add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
             (add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
             (add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
@@ -193,8 +179,6 @@
 (use-package fuzzy :ensure t)
 (use-package pcache :ensure t)
 (use-package logito :ensure t)
-(use-package maxframe
-  :hook (window-setup . maximize-frame))
 (use-package textmate
   :ensure t
   :config (progn
@@ -506,7 +490,7 @@
               (imenu--make-index-alist)
               (let ((name-and-pos '())
                     (symbol-names '()))
-                (flet ((addsymbols (symbol-list)
+                (cl-flet ((addsymbols (symbol-list)
                                    (when (listp symbol-list)
                                      (dolist (symbol symbol-list)
                                        (let ((name nil) (position nil))
