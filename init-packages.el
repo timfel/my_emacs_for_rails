@@ -402,8 +402,12 @@
             (defun my/hide-debug-windows (&optional session)
               "Hide debug windows when all debug sessions are dead."
               (global-my/dap-mode 0)
-              (kill-buffer dap-ui--sessions-buffer)
-              (kill-buffer dap-ui--locals-buffer))
+              (condition-case nil
+                  (kill-buffer "*out*"))
+              (condition-case nil
+                  (kill-buffer dap-ui--sessions-buffer))
+              (condition-case nil
+                  (kill-buffer dap-ui--locals-buffer)))
 
             (add-hook 'dap-terminated-hook 'my/hide-debug-windows)))
 
@@ -414,12 +418,12 @@
             (define-key java-mode-map (kbd "C-c C-d") 'dap-debug)
             (define-key java-mode-map (kbd "C-c C-x t") 'dap-breakpoint-toggle)
 
-            (dap-register-debug-template "Java Attach graalpython"
+            (dap-register-debug-template "Java Attach com.oracle.graal.python"
                                          (list :type "java"
                                                :request "attach"
                                                :hostName "localhost"
                                                :projectName "com.oracle.graal.python"
-                                               :port 8000))))
+                                               :port nil))))
 
 (use-package lsp-java-treemacs
   :after (treemacs lsp-java)
