@@ -343,15 +343,21 @@
                                                  (not (string-prefix-p "." elt))
                                                  (not (string-prefix-p "mx." elt)))) current-directory-list)))))
 
-
 (defun add-eclipse-projects-to-workspace (directory)
   (interactive "D")
-  (let ((projects (find-eclipse-projects-recursively directory))
-        (workspace-folders (lsp-session-folders (lsp-session))))
-    (seq-do (lambda (elt) 
-              (if (not (seq-contains workspace-folders projects))
-                  (lsp-workspace-folders-add elt)))
-            projects)))
+  (let ((projects (find-eclipse-projects-recursively directory)))
+    (dolist (elt projects)
+      (if (not (seq-contains (gethash 'jdtls
+                                      (lsp-session-server-id->folders (lsp-session)))
+                             elt))
+          (progn
+            (lsp-workspace-folders-add elt)
+            (puthash 'jdtls
+                     (append (gethash 'jdtls
+                                      (lsp-session-server-id->folders (lsp-session)))
+                             (list elt))
+                     (lsp-session-server-id->folders (lsp-session))))))
+    (lsp--persist-session (lsp-session))))
 
 
 ;; Custom Debug minor mode
