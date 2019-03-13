@@ -302,8 +302,9 @@
 (use-package company-lsp
   :ensure t
   :after company
-  :init
-  (add-to-list 'company-backends #'company-lsp))
+  :init (add-to-list 'company-backends #'company-lsp)
+  :config (setq company-lsp-cache-candidates t
+                company-lsp-filter-candidates t))
 (use-package lsp-ui
   :ensure t
   :hook (lsp-mode . lsp-ui-mode)
