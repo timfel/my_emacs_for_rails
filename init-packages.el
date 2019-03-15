@@ -14,7 +14,6 @@
    (package-install 'use-package)
    (require 'use-package)))
 
-
 ;; additional modes I like
 (use-package yaml-mode :ensure t
   :config (progn
@@ -210,6 +209,14 @@
     ;;   (append-to-file (point-min) (point-max) "~/.Xresources"))
     ))
 
+(use-package all-the-icons
+  :ensure t)
+(use-package doom-modeline
+  :after '(lsp-mode all-the-icons)
+  :ensure t
+  :hook (after-init . doom-modeline-mode)
+  :config (setq doom-modeline-minor-modes nil
+                doom-modeline-buffer-file-name-style 'truncate-all))
 
 ;; LaTeX
 (use-package tex
@@ -314,11 +321,14 @@
             (define-key lsp-mode-map (kbd "M-,") 'lsp-ui-flycheck-list)
             (define-key lsp-mode-map (kbd "M-.") 'lsp-find-definition)
             (define-key lsp-mode-map (kbd "C-M-.") 'lsp-find-references)
-            (setq lsp-ui-sideline-enable t
+            (setq lsp-ui-flycheck-live-reporting t
+                  lsp-ui-sideline-enable t
                   lsp-ui-sideline-show-symbol t
                   lsp-ui-sideline-show-hover t
                   lsp-ui-sideline-showcode-actions t
-                  lsp-ui-sideline-update-mode 'point)))
+                  lsp-ui-sideline-ignore-duplicate t
+                  lsp-ui-sideline-delay 2
+                  lsp-ui-sideline-update-mode 'line)))
 (use-package lsp-java
   :ensure t
   :after (lsp flycheck company)
@@ -328,6 +338,7 @@
             (require 'lsp-ui-sideline)
             ;; (setq lsp-java-workspace-dir "/home/tim/eclipse-workspace/")
             (add-hook 'java-mode-hook #'lsp)
+            (add-hook 'java-mode-hook 'friendly-whitespace)
             (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
             (add-hook 'java-mode-hook (lambda () (company-mode t)))
             (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
