@@ -372,6 +372,69 @@
     (lsp--persist-session (lsp-session))))
 
 
+(defun clear-lsp-session ()
+  (interactive)
+  (puthash 'jdtls
+           '()
+           (lsp-session-server-id->folders (lsp-session)))
+  (lsp--persist-session (lsp-session)))
+
+
+(defun import-eclipse-projects ()
+  (interactive)
+  (let* ((base-dir (read-directory-name "Base directory to search projects in: "))
+         (projects-found (find-eclipse-projects-recursively base-dir))
+         (projects-to-import (completing-read-multiple "Select projects to import (comma-sep): " projects-found nil t))
+         (additional-required-projects projects-to-import))
+    (require 'xml)
+    (seq-do (lambda (elt)
+              (progn
+                ;; find the required projects for each selected project
+                (seq-do
+                 (lambda (elt)
+                   (add-to-list 'additional-required-projects (car (xml-node-children elt))))
+                 (xml-get-children
+                  (car
+                   (xml-get-children 
+                    (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
+                    'projects))
+                  'project))
+                ;; find JAR projects on the factorypath that are part of a
+                ;; workspace project no go through
+                (condition-case nil
+                    (seq-do (lambda (elt)
+                              (if (string-equal (xml-get-attribute-or-nil elt 'kind) "WKSPJAR")
+                                  (add-to-list 'additional-required-projects (cadr (split-string (xml-get-attribute elt 'id) "/")))))
+                            (xml-get-children
+                             (assq 'factorypath (xml-parse-file (concat (file-name-as-directory elt) ".factorypath")))
+                             'factorypathentry)))))
+            projects-to-import)
+
+    ;; resolve dependencies
+    (seq-do (lambda (elt)
+              (let ((name (car (xml-node-children (car (xml-get-children 
+                                                        (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
+                                                        'name))))))
+                (if (seq-contains additional-required-projects name)
+                    (add-to-list 'projects-to-import elt))))
+            projects-found)
+
+    ;; add projects to session
+    (dolist (elt projects-to-import)
+      (if (not (seq-contains (gethash 'jdtls
+                                      (lsp-session-server-id->folders (lsp-session)))
+                             elt))
+          (progn
+            (lsp-workspace-folders-add elt)
+            (puthash 'jdtls
+                     (append (gethash 'jdtls
+                                      (lsp-session-server-id->folders (lsp-session)))
+                             (list elt))
+                     (lsp-session-server-id->folders (lsp-session))))))
+    (lsp--persist-session (lsp-session))
+    (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-to-import)))
+
+
 ;; Custom Debug minor mode
 (define-minor-mode my/dap-mode
   "My own minor mode when using the dap debugger."
