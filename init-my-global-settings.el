@@ -64,9 +64,6 @@
 ;; fix clipboard
 (if window-system
     (progn
-      (global-set-key (kbd "M-[") 'insert-pair)
-      (global-set-key (kbd "M-{") 'insert-pair)
-      (global-set-key (kbd "M-\"") 'insert-pair)
       (mouse-wheel-mode t)
       (setq x-select-enable-clipboard t)
       (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)))
@@ -89,9 +86,23 @@
 ;; C/C++/Java Options
 (setq-default c-basic-offset 4)
 
-(progn
-  (global-set-key (kbd "C->") 'forward-list)
-  (global-set-key (kbd "C-<") 'backward-list))
+;; some navigation keys
+(global-set-key (kbd "M-[") 'forward-list)
+(global-set-key (kbd "M-]") 'backward-list)
+
+(defun my/previous-position ()
+  (interactive)
+  ;; push onto the mark ring
+  (push-mark)
+  (if (xref-marker-stack-empty-p)
+      (xref-pop-marker-stack)
+    (previous-buffer)))
+(global-set-key (kbd "C-x <left>") 'my/previous-position)
+
+(defun my/next-position ()
+  (interactive)
+  (pop-global-mark))
+(global-set-key (kbd "C-x <right>") 'my/next-position)
 
 ;; Use generic printer dialiog on linux
 (if (eq system-type 'gnu/linux)
