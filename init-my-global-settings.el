@@ -87,8 +87,8 @@
 (setq-default c-basic-offset 4)
 
 ;; some navigation keys
-(global-set-key (kbd "M-[") 'forward-list)
-(global-set-key (kbd "M-]") 'backward-list)
+(global-set-key (kbd "M-]") 'forward-list)
+(global-set-key (kbd "M-[") 'backward-list)
 
 (defun my/previous-position ()
   (interactive)
