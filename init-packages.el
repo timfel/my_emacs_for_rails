@@ -338,6 +338,7 @@
             (require 'lsp-ui-sideline)
             ;; (setq lsp-java-workspace-dir "/home/tim/eclipse-workspace/")
             (add-hook 'java-mode-hook #'lsp)
+            (add-hook 'java-mode-hook 'doom-modeline-mode)
             (add-hook 'java-mode-hook 'friendly-whitespace)
             (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
             (add-hook 'java-mode-hook (lambda () (company-mode t)))
