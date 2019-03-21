@@ -384,54 +384,61 @@
 (defun import-eclipse-projects ()
   (interactive)
   (let* ((base-dir (read-directory-name "Base directory to search projects in: "))
-         (projects-found (find-eclipse-projects-recursively base-dir))
+         (base-dirs (completing-read-multiple "Base sub-directories to search projects in: " (directory-files base-dir) nil t))
+         (projects-found (seq-mapcat (lambda (elt) (find-eclipse-projects-recursively (concat (file-name-as-directory base-dir) elt))) base-dirs))
          (projects-to-import (completing-read-multiple "Select projects to import (comma-sep): " projects-found nil t))
-         (additional-required-projects projects-to-import))
+         (additional-required-projects '())
+         (go-again t))
     (require 'xml)
-    (seq-do (lambda (elt)
-              (progn
-                ;; find the required projects for each selected project
-                (seq-do
-                 (lambda (elt)
-                   (add-to-list 'additional-required-projects (car (xml-node-children elt))))
-                 (xml-get-children
-                  (car
-                   (xml-get-children 
-                    (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
-                    'projects))
-                  'project))
-                ;; find JAR projects on the factorypath that are part of a
-                ;; workspace project no go through
-                (condition-case nil
-                    (seq-do (lambda (elt)
-                              (if (string-equal (xml-get-attribute-or-nil elt 'kind) "WKSPJAR")
-                                  (add-to-list 'additional-required-projects (cadr (split-string (xml-get-attribute elt 'id) "/")))))
-                            (xml-get-children
-                             (assq 'factorypath (xml-parse-file (concat (file-name-as-directory elt) ".factorypath")))
-                             'factorypathentry)))))
-            projects-to-import)
+    (while go-again
+      (setq go-again (length projects-to-import))
+      (seq-do (lambda (elt)
+                (progn
+                  ;; find the required projects for each selected project
+                  (seq-do
+                   (lambda (elt)
+                     (add-to-list 'additional-required-projects (car (xml-node-children elt))))
+                   (xml-get-children
+                    (car
+                     (xml-get-children 
+                      (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
+                      'projects))
+                    'project))
+                  ;; find JAR projects on the factorypath that are part of a
+                  ;; workspace project no go through
+                  (if (file-exists-p (concat (file-name-as-directory elt) ".factorypath"))
+                      (seq-do (lambda (elt)
+                                (if (string-equal (xml-get-attribute-or-nil elt 'kind) "WKSPJAR")
+                                    (add-to-list 'additional-required-projects (cadr (split-string (xml-get-attribute elt 'id) "/")))))
+                              (xml-get-children
+                               (assq 'factorypath (xml-parse-file (concat (file-name-as-directory elt) ".factorypath")))
+                               'factorypathentry)))))
+              projects-to-import)
 
-    ;; resolve dependencies
-    (seq-do (lambda (elt)
-              (let ((name (car (xml-node-children (car (xml-get-children 
-                                                        (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
-                                                        'name))))))
-                (if (seq-contains additional-required-projects name)
-                    (add-to-list 'projects-to-import elt))))
-            projects-found)
+      ;; resolve dependencies
+      (seq-do (lambda (elt)
+                (let ((name (car (xml-node-children (car (xml-get-children 
+                                                          (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
+                                                          'name))))))
+                  (if (seq-contains additional-required-projects name)
+                      (add-to-list 'projects-to-import elt))))
+              projects-found)
+      ;; if we added projects to the list of projects to import, go deeper
+      (setq go-again (> (length projects-to-import) go-again)))
 
     ;; add projects to session
     (dolist (elt projects-to-import)
-      (if (not (seq-contains (gethash 'jdtls
-                                      (lsp-session-server-id->folders (lsp-session)))
-                             elt))
+      (let ((exp (expand-file-name elt)))
+        (if (not (seq-contains (gethash 'jdtls
+                                        (lsp-session-server-id->folders (lsp-session)))
+                               exp))
           (progn
-            (lsp-workspace-folders-add elt)
+            (lsp-workspace-folders-add exp)
             (puthash 'jdtls
                      (append (gethash 'jdtls
                                       (lsp-session-server-id->folders (lsp-session)))
-                             (list elt))
-                     (lsp-session-server-id->folders (lsp-session))))))
+                             (list exp))
+                     (lsp-session-server-id->folders (lsp-session)))))))
     (lsp--persist-session (lsp-session))
     (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-to-import)))
 
