@@ -285,7 +285,12 @@
 ;; LSP and especially Java
 (use-package treemacs :ensure t)
 (use-package lsp-mode
-  :ensure t)
+  :ensure t
+  :init (setq lsp-print-io t
+              lsp-enable-snippet t
+              lsp-enable-indentation t
+              lsp-before-save-edits t
+              lsp-enable-file-watchers t))
   ;; :config (progn
   ;;           (add-hook 'lsp-workspace-folders-changed-hook                      
   ;;                     (lambda (added-folders removed-folders)
@@ -308,6 +313,7 @@
 (use-package hydra :ensure t)
 (use-package company-lsp
   :ensure t
+  :commands company-lsp
   :after company
   :init (add-to-list 'company-backends #'company-lsp)
   :config (setq company-lsp-cache-candidates t
@@ -315,6 +321,7 @@
 (use-package lsp-ui
   :ensure t
   :hook (lsp-mode . lsp-ui-mode)
+  :commands lsp-ui-mode
   :config (progn
             (define-key lsp-mode-map (kbd "C-.") 'helm-imenu)
             (define-key lsp-mode-map (kbd "C-S-t") 'lsp-ui-find-workspace-symbol)
