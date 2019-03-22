@@ -286,7 +286,7 @@
 (use-package treemacs :ensure t)
 (use-package lsp-mode
   :ensure t
-  :init (setq lsp-print-io t
+  :init (setq lsp-print-io nil
               lsp-enable-snippet t
               lsp-enable-indentation t
               lsp-before-save-edits t
@@ -326,6 +326,7 @@
             (define-key lsp-mode-map (kbd "C-.") 'helm-imenu)
             (define-key lsp-mode-map (kbd "C-S-t") 'lsp-ui-find-workspace-symbol)
             (define-key lsp-mode-map (kbd "M-,") 'lsp-ui-flycheck-list)
+            (define-key lsp-mode-map (kbd "C-M-,") 'list-flycheck-errors)
             (define-key lsp-mode-map (kbd "M-.") 'lsp-find-definition)
             (define-key lsp-mode-map (kbd "C-M-.") 'lsp-find-references)
             (setq lsp-ui-flycheck-live-reporting t
@@ -465,6 +466,7 @@
     (,(kbd "C-c C-r") . dap-continue)
     (,(kbd "C-c C-d") . dap-disconnect)
     (,(kbd "C-c C-e") . dap-ui-repl)
+    (,(kbd "C-x C-e") . (lambda () (if mark-active (dap-eval-region) (dap-eval-thing-at-point))))
    )
   )
 
