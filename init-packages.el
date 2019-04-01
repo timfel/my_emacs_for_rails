@@ -450,6 +450,10 @@
     (lsp--persist-session (lsp-session))
     (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-to-import)))
 
+(defun my/rebuild-java ()
+    (interactive)
+    (lsp-send-notification
+     (lsp-make-request "java/buildWorkspace" t)))
 
 ;; Custom Debug minor mode
 (define-minor-mode my/dap-mode
@@ -469,6 +473,21 @@
     (,(kbd "C-x C-e") . (lambda () (if mark-active (dap-eval-region) (dap-eval-thing-at-point))))
    )
   )
+
+(defun my/dap-set-exception-breakpoint ()
+  (interactive)
+  (dap--send-message (dap--make-request
+                      "setExceptionBreakpoints"
+                      (list :filters (list "caught" "uncaught")))
+                     (dap--resp-handler)
+                     (dap--cur-active-session-or-die)))
+
+(defun my/dap-hotcodereplace ()
+  (interactive)
+  (dap--send-message (dap--make-request
+                      "redefineClasses")
+                     (dap--resp-handler)
+                     (dap--cur-active-session-or-die)))
 
 (define-globalized-minor-mode global-my/dap-mode my/dap-mode
   (lambda () (my/dap-mode 1)))
