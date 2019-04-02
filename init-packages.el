@@ -210,9 +210,11 @@
     ))
 
 (use-package all-the-icons
+  :demand t
   :ensure t)
 (use-package doom-modeline
-  :after '(lsp-mode all-the-icons)
+  :demand t
+  :after all-the-icons
   :ensure t
   :hook (after-init . doom-modeline-mode)
   :config (setq doom-modeline-minor-modes nil
