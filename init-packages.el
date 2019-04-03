@@ -292,7 +292,7 @@
               lsp-enable-snippet t
               lsp-enable-indentation t
               lsp-before-save-edits t
-              lsp-enable-file-watchers t))
+              lsp-enable-file-watchers nil))
   ;; :config (progn
   ;;           (add-hook 'lsp-workspace-folders-changed-hook                      
   ;;                     (lambda (added-folders removed-folders)
@@ -338,6 +338,7 @@
                   lsp-ui-sideline-showcode-actions t
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
+                  lsp-ui-sideline-code-actions-prefix "💡"
                   lsp-ui-sideline-update-mode 'line)))
 (use-package lsp-java
   :ensure t
