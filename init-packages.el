@@ -329,6 +329,7 @@
             (define-key lsp-mode-map (kbd "C-S-t") 'lsp-ui-find-workspace-symbol)
             (define-key lsp-mode-map (kbd "M-,") 'lsp-ui-flycheck-list)
             (define-key lsp-mode-map (kbd "C-M-,") 'list-flycheck-errors)
+            (define-key lsp-mode-map (kbd "C-x ,") 'lsp-execute-code-action)
             (define-key lsp-mode-map (kbd "M-.") 'lsp-find-definition)
             (define-key lsp-mode-map (kbd "C-M-.") 'lsp-find-references)
             (setq lsp-ui-flycheck-live-reporting t
@@ -338,7 +339,7 @@
                   lsp-ui-sideline-showcode-actions t
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
-                  lsp-ui-sideline-code-actions-prefix "💡"
+                  lsp-ui-sideline-code-actions-prefix "💡 "
                   lsp-ui-sideline-update-mode 'line)))
 (use-package lsp-java
   :ensure t
@@ -348,7 +349,9 @@
             (require 'lsp-ui-flycheck)
             (require 'lsp-ui-sideline)
             ;; (setq lsp-java-workspace-dir "/home/tim/eclipse-workspace/")
-            (add-hook 'java-mode-hook #'lsp)
+            (setq
+             lsp-java-import-order ["java" "javax" "org" "com"])
+            (add-hook 'java-mode-hook 'lsp)
             (add-hook 'java-mode-hook 'doom-modeline-mode)
             (add-hook 'java-mode-hook 'friendly-whitespace)
             (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
