@@ -50,6 +50,20 @@ LIST defaults to all existing live buffers."
             (kill-buffer buffer))))))
 (global-set-key "\C-x\C-ka" 'kill-all-but-active-buffers)
 
+;; Kills some live buffers, leaves some emacs work buffers and the currently active tab
+(defun reload-all-java-buffers ()
+  "For each buffer in LIST, kill it silently if unmodified. Otherwise ask.
+LIST defaults to all existing live buffers."
+  (interactive)
+  (let ((list (buffer-list)))
+    (dolist (buffer list)
+      (let ((name (buffer-name buffer))
+            (mode (with-current-buffer buffer major-mode)))
+        (if (eq mode 'java-mode)
+            (if (not (buffer-modified-p buffer))
+                (with-current-buffer buffer
+                  (lsp))))))))
+
 ;; fullscreen
 (defun toggle-fullscreen ()
   (interactive)
