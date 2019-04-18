@@ -360,34 +360,17 @@
             (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))))
 
 
-(defun find-eclipse-projects-recursively (directory)
-  (interactive "D")
+(defun my/lsp/find-eclipse-projects-recursively (directory)
   (let ((current-directory-list (directory-files directory)))
     (if (seq-some (lambda (elt) (string-equal ".project" elt)) current-directory-list)
         (list directory)
-      (seq-mapcat (lambda (elt) (find-eclipse-projects-recursively (concat (file-name-as-directory directory) elt)))
+      (seq-mapcat (lambda (elt) (my/lsp/find-eclipse-projects-recursively (concat (file-name-as-directory directory) elt)))
                   (seq-filter (lambda (elt) (and (file-directory-p (concat (file-name-as-directory directory) elt))
                                                  (not (string-prefix-p "." elt))
                                                  (not (string-prefix-p "mx." elt)))) current-directory-list)))))
 
-(defun add-eclipse-projects-to-workspace (directory)
-  (interactive "D")
-  (let ((projects (find-eclipse-projects-recursively directory)))
-    (dolist (elt projects)
-      (if (not (seq-contains (gethash 'jdtls
-                                      (lsp-session-server-id->folders (lsp-session)))
-                             elt))
-          (progn
-            (lsp-workspace-folders-add elt)
-            (puthash 'jdtls
-                     (append (gethash 'jdtls
-                                      (lsp-session-server-id->folders (lsp-session)))
-                             (list elt))
-                     (lsp-session-server-id->folders (lsp-session))))))
-    (lsp--persist-session (lsp-session))))
 
-
-(defun clear-lsp-session ()
+(defun my/lsp/clear-lsp-session ()
   (interactive)
   (puthash 'jdtls
            '()
@@ -395,11 +378,11 @@
   (lsp--persist-session (lsp-session)))
 
 
-(defun import-eclipse-projects ()
+(defun my/lsp/import-eclipse-projects ()
   (interactive)
   (let* ((base-dir (read-directory-name "Base directory to search projects in: "))
          (base-dirs (completing-read-multiple "Base sub-directories to search projects in: " (directory-files base-dir) nil t))
-         (projects-found (seq-mapcat (lambda (elt) (find-eclipse-projects-recursively (concat (file-name-as-directory base-dir) elt))) base-dirs))
+         (projects-found (seq-mapcat (lambda (elt) (my/lsp/find-eclipse-projects-recursively (concat (file-name-as-directory base-dir) elt))) base-dirs))
          (projects-to-import (completing-read-multiple "Select projects to import (comma-sep): " projects-found nil t))
          (additional-required-projects '())
          (go-again t))
@@ -456,7 +439,7 @@
     (lsp--persist-session (lsp-session))
     (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-to-import)))
 
-(defun my/rebuild-java ()
+(defun my/lsp/rebuild-java ()
     (interactive)
     (lsp-send-notification
      (lsp-make-request "java/buildWorkspace" t)))
