@@ -294,8 +294,8 @@
 ;;       mail-signature ""
 ;;       mail-default-headers "")
 
-
-
+(setq split-height-threshold nil
+      split-width-threshold 160)
 
 ;; (setq split-height-threshold 120
 ;;       split-width-threshold 160)
