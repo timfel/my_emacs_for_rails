@@ -109,6 +109,9 @@
   :config (progn
             (global-company-mode t)
             (global-set-key (kbd "M-?") 'company-complete)))
+;; (use-package company-box
+;;  :ensure t
+;;  :hook (company-mode . company-box-mode))
 (use-package flycheck
   :ensure t
   :init
@@ -290,7 +293,7 @@
   :ensure t
   :init (setq lsp-print-io nil
               lsp-enable-snippet t
-              lsp-enable-indentation t
+              lsp-enable-indentation nil
               lsp-before-save-edits t
               lsp-enable-file-watchers nil))
   ;; :config (progn
@@ -325,17 +328,29 @@
   :hook (lsp-mode . lsp-ui-mode)
   :commands lsp-ui-mode
   :config (progn
-            (define-key lsp-mode-map (kbd "C-.") 'helm-imenu)
-            (define-key lsp-mode-map (kbd "C-S-t") 'lsp-ui-find-workspace-symbol)
-            (define-key lsp-mode-map (kbd "M-,") 'lsp-ui-flycheck-list)
+            (define-key lsp-mode-map (kbd "C-.") #'helm-imenu)
+            ;; (define-key lsp-mode-map (kbd "C-S-t") #'lsp-ui-find-workspace-symbol)
+            (define-key lsp-mode-map (kbd "C-S-t") #'helm-lsp-workspace-symbol)
             (define-key lsp-mode-map (kbd "C-M-,") (lambda ()
                                                      (interactive)
                                                      (list-flycheck-errors)
                                                      (switch-to-buffer-other-window flycheck-error-list-buffer)))
-            (define-key lsp-mode-map (kbd "C-x ,") 'lsp-execute-code-action)
-            (define-key lsp-mode-map (kbd "M-.") 'lsp-find-definition)
-            (define-key lsp-mode-map (kbd "C-M-.") 'lsp-find-references)
+            (define-key lsp-mode-map (kbd "C-,") #'lsp-execute-code-action)
+            ;; (lsp-ui-peek-jump-backward)
+            ;; (lsp-ui-peek-jump-forward)
+            (define-key lsp-ui-mode-map (kbd "M-,") #'lsp-ui-flycheck-list)
+            (define-key lsp-ui-mode-map (kbd "M-.") #'lsp-ui-peek-find-definitions)
+            (define-key lsp-ui-mode-map (kbd "C-M-.") #'lsp-ui-peek-find-references)
+            ;; (define-key lsp-mode-map (kbd "M-.") #'lsp-find-definition)
+            ;; (define-key lsp-mode-map (kbd "C-M-.") #'lsp-find-references)
             (setq lsp-ui-flycheck-live-reporting t
+                  lsp-print-performance t
+                  lsp-report-if-no-buffer t
+                  lsp-enable-snippet t
+                  lsp-enable-xref t
+                  lsp-enable-completion-at-point t
+                  lsp-response-timeout 2
+                  lsp-ui-doc-use-webkit t
                   lsp-ui-sideline-enable t
                   lsp-ui-sideline-show-symbol t
                   lsp-ui-sideline-show-hover t
@@ -344,6 +359,15 @@
                   lsp-ui-sideline-delay 2
                   lsp-ui-sideline-code-actions-prefix "💡 "
                   lsp-ui-sideline-update-mode 'line)))
+
+(use-package helm-lsp
+  :ensure t
+  :commands helm-lsp-workspace-symbol)
+
+(use-package lsp-treemacs
+  :ensure t
+  :commands lsp-treemacs-errors-list)
+
 (use-package lsp-java
   :ensure t
   :after (lsp flycheck company)
@@ -353,7 +377,24 @@
             (require 'lsp-ui-sideline)
             ;; (setq lsp-java-workspace-dir "/home/tim/eclipse-workspace/")
             (setq
+             lsp-java-save-actions-organize-imports t
+             lsp-java-format-on-type-enabled nil
+             lsp-java-format-comments-enabled nil
+             lsp-java-format-enabled nil
              lsp-java-import-order ["java" "javax" "org" "com"])
+
+            ;; (puthash "language/progressReport" (lambda (workspace params)
+            ;;                                      (lsp-java--progress-report workspace params)
+            ;;                                      (-let [(&hash "status" "complete") params]
+            ;;                                        (when complete
+            ;;                                          (message "Build complete, running mx")
+            ;;                                          (let ((default-directory (file-name-directory (buffer-file-name (current-buffer)))))
+            ;;                                            (start-process
+            ;;                                             "mx-nativebuild"
+            ;;                                             "*mx output*"
+            ;;                                             "~/.graalenv/mx/mx"
+            ;;                                             "nativebuild")))))
+            ;;          (lsp--client-notification-handlers (gethash 'jdtls lsp-clients)))
             (add-hook 'java-mode-hook #'lsp)
             (add-hook 'java-mode-hook 'doom-modeline-mode)
             (add-hook 'java-mode-hook 'friendly-whitespace)
@@ -381,8 +422,10 @@
         (if (eq mode 'java-mode)
             (if (not (buffer-modified-p buffer))
                 (with-current-buffer buffer
-                  (revert-buffer :ignore-auto :noconfirm)
-                  (lsp))))))))
+                  (if (funcall buffer-stale-function)
+                      (progn
+                        (message "Reverting %s" (buffer-name))
+                        (revert-buffer :ignore-auto :noconfirm))))))))))
 
 (defun my/lsp/kill-all-java-buffers ()
   (interactive)
@@ -464,9 +507,10 @@
     (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-to-import)))
 
 (defun my/lsp/rebuild-java ()
-    (interactive)
-    (lsp-send-notification
-     (lsp-make-request "java/buildWorkspace" t)))
+  (interactive)
+  (my/lsp/reload-all-java-buffers)
+  (lsp-send-notification
+   (lsp-make-request "java/buildWorkspace" t)))
 
 ;; Custom Debug minor mode
 (define-minor-mode my/dap-mode
@@ -537,8 +581,6 @@
               "Hide debug windows when all debug sessions are dead."
               (global-my/dap-mode 0)
               (condition-case nil
-                  (kill-buffer "*out*"))
-              (condition-case nil
                   (kill-buffer dap-ui--sessions-buffer))
               (condition-case nil
                   (kill-buffer dap-ui--locals-buffer)))
@@ -560,7 +602,7 @@
                                                :port nil))))
 
 (use-package lsp-java-treemacs
-  :after (treemacs lsp-java)
+  :after (lsp-treemacs treemacs lsp-java)
   :config
   (define-key lsp-mode-map (kbd "C-x t t") (lambda () (unless (eq 'visible (treemacs-current-visibility))
                                                         (lsp-java-treemacs-register)
