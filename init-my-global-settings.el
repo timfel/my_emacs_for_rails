@@ -129,9 +129,24 @@
 (setq comment-multi-line t)
 (setq comment-style 'extra-line)
 
+(if (and
+     (fboundp 'xref-goto-xref)
+     (not (fboundp 'xref-quit-and-goto-xref)))
+    (defun xref-quit-and-goto-xref ()
+      "Quit *xref* buffer, then jump to xref on current line."
+      (interactive)
+      (let* ((buffer (current-buffer))
+             (xref (or (xref--item-at-point)
+                       (user-error "No reference at point")))
+             (xref--current-item xref))
+        (quit-window nil nil)
+        (xref--show-location (xref-item-location xref) t)
+        (next-error-found buffer (current-buffer)))))
+
 ;; Sessions
 (desktop-save-mode 1)
 (setq history-length 250)
+(setq desktop-restore-eager 5)
 (add-to-list 'desktop-globals-to-save 'file-name-history)
 (setq desktop-buffers-not-to-save
       (concat "\\("
