@@ -370,8 +370,7 @@
 
 (use-package lsp-java
   :ensure t
-  :after (lsp flycheck company)
-  :defer 3
+  :after (lsp-mode flycheck company)
   :config (progn
             (require 'lsp-ui-flycheck)
             (require 'lsp-ui-sideline)
@@ -600,14 +599,6 @@
                                                :hostName "localhost"
                                                :projectName "com.oracle.graal.python"
                                                :port nil))))
-
-(use-package lsp-java-treemacs
-  :after (lsp-treemacs treemacs lsp-java)
-  :config
-  (define-key lsp-mode-map (kbd "C-x t t") (lambda () (unless (eq 'visible (treemacs-current-visibility))
-                                                        (lsp-java-treemacs-register)
-                                                        (treemacs-select-window)))))
-
 
 ;; The spacemacs default colors
 (condition-case nil
