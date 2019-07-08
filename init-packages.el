@@ -163,7 +163,8 @@
             (global-set-key (kbd "C-x C-z") 'magit-status)
             ;; (add-hook 'magit-mode-hook 'magit-load-config-extensions)
             ;; (setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
-            (setq magit-auto-revert-mode nil)))
+            (setq magit-auto-revert-tracked-only t)
+            (magit-auto-revert-mode)))
 ;; (use-package magit-svn :ensure t)
 ;; (use-package gh :ensure t)
 
