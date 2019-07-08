@@ -575,23 +575,21 @@
                   (unless (my/window-visible dap-ui--sessions-buffer)
                     (dap-ui-sessions)))))
 
-            (add-hook 'dap-session-created-hook 'my/show-debug-windows)
-
-            (defun my/hide-debug-windows (&optional session)
-              "Hide debug windows when all debug sessions are dead."
-              (global-my/dap-mode 0)
-              (condition-case nil
-                  (kill-buffer dap-ui--sessions-buffer))
-              (condition-case nil
-                  (kill-buffer dap-ui--locals-buffer)))
-
-            (add-hook 'dap-terminated-hook 'my/hide-debug-windows)))
+            (add-hook 'dap-session-created-hook 'my/show-debug-windows)))
 
 (use-package dap-java
   :after (dap-mode lsp-java)
   :config (progn
             (setq dap-java-default-debug-port 8000)
-            (define-key java-mode-map (kbd "C-c C-d") 'dap-debug)
+
+            (defun my/lsp/dap-debug ()
+              (interactive)
+              (let ((new-frame (make-frame)))
+                (select-frame-set-input-focus new-frame)
+                (toggle-fullscreen)
+                (call-interactively 'dap-debug)))
+
+            (define-key java-mode-map (kbd "C-c C-d") 'my/lsp/dap-debug)
             (define-key java-mode-map (kbd "C-c C-x t") 'dap-breakpoint-toggle)
 
             (dap-register-debug-template "Java Attach com.oracle.graal.python"
@@ -599,7 +597,7 @@
                                                :request "attach"
                                                :hostName "localhost"
                                                :projectName "com.oracle.graal.python"
-                                               :port nil))))
+                                               :port 8000))))
 
 ;; The spacemacs default colors
 (condition-case nil
