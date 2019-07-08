@@ -339,7 +339,7 @@
             (define-key lsp-mode-map (kbd "C-,") #'lsp-execute-code-action)
             ;; (lsp-ui-peek-jump-backward)
             ;; (lsp-ui-peek-jump-forward)
-            (define-key lsp-ui-mode-map (kbd "M-,") #'lsp-ui-flycheck-list)
+            (define-key lsp-ui-mode-map (kbd "M-,") #'lsp-treemacs-errors-list)
             (define-key lsp-ui-mode-map (kbd "M-.") #'lsp-ui-peek-find-definitions)
             (define-key lsp-ui-mode-map (kbd "C-M-.") #'lsp-ui-peek-find-references)
             ;; (define-key lsp-mode-map (kbd "M-.") #'lsp-find-definition)
