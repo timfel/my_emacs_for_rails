@@ -395,6 +395,10 @@
             ;;                                             "~/.graalenv/mx/mx"
             ;;                                             "nativebuild")))))
             ;;          (lsp--client-notification-handlers (gethash 'jdtls lsp-clients)))
+            ;; adjust open list indentation
+            (add-hook 'java-mode-hook
+                      (lambda ()
+                        (c-set-offset 'arglist-cont-nonempty 16)))
             (add-hook 'java-mode-hook #'lsp)
             (add-hook 'java-mode-hook 'doom-modeline-mode)
             (add-hook 'java-mode-hook 'friendly-whitespace)
