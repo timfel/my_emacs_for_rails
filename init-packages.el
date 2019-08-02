@@ -345,7 +345,7 @@
             ;; (define-key lsp-mode-map (kbd "M-.") #'lsp-find-definition)
             ;; (define-key lsp-mode-map (kbd "C-M-.") #'lsp-find-references)
             (setq lsp-ui-flycheck-live-reporting t
-                  lsp-print-performance t
+                  lsp-print-performance nil
                   lsp-report-if-no-buffer t
                   lsp-enable-snippet t
                   lsp-enable-xref t
@@ -381,6 +381,7 @@
              lsp-java-format-on-type-enabled nil
              lsp-java-format-comments-enabled nil
              lsp-java-format-enabled nil
+             lsp-java-autobuild-enabled nil
              lsp-java-import-order ["java" "javax" "org" "com"])
 
             ;; (puthash "language/progressReport" (lambda (workspace params)
@@ -441,13 +442,35 @@
             (if (not (buffer-modified-p buffer))
                 (kill-buffer buffer)))))))
 
-(defun my/lsp/clear-lsp-session ()
+(defun my/lsp/import-all-eclipse-projects ()
   (interactive)
+  (let* ((base-dir (read-directory-name "Base directory to search projects in: "))
+         (base-dirs (completing-read-multiple "Base sub-directories to search projects in: " (directory-files base-dir) nil t))
+         (projects-found (seq-mapcat (lambda (elt) (my/lsp/find-eclipse-projects-recursively (concat (file-name-as-directory base-dir) elt))) base-dirs)))
+    ;; add projects to session
+    (seq-do (lambda (elt)
+              (let ((exp (expand-file-name elt)))
+                (if (not (seq-contains (lsp-session-folders (lsp-session)) exp))
+                    (progn
+                      (lsp-workspace-folders-add exp)
+                      (puthash 'jdtls
+                               (append (gethash 'jdtls
+                                        (lsp-session-server-id->folders (lsp-session)))
+                                       (list exp))
+                               (lsp-session-server-id->folders (lsp-session)))))))
+            projects-found)
+    (lsp--persist-session (lsp-session))
+    (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-found)))
+
+(defun my/lsp/clear-workspace ()
+  (interactive)
+  (seq-do (lambda (elt)
+            (lsp-workspace-folders-remove elt))
+          (lsp-session-folders (lsp-session)))
   (puthash 'jdtls
            '()
            (lsp-session-server-id->folders (lsp-session)))
   (lsp--persist-session (lsp-session)))
-
 
 (defun my/lsp/import-eclipse-projects ()
   (interactive)
@@ -497,16 +520,15 @@
     ;; add projects to session
     (dolist (elt projects-to-import)
       (let ((exp (expand-file-name elt)))
-        (if (not (seq-contains (gethash 'jdtls
+        (if (not (seq-contains (lsp-session-folders (lsp-session)) exp))
+            (progn
+              (lsp-workspace-folders-add exp)
+              (puthash 'jdtls
+                       (append (gethash 'jdtls
                                         (lsp-session-server-id->folders (lsp-session)))
-                               exp))
-          (progn
-            (lsp-workspace-folders-add exp)
-            (puthash 'jdtls
-                     (append (gethash 'jdtls
-                                      (lsp-session-server-id->folders (lsp-session)))
-                             (list exp))
-                     (lsp-session-server-id->folders (lsp-session)))))))
+                               (list exp))
+                       (lsp-session-server-id->folders (lsp-session)))
+              ))))
     (lsp--persist-session (lsp-session))
     (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-to-import)))
 
