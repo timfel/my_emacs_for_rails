@@ -408,14 +408,16 @@
             (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
             (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))))
 
-
 (defun my/lsp/find-eclipse-projects-recursively (directory)
   (let ((current-directory-list (directory-files directory)))
-    (if (seq-some (lambda (elt) (string-equal ".project" elt)) current-directory-list)
-        (list directory)
+    (seq-concatenate 'list
+     (if (seq-some (lambda (elt) (string-equal ".project" elt)) current-directory-list)
+         (list directory)
+       '())
       (seq-mapcat (lambda (elt) (my/lsp/find-eclipse-projects-recursively (concat (file-name-as-directory directory) elt)))
                   (seq-filter (lambda (elt) (and (file-directory-p (concat (file-name-as-directory directory) elt))
                                                  (not (string-prefix-p "." elt))
+                                                 (not (string-prefix-p "mxbuild" elt))
                                                  (not (string-prefix-p "mx." elt)))) current-directory-list)))))
 
 (defun my/lsp/reload-all-java-buffers ()
@@ -562,6 +564,8 @@
   (dap--send-message (dap--make-request
                       "setExceptionBreakpoints"
                       (list :filters (list "caught" "uncaught")))
+                            ;; :exceptionOptions (list :path (list :names (list "java.lang.AssertionError"))
+                            ;;                         :breakMode "always")))
                      (dap--resp-handler)
                      (dap--cur-active-session-or-die)))
 
@@ -580,8 +584,21 @@
   :config (progn
             (dap-mode t)
             (dap-ui-mode t)
+            (setq dap-auto-show-output nil)))
 
-            (setq dap-auto-show-output nil)
+(use-package dap-java
+  :after (dap-mode lsp-java)
+  :config (progn
+            (setq dap-java-default-debug-port 8000)
+
+            (defun my/lsp/dap-debug ()
+              (interactive)
+              (let ((new-frame (make-frame)))
+                (select-frame-set-input-focus new-frame)
+                (toggle-fullscreen)
+                (call-interactively 'dap-debug)))
+            (define-key java-mode-map (kbd "C-c C-d") 'my/lsp/dap-debug)
+            (define-key java-mode-map (kbd "C-c C-x t") 'dap-breakpoint-toggle)
 
             (defun my/window-visible (b-name)
               "Return whether B-NAME is visible."
@@ -600,23 +617,19 @@
                   ;; display sessions
                   (unless (my/window-visible dap-ui--sessions-buffer)
                     (dap-ui-sessions)))))
+            (add-hook 'dap-session-created-hook 'my/show-debug-windows)
 
-            (add-hook 'dap-session-created-hook 'my/show-debug-windows)))
-
-(use-package dap-java
-  :after (dap-mode lsp-java)
-  :config (progn
-            (setq dap-java-default-debug-port 8000)
-
-            (defun my/lsp/dap-debug ()
-              (interactive)
-              (let ((new-frame (make-frame)))
-                (select-frame-set-input-focus new-frame)
-                (toggle-fullscreen)
-                (call-interactively 'dap-debug)))
-
-            (define-key java-mode-map (kbd "C-c C-d") 'my/lsp/dap-debug)
-            (define-key java-mode-map (kbd "C-c C-x t") 'dap-breakpoint-toggle)
+            (defun my/close-debug-windows (session)
+              (global-my/dap-mode -1)
+              (let ((debug-frame (seq-find (lambda (frame)
+                                             (> (seq-count (lambda (w) (string-equal (buffer-name (window-buffer w))
+                                                                                     dap-ui--sessions-buffer))
+                                                           (window-list frame))
+                                                0))
+                                           (frame-list))))
+                (if debug-frame
+                    (delete-frame debug-frame t))))
+            (add-hook 'dap-terminated-hook 'my/close-debug-windows)
 
             (dap-register-debug-template "Java Attach com.oracle.graal.python"
                                          (list :type "java"
