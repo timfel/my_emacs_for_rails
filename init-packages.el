@@ -359,7 +359,11 @@
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
                   lsp-ui-sideline-code-actions-prefix "💡 "
-                  lsp-ui-sideline-update-mode 'line)))
+                  lsp-ui-sideline-update-mode 'line)
+            (if (equalp (getenv "WSL") "1")
+                (setq lsp-ui-flycheck-live-reporting nil
+                      lsp-response-timeout 5
+                      lsp-ui-sideline-enable nil))))
 
 (use-package helm-lsp
   :ensure t
