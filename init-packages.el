@@ -387,10 +387,10 @@
                   lsp-enable-completion-at-point t
                   lsp-response-timeout 2
                   lsp-ui-doc-use-webkit t
-                  lsp-ui-sideline-enable t
+                  lsp-ui-sideline-enable nil
                   lsp-ui-sideline-show-symbol t
                   lsp-ui-sideline-show-hover t
-                  lsp-ui-sideline-showcode-actions t
+                  lsp-ui-sideline-showcode-actions nil
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
                   lsp-ui-sideline-code-actions-prefix "💡 "
@@ -410,7 +410,6 @@
   :config (progn
             (require 'lsp-ui-flycheck)
             (require 'lsp-ui-sideline)
-            ;; (setq lsp-java-workspace-dir "/home/tim/eclipse-workspace/")
             (setq
              lsp-java-save-actions-organize-imports t
              lsp-java-format-on-type-enabled nil
