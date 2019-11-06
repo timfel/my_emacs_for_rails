@@ -72,18 +72,53 @@
 (use-package org
   :ensure t
   :config (progn
-            (add-hook 'org-mode-hook (lambda ()
-                                       (progn
-                                         (local-set-key (kbd "<return>") 'org-insert-heading)
-                                         (local-set-key (kbd "M-<return>") 'org-insert-subheading))))
-            (setq org-hide-leading-stars t)
-            (setq org-agenda-files '())
-            (add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
-            (setq org-agenda-files (append (file-expand-wildcards
-                                            (expand-file-name "~/Documents/HPI/11SS/*"))
-                                           org-agenda-files))
-            (setq org-insert-mode-line-in-empty-file t)))
-
+            ;; (add-hook 'org-mode-hook (lambda ()
+            ;;                            (progn
+            ;;                              (local-set-key (kbd "<return>") 'org-insert-heading)
+            ;;                              (local-set-key (kbd "M-<return>") 'org-insert-subheading)))
+            (add-hook 'org-mode-hook (lambda () (run-at-time "1 sec" nil (lambda () (fci-mode 0)))))
+            (global-set-key (kbd "C-c a") 'org-agenda)
+            (define-key global-map (kbd "C-c c") 'org-capture)
+            (let ((todos (expand-file-name "~/OneDrive/todo.org"))
+                  (notes (expand-file-name "~/OneDrive/notes.org")))
+              (setq
+               org-default-notes-file notes
+               org-agenda-files (list todos)
+               ;; warn me of any deadlines in next 7 days
+               org-deadline-warning-days 7
+               ;; show me tasks scheduled or due in next fortnight
+               org-agenda-span 'fortnight
+               ;; don't show tasks as scheduled if they are already shown as a deadline
+               org-agenda-skip-scheduled-if-deadline-is-shown t
+               ;; don't give awarning colour to tasks with impending deadlines if they are
+               ;; scheduled to be done
+               org-agenda-skip-deadline-prewarning-if-scheduled 'pre-scheduled
+               ;; don't show tasks that are scheduled or have deadlines in the normal todo
+               ;; list
+               org-agenda-todo-ignore-deadlines 'all
+               org-agenda-todo-ignore-scheduled 'all
+               ;; sort tasks in order of when they are due and then by priority
+               org-agenda-sorting-strategy '((agenda deadline-up priority-down)
+                                             (todo priority-down category-keep)
+                                             (tags priority-down category-keep)
+                                             (search category-keep))
+               org-insert-mode-line-in-empty-file t
+               ;; do not shift lower items
+               org-adapt-indentation nil
+               ;; i like this more
+               org-hide-leading-stars t
+               org-highest-priority ?A
+               org-lowest-priority ?C
+               org-default-priority ?A
+               org-priority-faces '((?A . (:foreground "#F0DFAF" :weight bold))
+                                    (?B . (:foreground "LightSteelBlue"))
+                                    (?C . (:foreground "OliveDrab")))
+               org-agenda-window-setup 'current-window
+               org-capture-templates
+               (list
+                ;; schedule new todo items to today by default
+                (list "n" "note" 'entry (list 'file+datetree notes) "* %?\nEntered on %U\n  %i\n  %a")
+                (list "t" "todo" 'entry (list 'file+headline todos "Tasks") "* TODO [#A] %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n"))))))
 
 ;; tags and navigation
 (use-package ggtags :ensure t)
