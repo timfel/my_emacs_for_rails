@@ -159,10 +159,16 @@
 (add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
 (add-to-list 'desktop-modes-not-to-save 'grep-mode)
 (add-to-list 'desktop-modes-not-to-save 'magit-mode)
-(run-with-idle-timer
- 30 ; seconds
- t  ; repeat
- 'desktop-save-in-desktop-dir)
+(if (not (eq (emacs-pid) (desktop-owner)))
+    (progn
+      (desktop-save-mode nil)
+      
+      (setq lsp-java-workspace-dir
+            (expand-file-name (locate-user-emacs-file "workspace2/"))))
+  (run-with-idle-timer
+   30 ; seconds
+   t  ; repeat
+   'desktop-save-in-desktop-dir))
 
 
 ;; ISearch word under cursor
