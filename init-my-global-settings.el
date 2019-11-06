@@ -367,3 +367,10 @@
 (add-to-list 'term-file-aliases
              '("st-256color" . "xterm-256color")
              '("screen-256color" . "xterm-256color"))
+
+
+(setq display-buffer-alist
+      '((".java" (display-buffer-same-window) ())
+        (".py" (display-buffer-same-window) ())
+        (".c" (display-buffer-same-window) ())
+        (".h" (display-buffer-same-window) ())))
