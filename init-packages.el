@@ -468,6 +468,20 @@
                         (message "Reverting %s" (buffer-name))
                         (revert-buffer :ignore-auto :noconfirm))))))))))
 
+(defun my/lsp/kill-old-java-buffers ()
+  (interactive)
+  (let ((list (buffer-list))
+        (recent-cnt 0))
+    (dolist (buffer list)
+      (let ((name (buffer-name buffer))
+            (mode (with-current-buffer buffer major-mode)))
+        (if (eq mode 'java-mode)
+            (progn 
+              (setq recent-cnt (+ 1 recent-cnt))
+              (if (and (not (buffer-modified-p buffer))
+                       (> recent-cnt 5))
+                  (kill-buffer buffer))))))))
+
 (defun my/lsp/kill-all-java-buffers ()
   (interactive)
   (let ((list (buffer-list)))
