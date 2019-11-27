@@ -322,7 +322,6 @@
 
             (setq reftex-default-bibliography (list (expand-file-name "~/Dropbox/Papers/library.bib")))))
 
-
 ;; LSP and especially Java
 (use-package treemacs :ensure t)
 (use-package lsp-mode
@@ -367,14 +366,12 @@
             (define-key lsp-mode-map (kbd "C-.") #'helm-imenu)
             ;; (define-key lsp-mode-map (kbd "C-S-t") #'lsp-ui-find-workspace-symbol)
             (define-key lsp-mode-map (kbd "C-S-t") #'helm-lsp-workspace-symbol)
-            (define-key lsp-mode-map (kbd "C-M-,") (lambda ()
-                                                     (interactive)
-                                                     (list-flycheck-errors)
-                                                     (switch-to-buffer-other-window flycheck-error-list-buffer)))
+            (define-key lsp-mode-map (kbd "C-c f") (lambda () (interactive) (list-flycheck-errors)))
+            (define-key lsp-ui-mode-map (kbd "C-c e") #'lsp-treemacs-errors-list)
             (define-key lsp-mode-map (kbd "C-,") #'lsp-execute-code-action)
             ;; (lsp-ui-peek-jump-backward)
             ;; (lsp-ui-peek-jump-forward)
-            (define-key lsp-ui-mode-map (kbd "M-,") #'lsp-treemacs-errors-list)
+            (define-key lsp-ui-mode-map (kbd "M-,") #'xref-pop-marker-stack)
             (define-key lsp-ui-mode-map (kbd "M-.") #'lsp-ui-peek-find-definitions)
             (define-key lsp-ui-mode-map (kbd "C-M-.") #'lsp-ui-peek-find-references)
             ;; (define-key lsp-mode-map (kbd "M-.") #'lsp-find-definition)
@@ -403,6 +400,10 @@
 (use-package lsp-treemacs
   :ensure t
   :commands lsp-treemacs-errors-list)
+
+(use-package lsp-python-ms
+  :ensure t
+  :after (lsp-mode))
 
 (use-package lsp-java
   :ensure t
@@ -440,7 +441,8 @@
             (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
             (add-hook 'java-mode-hook (lambda () (company-mode t)))
             (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
-            (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))))
+            ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))
+                      ))
 
 (defun my/lsp/find-eclipse-projects-recursively (directory)
   (let ((current-directory-list (directory-files directory)))
@@ -630,8 +632,11 @@
 (use-package dap-mode
   :ensure t :after lsp-mode
   :config (progn
-            (dap-mode t)
-            (dap-ui-mode t)
+            (dap-mode 1)
+            (dap-ui-mode 1)
+            (dap-tooltip-mode 1)
+            (tooltip-mode 1)
+            (define-key dap-ui-session-mode-map [C-mouse-1] 'dap-ui-session-select)
             (setq dap-auto-show-output nil)))
 
 (use-package dap-java
@@ -639,13 +644,14 @@
   :config (progn
             (setq dap-java-default-debug-port 8000)
 
-            (defun my/lsp/dap-debug ()
-              (interactive)
-              (let ((new-frame (make-frame)))
-                (select-frame-set-input-focus new-frame)
-                (toggle-fullscreen)
-                (call-interactively 'dap-debug)))
-            (define-key java-mode-map (kbd "C-c C-d") 'my/lsp/dap-debug)
+            ;; (defun my/lsp/dap-debug ()
+            ;;   (interactive)
+            ;;   (let ((new-frame (make-frame)))
+            ;;     (select-frame-set-input-focus new-frame)
+            ;;     (toggle-fullscreen)
+            ;;     (call-interactively 'dap-debug)))
+            ;; (define-key java-mode-map (kbd "C-c C-d") 'my/lsp/dap-debug)
+            (define-key java-mode-map (kbd "C-c C-d") 'dap-debug)
             (define-key java-mode-map (kbd "C-c C-x t") 'dap-breakpoint-toggle)
 
             (defun my/window-visible (b-name)
@@ -669,14 +675,15 @@
 
             (defun my/close-debug-windows (session)
               (global-my/dap-mode -1)
-              (let ((debug-frame (seq-find (lambda (frame)
-                                             (> (seq-count (lambda (w) (string-equal (buffer-name (window-buffer w))
-                                                                                     dap-ui--sessions-buffer))
-                                                           (window-list frame))
-                                                0))
-                                           (frame-list))))
-                (if debug-frame
-                    (delete-frame debug-frame t))))
+              ;; (let ((debug-frame (seq-find (lambda (frame)
+              ;;                                (> (seq-count (lambda (w) (string-equal (buffer-name (window-buffer w))
+              ;;                                                                        dap-ui--sessions-buffer))
+              ;;                                              (window-list frame))
+              ;;                                   0))
+              ;;                              (frame-list))))
+              ;;   (if debug-frame
+              ;;       (delete-frame debug-frame t)))
+              )
             (add-hook 'dap-terminated-hook 'my/close-debug-windows)
 
             (dap-register-debug-template "Java Attach com.oracle.graal.python"
