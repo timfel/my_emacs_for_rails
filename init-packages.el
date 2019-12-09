@@ -642,6 +642,8 @@
             (define-key dap-ui-session-mode-map [C-mouse-1] 'dap-ui-session-select)
             (setq dap-auto-show-output nil)))
 
+(use-package posframe :ensure t)
+
 (use-package dap-java
   :after (dap-mode lsp-java)
   :config (progn
