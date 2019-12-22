@@ -173,7 +173,9 @@ each nesting level."
                          (sexp :tag "Error specification")))
   :group 'kickasm)
 
-(defcustom kickasm-assemble-command "java -jar /usr/lib/kickassembler/KickAss.jar -vicesymbols -debugdump"
+(defcustom kickasm-assemble-command (concat "java -jar "
+                                            (expand-file-name user-emacs-directory)
+                                            "KickAss.jar -vicesymbols -debugdump")
   "Command to assemble Kick Assembler programs."
   :type 'string
   :group 'kickasm)
@@ -185,7 +187,8 @@ file was created by the assembler."
   :type 'string
   :group 'kickasm)
 
-(defcustom kickasm-c64debugger-command "c64debugger -autojmp -wait 4000"
+(defcustom kickasm-c64debugger-command (concat
+                                        (expand-file-name user-emacs-directory) "c64debugger -autojmp -wait 4000")
   "Command to run C64 Debugger.
 Please note that -symbols will be added automatically if a vice symbol
 file was created by the assembler."
@@ -193,6 +196,58 @@ file was created by the assembler."
   :group 'kickasm)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun kickasm-download-assembler ()
+  "Download kickassembler to local .emacs directory"
+  (interactive)
+  (let
+      ((kickass-jar (concat (expand-file-name user-emacs-directory) "KickAss.jar"))
+       (kickass-zip (concat (expand-file-name user-emacs-directory) "KickAssembler.zip")))
+    (if (not (file-exists-p kickass-jar))
+        (progn
+          (url-copy-file "http://theweb.dk/KickAssembler/KickAssembler.zip" kickass-zip
+                         :ok-if-already-exists t)
+          (call-process-shell-command
+           (concat "unzip -j -o "
+                   kickass-zip
+                   " -d "
+                   (expand-file-name user-emacs-directory)
+                   " KickAss.jar"
+                   ))
+          (delete-file kickass-zip)))))
+
+(defun kickasm-download-c64debugger ()
+  "Download c64debugger and compile local .emacs directory"
+  (interactive)
+  (let
+      ((c64debugger (concat (expand-file-name user-emacs-directory)
+                            (file-name-as-directory "c64debugger")
+                            "c64debugger"))
+       (c64debugger-url "https://github.com/sunsided/c64-debugger/archive/github.zip")
+       (c64debugger-zip (concat (expand-file-name user-emacs-directory)
+                                "c64debugger.zip")))
+    (if (not (file-exists-p c64debugger))
+        (progn
+          (url-copy-file c64debugger-url c64debugger-zip :ok-if-already-exists t)
+          (call-process-shell-command
+           (concat "unzip -o "
+                   c64debugger-zip
+                   " -d "
+                   (file-name-directory c64debugger)))
+          (let* ((makefile (car (directory-files-recursively (file-name-directory c64debugger) "Makefile")))
+                 (makedir (file-name-directory makefile))
+                 (proc (start-process "make" "*c64debugger build*" "make" "-C" makedir)))
+            (switch-to-buffer-other-window "*c64debugger build*")
+            (set-process-sentinel proc (lambda (process signal)
+                                         (if (not (process-live-p process))
+                                             (if (not (= (process-exit-status process) 0))
+                                                 (progn
+                                                   (error "Could not compile c64debugger")
+                                                   (delete-file (concat (expand-file-name user-emacs-directory)
+                                                                        (file-name-as-directory "c64debugger")
+                                                                        "c64debugger")))))))
+            (make-symbolic-link (concat makedir "c64debugger") c64debugger))
+          (delete-file c64debugger-zip)))))
 
 (defun kickasm-compilation-buffer-name (mode)
   "Function to compute the name of the compilation buffer.
