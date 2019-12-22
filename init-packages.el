@@ -796,4 +796,5 @@
 (progn (global-set-key [(control -)] 'redo))
 (require 'sudo-save)
 (autoload 'pypytrace-mode "pypytrace-mode" "PyPy JIT Trace mode" t)
+
 (autoload 'kickasm-mode "kickasm-mode" "KickAssembler mode" t)
