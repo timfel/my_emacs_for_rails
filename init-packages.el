@@ -83,7 +83,7 @@
                   (notes (expand-file-name "~/OneDrive/notes.org")))
               (setq
                org-default-notes-file notes
-               org-agenda-files (list todos)
+               org-agenda-files (list todos notes)
                ;; warn me of any deadlines in next 7 days
                org-deadline-warning-days 7
                ;; show me tasks scheduled or due in next fortnight
