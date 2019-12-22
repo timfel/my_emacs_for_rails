@@ -274,12 +274,12 @@
 ;;            (delq 'buffer-file-name mumamo-per-buffer-local-vars))))
 
 
-(defun my-find-file-check-make-small-files-fci ()
-  "If a file is under a given size draw a nice fci indicator."
-  (if (and (< (buffer-size) (* 1024 1024))
-	   window-system)
-      (fci-mode 1)))
-(add-hook 'find-file-hook 'my-find-file-check-make-small-files-fci)
+;; (defun my-find-file-check-make-small-files-fci ()
+;;   "If a file is under a given size draw a nice fci indicator."
+;;   (if (and (< (buffer-size) (* 1024 1024))
+;; 	   window-system)
+;;       (fci-mode 1)))
+;; (add-hook 'find-file-hook 'my-find-file-check-make-small-files-fci)
 
 
 (defun xclip-paste ()
@@ -315,8 +315,8 @@
 ;;       mail-signature ""
 ;;       mail-default-headers "")
 
-(setq split-height-threshold nil
-      split-width-threshold 160)
+;; (setq split-height-threshold nil
+;;       split-width-threshold 160)
 
 ;; (setq split-height-threshold 120
 ;;       split-width-threshold 160)
@@ -368,9 +368,8 @@
              '("st-256color" . "xterm-256color")
              '("screen-256color" . "xterm-256color"))
 
-
-(setq display-buffer-alist
-      '((".java" (display-buffer-same-window) ())
-        (".py" (display-buffer-same-window) ())
-        (".c" (display-buffer-same-window) ())
-        (".h" (display-buffer-same-window) ())))
+;; (setq display-buffer-alist
+;;       '((".java" (display-buffer-same-window) ())
+;;         (".py" (display-buffer-same-window) ())
+;;         (".c" (display-buffer-same-window) ())
+;;         (".h" (display-buffer-same-window) ())))
