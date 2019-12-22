@@ -251,13 +251,13 @@
 (use-package all-the-icons
   :demand t
   :ensure t)
-(use-package doom-modeline
-  :demand t
-  :after all-the-icons
-  :ensure t
-  :hook (after-init . doom-modeline-mode)
-  :config (setq doom-modeline-minor-modes nil
-                doom-modeline-buffer-file-name-style 'truncate-all))
+;; (use-package doom-modeline
+;;   :demand t
+;;   :after all-the-icons
+;;   :ensure t
+;;   :hook (after-init . doom-modeline-mode)
+;;   :config (setq doom-modeline-minor-modes nil
+;;                 doom-modeline-buffer-file-name-style 'truncate-all))
 
 ;; LaTeX
 (use-package tex
@@ -439,7 +439,7 @@
                       (lambda ()
                         (c-set-offset 'arglist-cont-nonempty 16)))
             (add-hook 'java-mode-hook #'lsp)
-            (add-hook 'java-mode-hook 'doom-modeline-mode)
+            ;; (add-hook 'java-mode-hook 'doom-modeline-mode)
             (add-hook 'java-mode-hook 'friendly-whitespace)
             (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
             (add-hook 'java-mode-hook (lambda () (company-mode t)))
