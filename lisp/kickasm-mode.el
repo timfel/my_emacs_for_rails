@@ -188,7 +188,9 @@ file was created by the assembler."
   :group 'kickasm)
 
 (defcustom kickasm-c64debugger-command (concat
-                                        (expand-file-name user-emacs-directory) "c64debugger -autojmp -wait 4000")
+                                        (expand-file-name user-emacs-directory)
+                                        (file-name-as-directory "c64debugger")
+                                        "c64debugger -autojmp -wait 4000")
   "Command to run C64 Debugger.
 Please note that -symbols will be added automatically if a vice symbol
 file was created by the assembler."

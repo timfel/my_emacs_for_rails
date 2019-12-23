@@ -35,6 +35,9 @@
      ("XXX" . "#dc752f")
      ("XXXX" . "#dc752f")
      ("???" . "#dc752f"))))
+ '(kickasm-c64debugger-command
+   "/home/tim/.emacs.d/c64debugger/c64debugger -autojmp -wait 4000")
+ '(kickasm-vice-command "x64")
  '(org-file-apps
    (quote
     ((auto-mode . emacs)

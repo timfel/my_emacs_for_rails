@@ -8,3 +8,16 @@ server/server
 tramp
 \#*\#
 ac-comphist.dat
+c64debugger
+.dap-breakpoints
+.lsp-session-v1
+KickAss.jar
+bookmarks
+.emacs.desktop*
+workspace
+mspyls
+eclipse.jdt.ls
+ido.last
+recentf
+transient
+
