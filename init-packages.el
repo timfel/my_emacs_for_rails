@@ -798,3 +798,11 @@
 (autoload 'pypytrace-mode "pypytrace-mode" "PyPy JIT Trace mode" t)
 
 (autoload 'kickasm-mode "kickasm-mode" "KickAssembler mode" t)
+(add-hook 'kickasm-mode-hook
+          (lambda () (add-hook 'before-save-hook
+                               (lambda ()
+                                 (whitespace-cleanup)
+                                 (indent-region (point-min) (point-max) nil)
+                                 (untabify (point-min) (point-max)))
+                               nil
+                               'local)))
