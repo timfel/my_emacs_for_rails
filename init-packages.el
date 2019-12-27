@@ -72,18 +72,53 @@
 (use-package org
   :ensure t
   :config (progn
-            (add-hook 'org-mode-hook (lambda ()
-                                       (progn
-                                         (local-set-key (kbd "<return>") 'org-insert-heading)
-                                         (local-set-key (kbd "M-<return>") 'org-insert-subheading))))
-            (setq org-hide-leading-stars t)
-            (setq org-agenda-files '())
-            (add-to-list 'org-agenda-files (expand-file-name "~/Desktop"))
-            (setq org-agenda-files (append (file-expand-wildcards
-                                            (expand-file-name "~/Documents/HPI/11SS/*"))
-                                           org-agenda-files))
-            (setq org-insert-mode-line-in-empty-file t)))
-
+            ;; (add-hook 'org-mode-hook (lambda ()
+            ;;                            (progn
+            ;;                              (local-set-key (kbd "<return>") 'org-insert-heading)
+            ;;                              (local-set-key (kbd "M-<return>") 'org-insert-subheading)))
+            (add-hook 'org-mode-hook (lambda () (run-at-time "1 sec" nil (lambda () (fci-mode 0)))))
+            (global-set-key (kbd "C-c a") 'org-agenda)
+            (define-key global-map (kbd "C-c c") 'org-capture)
+            (let ((todos (expand-file-name "~/OneDrive/todo.org"))
+                  (notes (expand-file-name "~/OneDrive/notes.org")))
+              (setq
+               org-default-notes-file notes
+               org-agenda-files (list todos notes)
+               ;; warn me of any deadlines in next 7 days
+               org-deadline-warning-days 7
+               ;; show me tasks scheduled or due in next fortnight
+               org-agenda-span 'fortnight
+               ;; don't show tasks as scheduled if they are already shown as a deadline
+               org-agenda-skip-scheduled-if-deadline-is-shown t
+               ;; don't give awarning colour to tasks with impending deadlines if they are
+               ;; scheduled to be done
+               org-agenda-skip-deadline-prewarning-if-scheduled 'pre-scheduled
+               ;; don't show tasks that are scheduled or have deadlines in the normal todo
+               ;; list
+               org-agenda-todo-ignore-deadlines 'all
+               org-agenda-todo-ignore-scheduled 'all
+               ;; sort tasks in order of when they are due and then by priority
+               org-agenda-sorting-strategy '((agenda deadline-up priority-down)
+                                             (todo priority-down category-keep)
+                                             (tags priority-down category-keep)
+                                             (search category-keep))
+               org-insert-mode-line-in-empty-file t
+               ;; do not shift lower items
+               org-adapt-indentation nil
+               ;; i like this more
+               org-hide-leading-stars t
+               org-highest-priority ?A
+               org-lowest-priority ?C
+               org-default-priority ?A
+               org-priority-faces '((?A . (:foreground "#F0DFAF" :weight bold))
+                                    (?B . (:foreground "LightSteelBlue"))
+                                    (?C . (:foreground "OliveDrab")))
+               org-agenda-window-setup 'current-window
+               org-capture-templates
+               (list
+                ;; schedule new todo items to today by default
+                (list "n" "note" 'entry (list 'file+datetree notes) "* %?\nEntered on %U\n  %i\n  %a")
+                (list "t" "todo" 'entry (list 'file+headline todos "Tasks") "* TODO [#A] %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n"))))))
 
 ;; tags and navigation
 (use-package ggtags :ensure t)
@@ -216,13 +251,13 @@
 (use-package all-the-icons
   :demand t
   :ensure t)
-(use-package doom-modeline
-  :demand t
-  :after all-the-icons
-  :ensure t
-  :hook (after-init . doom-modeline-mode)
-  :config (setq doom-modeline-minor-modes nil
-                doom-modeline-buffer-file-name-style 'truncate-all))
+;; (use-package doom-modeline
+;;   :demand t
+;;   :after all-the-icons
+;;   :ensure t
+;;   :hook (after-init . doom-modeline-mode)
+;;   :config (setq doom-modeline-minor-modes nil
+;;                 doom-modeline-buffer-file-name-style 'truncate-all))
 
 ;; LaTeX
 (use-package tex
@@ -287,7 +322,6 @@
 
             (setq reftex-default-bibliography (list (expand-file-name "~/Dropbox/Papers/library.bib")))))
 
-
 ;; LSP and especially Java
 (use-package treemacs :ensure t)
 (use-package lsp-mode
@@ -332,14 +366,12 @@
             (define-key lsp-mode-map (kbd "C-.") #'helm-imenu)
             ;; (define-key lsp-mode-map (kbd "C-S-t") #'lsp-ui-find-workspace-symbol)
             (define-key lsp-mode-map (kbd "C-S-t") #'helm-lsp-workspace-symbol)
-            (define-key lsp-mode-map (kbd "C-M-,") (lambda ()
-                                                     (interactive)
-                                                     (list-flycheck-errors)
-                                                     (switch-to-buffer-other-window flycheck-error-list-buffer)))
+            (define-key lsp-mode-map (kbd "C-c f") (lambda () (interactive) (list-flycheck-errors)))
+            (define-key lsp-ui-mode-map (kbd "C-c e") #'lsp-treemacs-errors-list)
             (define-key lsp-mode-map (kbd "C-,") #'lsp-execute-code-action)
             ;; (lsp-ui-peek-jump-backward)
             ;; (lsp-ui-peek-jump-forward)
-            (define-key lsp-ui-mode-map (kbd "M-,") #'lsp-treemacs-errors-list)
+            (define-key lsp-ui-mode-map (kbd "M-,") #'xref-pop-marker-stack)
             (define-key lsp-ui-mode-map (kbd "M-.") #'lsp-ui-peek-find-definitions)
             (define-key lsp-ui-mode-map (kbd "C-M-.") #'lsp-ui-peek-find-references)
             ;; (define-key lsp-mode-map (kbd "M-.") #'lsp-find-definition)
@@ -352,10 +384,10 @@
                   lsp-enable-completion-at-point t
                   lsp-response-timeout 2
                   lsp-ui-doc-use-webkit t
-                  lsp-ui-sideline-enable t
+                  lsp-ui-sideline-enable nil
                   lsp-ui-sideline-show-symbol t
                   lsp-ui-sideline-show-hover t
-                  lsp-ui-sideline-showcode-actions t
+                  lsp-ui-sideline-showcode-actions nil
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
                   lsp-ui-sideline-code-actions-prefix "💡 "
@@ -373,13 +405,19 @@
   :ensure t
   :commands lsp-treemacs-errors-list)
 
+(use-package lsp-python-ms
+  :ensure t
+  :after (lsp-mode)
+  :hook (python-mode . (lambda ()
+                          (require 'lsp-python-ms)
+                          (lsp))))
+
 (use-package lsp-java
   :ensure t
   :after (lsp-mode flycheck company)
   :config (progn
             (require 'lsp-ui-flycheck)
             (require 'lsp-ui-sideline)
-            ;; (setq lsp-java-workspace-dir "/home/tim/eclipse-workspace/")
             (setq
              lsp-java-save-actions-organize-imports t
              lsp-java-format-on-type-enabled nil
@@ -405,12 +443,13 @@
                       (lambda ()
                         (c-set-offset 'arglist-cont-nonempty 16)))
             (add-hook 'java-mode-hook #'lsp)
-            (add-hook 'java-mode-hook 'doom-modeline-mode)
+            ;; (add-hook 'java-mode-hook 'doom-modeline-mode)
             (add-hook 'java-mode-hook 'friendly-whitespace)
             (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
             (add-hook 'java-mode-hook (lambda () (company-mode t)))
             (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
-            (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))))
+            ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))
+                      ))
 
 (defun my/lsp/find-eclipse-projects-recursively (directory)
   (let ((current-directory-list (directory-files directory)))
@@ -437,6 +476,20 @@
                       (progn
                         (message "Reverting %s" (buffer-name))
                         (revert-buffer :ignore-auto :noconfirm))))))))))
+
+(defun my/lsp/kill-old-java-buffers ()
+  (interactive)
+  (let ((list (buffer-list))
+        (recent-cnt 0))
+    (dolist (buffer list)
+      (let ((name (buffer-name buffer))
+            (mode (with-current-buffer buffer major-mode)))
+        (if (eq mode 'java-mode)
+            (progn 
+              (setq recent-cnt (+ 1 recent-cnt))
+              (if (and (not (buffer-modified-p buffer))
+                       (> recent-cnt 5))
+                  (kill-buffer buffer))))))))
 
 (defun my/lsp/kill-all-java-buffers ()
   (interactive)
@@ -586,22 +639,28 @@
 (use-package dap-mode
   :ensure t :after lsp-mode
   :config (progn
-            (dap-mode t)
-            (dap-ui-mode t)
+            (dap-mode 1)
+            (dap-ui-mode 1)
+            (dap-tooltip-mode 1)
+            (tooltip-mode 1)
+            (define-key dap-ui-session-mode-map [C-mouse-1] 'dap-ui-session-select)
             (setq dap-auto-show-output nil)))
+
+(use-package posframe :ensure t)
 
 (use-package dap-java
   :after (dap-mode lsp-java)
   :config (progn
             (setq dap-java-default-debug-port 8000)
 
-            (defun my/lsp/dap-debug ()
-              (interactive)
-              (let ((new-frame (make-frame)))
-                (select-frame-set-input-focus new-frame)
-                (toggle-fullscreen)
-                (call-interactively 'dap-debug)))
-            (define-key java-mode-map (kbd "C-c C-d") 'my/lsp/dap-debug)
+            ;; (defun my/lsp/dap-debug ()
+            ;;   (interactive)
+            ;;   (let ((new-frame (make-frame)))
+            ;;     (select-frame-set-input-focus new-frame)
+            ;;     (toggle-fullscreen)
+            ;;     (call-interactively 'dap-debug)))
+            ;; (define-key java-mode-map (kbd "C-c C-d") 'my/lsp/dap-debug)
+            (define-key java-mode-map (kbd "C-c C-d") 'dap-debug)
             (define-key java-mode-map (kbd "C-c C-x t") 'dap-breakpoint-toggle)
 
             (defun my/window-visible (b-name)
@@ -625,14 +684,15 @@
 
             (defun my/close-debug-windows (session)
               (global-my/dap-mode -1)
-              (let ((debug-frame (seq-find (lambda (frame)
-                                             (> (seq-count (lambda (w) (string-equal (buffer-name (window-buffer w))
-                                                                                     dap-ui--sessions-buffer))
-                                                           (window-list frame))
-                                                0))
-                                           (frame-list))))
-                (if debug-frame
-                    (delete-frame debug-frame t))))
+              ;; (let ((debug-frame (seq-find (lambda (frame)
+              ;;                                (> (seq-count (lambda (w) (string-equal (buffer-name (window-buffer w))
+              ;;                                                                        dap-ui--sessions-buffer))
+              ;;                                              (window-list frame))
+              ;;                                   0))
+              ;;                              (frame-list))))
+              ;;   (if debug-frame
+              ;;       (delete-frame debug-frame t)))
+              )
             (add-hook 'dap-terminated-hook 'my/close-debug-windows)
 
             (dap-register-debug-template "Java Attach com.oracle.graal.python"
@@ -740,3 +800,13 @@
 (progn (global-set-key [(control -)] 'redo))
 (require 'sudo-save)
 (autoload 'pypytrace-mode "pypytrace-mode" "PyPy JIT Trace mode" t)
+
+(autoload 'kickasm-mode "kickasm-mode" "KickAssembler mode" t)
+(add-hook 'kickasm-mode-hook
+          (lambda () (add-hook 'before-save-hook
+                               (lambda ()
+                                 (whitespace-cleanup)
+                                 (indent-region (point-min) (point-max) nil)
+                                 (untabify (point-min) (point-max)))
+                               nil
+                               'local)))

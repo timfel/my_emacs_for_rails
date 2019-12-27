@@ -35,6 +35,9 @@
      ("XXX" . "#dc752f")
      ("XXXX" . "#dc752f")
      ("???" . "#dc752f"))))
+ '(kickasm-c64debugger-command
+   "/home/tim/.emacs.d/c64debugger/c64debugger -autojmp -wait 4000")
+ '(kickasm-vice-command "x64")
  '(org-file-apps
    (quote
     ((auto-mode . emacs)
@@ -43,7 +46,7 @@
      ("\\.pdf\\'" . "evince %s"))))
  '(package-selected-packages
    (quote
-    (lsp-java-treemacs treemacs-icons company-box doom-modeline dracula-theme magit-popup thesaurus flycheck company-lsp treemacs fill-column-indicator textmate logito pcache fuzzy popup autopair switch-window cssh gh magithub magit-svn magit gist helm-etags-plus projectile xcscope org-mode ruby-electric lua-mode markdown-mode sass-mode rspec-mode haml-mode yaml-mode org-link-minor-mode helm-projectile helm markdown-preview-mode markdown-mode+ spacemacs-theme term-keys lsp-java dap-mode lsp-ui lsp-mode tree-mode oauth2)))
+    (posframe lsp-python-ms lsp-java-treemacs treemacs-icons company-box doom-modeline dracula-theme magit-popup thesaurus flycheck company-lsp treemacs fill-column-indicator textmate logito pcache fuzzy popup autopair switch-window cssh gh magithub magit-svn magit gist helm-etags-plus projectile xcscope org-mode ruby-electric lua-mode markdown-mode sass-mode rspec-mode haml-mode yaml-mode org-link-minor-mode helm-projectile helm markdown-preview-mode markdown-mode+ spacemacs-theme term-keys lsp-java dap-mode lsp-ui lsp-mode tree-mode oauth2)))
  '(pdf-view-midnight-colors (quote ("#655370" . "#fbf8ef")))
  '(safe-local-variable-values
    (quote
