@@ -404,9 +404,10 @@
 (use-package lsp-python-ms
   :ensure t
   :after (lsp-mode)
-  :hook (python-mode . (lambda ()
-                          (require 'lsp-python-ms)
-                          (lsp))))
+  ;; :hook (python-mode . (lambda ()
+  ;;                         (require 'lsp-python-ms)
+  ;;                         (lsp)))
+  )
 
 (use-package lsp-java
   :ensure t
