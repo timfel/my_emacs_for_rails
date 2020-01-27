@@ -38,6 +38,7 @@
  '(kickasm-c64debugger-command
    "/home/tim/.emacs.d/c64debugger/c64debugger -autojmp -wait 4000")
  '(kickasm-vice-command "x64")
+ '(markdown-command "cmark-gfm --extension table")
  '(org-file-apps
    (quote
     ((auto-mode . emacs)
