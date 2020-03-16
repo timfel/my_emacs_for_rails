@@ -376,13 +376,20 @@
             (define-key lsp-ui-mode-map (kbd "C-M-.") #'lsp-ui-peek-find-references)
             ;; (define-key lsp-mode-map (kbd "M-.") #'lsp-find-definition)
             ;; (define-key lsp-mode-map (kbd "C-M-.") #'lsp-find-references)
+            ;; performance tips from readme
+            (setq gc-cons-threshold 100000000) ;; 100mb
+            (setq read-process-output-max (* 1024 1024)) ;; 1mb
+            ;; settings
             (setq lsp-ui-flycheck-live-reporting t
                   lsp-print-performance nil
                   lsp-report-if-no-buffer t
                   lsp-enable-snippet t
                   lsp-enable-xref t
                   lsp-enable-completion-at-point t
-                  lsp-response-timeout 2
+                  lsp-response-timeout 10
+                  lsp-eldoc-render-all t
+                  lsp-ui-peek-always-show t
+                  lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit t
                   lsp-ui-sideline-enable nil
                   lsp-ui-sideline-show-symbol t
@@ -390,6 +397,7 @@
                   lsp-ui-sideline-showcode-actions nil
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
+                  lsp-idle-delay 0.500
                   lsp-ui-sideline-code-actions-prefix "💡 "
                   lsp-ui-sideline-update-mode 'line)))
 
