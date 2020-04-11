@@ -38,6 +38,7 @@
  '(kickasm-c64debugger-command
    "/home/tim/.emacs.d/c64debugger/c64debugger -autojmp -wait 4000")
  '(kickasm-vice-command "x64")
+ '(lsp-tcp-connection-timeout 20)
  '(lsp-ui-doc-position (quote top))
  '(markdown-command "cmark-gfm --extension table")
  '(org-file-apps
