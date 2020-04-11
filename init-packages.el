@@ -412,9 +412,10 @@
 (use-package lsp-python-ms
   :ensure t
   :after (lsp-mode)
-  ;; :hook (python-mode . (lambda ()
-  ;;                         (require 'lsp-python-ms)
-  ;;                         (lsp)))
+  :hook (python-mode . (lambda ()
+                         (require 'lsp-python-ms)))
+  :config (setq
+           lsp-python-ms-python-executable-cmd "python3")
   )
 
 (use-package lsp-java
@@ -616,7 +617,9 @@
                             (unless (-> (-compose 'buffer-name 'window-buffer)
                                         (-map (window-list))
                                         (-contains? name))
-                              (call-interactively func)))
+                              (call-interactively func))
+                            (with-current-buffer name
+                              (visual-line-mode 1)))
                           (list dap-ui--breakpoints-buffer dap-ui--expressions-buffer dap-ui--locals-buffer dap-ui--sessions-buffer)
                           '(dap-ui-breakpoints dap-ui-expressions dap-ui-locals dap-ui-sessions))))
             (add-hook 'dap-session-created-hook 'my/show-debug-windows)
