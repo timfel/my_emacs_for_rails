@@ -1,3 +1,5 @@
+;;
+(windmove-default-keybindings)
 ;; don't ding
 (setq visible-bell t)
 (recentf-mode t)

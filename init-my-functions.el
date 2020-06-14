@@ -171,3 +171,19 @@ Non-interactive arguments are Begin End Regexp"
 
 (global-set-key (kbd "M-<up>") 'move-line-up)
 (global-set-key (kbd "M-<down>") 'move-line-down)
+
+(defun update-proxies-from-wpad ()
+  (interactive)
+  ;; (setq wpad (shell-command-to-string "curl -s wpad")
+  (let ((wpad (shell-command-to-string "curl -s wpad")))
+    (if (string-match "PROXY\s\\([^; \n\t]+\\)" wpad)
+        (progn
+          (setq wpad (match-string-no-properties 1 wpad))
+          (if (string-match-p ":[0-9]+$" wpad)
+              (setq url-proxy-services
+                    (list (cons "http" wpad)
+                          (cons "https" wpad)))
+            (setq url-proxy-services
+                  (list (cons "http" (concat wpad ":80"))
+                        (cons "https" (concat wpad ":443"))))))
+      (setq url-proxy-services nil))))

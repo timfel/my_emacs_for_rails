@@ -376,13 +376,20 @@
             (define-key lsp-ui-mode-map (kbd "C-M-.") #'lsp-ui-peek-find-references)
             ;; (define-key lsp-mode-map (kbd "M-.") #'lsp-find-definition)
             ;; (define-key lsp-mode-map (kbd "C-M-.") #'lsp-find-references)
+            ;; performance tips from readme
+            (setq gc-cons-threshold 100000000) ;; 100mb
+            (setq read-process-output-max (* 1024 1024)) ;; 1mb
+            ;; settings
             (setq lsp-ui-flycheck-live-reporting t
                   lsp-print-performance nil
                   lsp-report-if-no-buffer t
                   lsp-enable-snippet t
                   lsp-enable-xref t
                   lsp-enable-completion-at-point t
-                  lsp-response-timeout 2
+                  lsp-response-timeout 10
+                  lsp-eldoc-render-all t
+                  lsp-ui-peek-always-show t
+                  lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit t
                   lsp-ui-sideline-enable nil
                   lsp-ui-sideline-show-symbol t
@@ -390,6 +397,7 @@
                   lsp-ui-sideline-showcode-actions nil
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
+                  lsp-idle-delay 0.500
                   lsp-ui-sideline-code-actions-prefix "💡 "
                   lsp-ui-sideline-update-mode 'line)
             (if (equalp (getenv "WSL") "1")
@@ -409,8 +417,10 @@
   :ensure t
   :after (lsp-mode)
   :hook (python-mode . (lambda ()
-                          (require 'lsp-python-ms)
-                          (lsp))))
+                         (require 'lsp-python-ms)))
+  :config (setq
+           lsp-python-ms-python-executable-cmd "python3")
+  )
 
 (use-package lsp-java
   :ensure t
@@ -597,54 +607,63 @@
   (lsp-send-notification
    (lsp-make-request "java/buildWorkspace" t)))
 
-;; Custom Debug minor mode
-(define-minor-mode my/dap-mode
-  "My own minor mode when using the dap debugger."
-  ;; The initial value - Set to 1 to enable by default
-  nil
-  ;; The indicator for the mode line.
-  " My/DBG"
-  ;; The minor mode keymap
-  `(
-    (,(kbd "C-c C-s") . dap-step-in)
-    (,(kbd "C-c C-f") . dap-step-out)
-    (,(kbd "C-c C-n") . dap-next)
-    (,(kbd "C-c C-r") . dap-continue)
-    (,(kbd "C-c C-d") . dap-disconnect)
-    (,(kbd "C-c C-e") . dap-ui-repl)
-    (,(kbd "C-x C-e") . (lambda () (if mark-active (dap-eval-region) (dap-eval-thing-at-point))))
-   )
-  )
-
-(defun my/dap-set-exception-breakpoint ()
-  (interactive)
-  (dap--send-message (dap--make-request
-                      "setExceptionBreakpoints"
-                      (list :filters (list "caught" "uncaught")))
-                            ;; :exceptionOptions (list :path (list :names (list "java.lang.AssertionError"))
-                            ;;                         :breakMode "always")))
-                     (dap--resp-handler)
-                     (dap--cur-active-session-or-die)))
-
-(defun my/dap-hotcodereplace ()
-  (interactive)
-  (dap--send-message (dap--make-request
-                      "redefineClasses")
-                     (dap--resp-handler)
-                     (dap--cur-active-session-or-die)))
-
-(define-globalized-minor-mode global-my/dap-mode my/dap-mode
-  (lambda () (my/dap-mode 1)))
-
 (use-package dap-mode
   :ensure t :after lsp-mode
   :config (progn
+            (defun my/show-debug-windows (session)
+              (save-excursion
+                (call-interactively #'dap-ui-repl)
+                (delete-window (get-buffer-window "*dap-ui-repl*"))
+                (display-buffer-in-side-window (get-buffer "*dap-ui-repl*") `((side . bottom)
+                                                                              (slot . 0)
+                                                                              (window-height . 10)))
+                (seq-mapn (lambda (name func)
+                            (unless (-> (-compose 'buffer-name 'window-buffer)
+                                        (-map (window-list))
+                                        (-contains? name))
+                              (call-interactively func))
+                            (with-current-buffer name
+                              (visual-line-mode 1)))
+                          (list dap-ui--breakpoints-buffer dap-ui--expressions-buffer dap-ui--locals-buffer dap-ui--sessions-buffer)
+                          '(dap-ui-breakpoints dap-ui-expressions dap-ui-locals dap-ui-sessions))))
+            (add-hook 'dap-session-created-hook 'my/show-debug-windows)
+
+            (defun my/close-debug-windows (session)
+              (condition-case nil
+                  (delete-window (get-buffer-window "*dap-ui-repl*" )))
+              (seq-map (lambda (name)
+                         (condition-case nil
+                             (kill-buffer name)
+                           (error nil)))
+                       (list dap-ui--breakpoints-buffer dap-ui--expressions-buffer dap-ui--locals-buffer dap-ui--sessions-buffer)))
+            (add-hook 'dap-terminated-hook 'my/close-debug-windows)
+
+            (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
+            (add-hook 'dap-terminated-hook (lambda (arg) (call-interactively #'dap-hydra/nil)))
+
             (dap-mode 1)
             (dap-ui-mode 1)
             (dap-tooltip-mode 1)
             (tooltip-mode 1)
             (define-key dap-ui-session-mode-map [C-mouse-1] 'dap-ui-session-select)
             (setq dap-auto-show-output nil)))
+
+(use-package dap-hydra
+  :after dap-mode)
+
+(use-package dap-node
+  :after dap-mode
+  :config (dap-register-debug-template
+           "Node Attach 9229"
+           (list :type "node"
+                 :cwd nil
+                 :request "attach"
+                 :protocol "auto"
+                 :address "127.0.0.1"
+                 :stopOnEntry t
+                 :port 9229
+                 :program ""
+                 :name "Node Attach 9229")))
 
 (if (version<= "26" emacs-version)
     (use-package posframe :ensure t))
@@ -654,47 +673,15 @@
   :config (progn
             (setq dap-java-default-debug-port 8000)
 
-            ;; (defun my/lsp/dap-debug ()
-            ;;   (interactive)
-            ;;   (let ((new-frame (make-frame)))
-            ;;     (select-frame-set-input-focus new-frame)
-            ;;     (toggle-fullscreen)
-            ;;     (call-interactively 'dap-debug)))
-            ;; (define-key java-mode-map (kbd "C-c C-d") 'my/lsp/dap-debug)
-            (define-key java-mode-map (kbd "C-c C-d") 'dap-debug)
-            (define-key java-mode-map (kbd "C-c C-x t") 'dap-breakpoint-toggle)
+            ;; bind C-c C-d dynamically
+            (fset 'my/dap-debug 'dap-debug)
+            (add-hook 'dap-session-created-hook
+                      (lambda (arg) (fset 'my/dap-debug 'dap-hydra)))
+            (add-hook 'dap-terminated-hook
+                      (lambda (arg) (fset 'my/dap-debug 'dap-debug)))
 
-            (defun my/window-visible (b-name)
-              "Return whether B-NAME is visible."
-              (-> (-compose 'buffer-name 'window-buffer)
-                  (-map (window-list))
-                  (-contains? b-name)))
-
-            (defun my/show-debug-windows (session)
-              "Show debug windows."
-              (global-my/dap-mode 1)
-              (let ((lsp--cur-workspace (dap--debug-session-workspace session)))
-                (save-excursion
-                  ;; display locals
-                  (unless (my/window-visible dap-ui--locals-buffer)
-                    (dap-ui-locals))
-                  ;; display sessions
-                  (unless (my/window-visible dap-ui--sessions-buffer)
-                    (dap-ui-sessions)))))
-            (add-hook 'dap-session-created-hook 'my/show-debug-windows)
-
-            (defun my/close-debug-windows (session)
-              (global-my/dap-mode -1)
-              ;; (let ((debug-frame (seq-find (lambda (frame)
-              ;;                                (> (seq-count (lambda (w) (string-equal (buffer-name (window-buffer w))
-              ;;                                                                        dap-ui--sessions-buffer))
-              ;;                                              (window-list frame))
-              ;;                                   0))
-              ;;                              (frame-list))))
-              ;;   (if debug-frame
-              ;;       (delete-frame debug-frame t)))
-              )
-            (add-hook 'dap-terminated-hook 'my/close-debug-windows)
+            (define-key java-mode-map (kbd "C-c C-d") #'my/dap-debug)
+            (define-key java-mode-map (kbd "C-c C-x t") #'dap-breakpoint-toggle)
 
             (dap-register-debug-template "Java Attach com.oracle.graal.python"
                                          (list :type "java"
