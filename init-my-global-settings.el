@@ -375,3 +375,6 @@
 ;;         (".py" (display-buffer-same-window) ())
 ;;         (".c" (display-buffer-same-window) ())
 ;;         (".h" (display-buffer-same-window) ())))
+
+;; always infer indentation style for c++
+(add-hook 'c++-mode-hook 'infer-indentation-style)
