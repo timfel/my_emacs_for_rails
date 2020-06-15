@@ -451,6 +451,7 @@
             ;; adjust open list indentation
             (add-hook 'java-mode-hook
                       (lambda ()
+                        (set-fill-column 100)
                         (c-set-offset 'arglist-cont-nonempty 16)))
             (add-hook 'java-mode-hook #'lsp)
             ;; (add-hook 'java-mode-hook 'doom-modeline-mode)
@@ -606,7 +607,6 @@
   (my/lsp/reload-all-java-buffers)
   (lsp-send-notification
    (lsp-make-request "java/buildWorkspace" t)))
-
 (use-package dap-mode
   :ensure t :after lsp-mode
   :config (progn
