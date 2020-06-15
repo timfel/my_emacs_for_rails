@@ -610,6 +610,21 @@
 (use-package dap-mode
   :ensure t :after lsp-mode
   :config (progn
+            (setq my/repl-should-show-hydra nil)
+
+            (defun my/repl-show-hydra ()
+              (if (equalp (buffer-name (window-buffer (selected-window))) "*dap-ui-repl*")
+                  (progn
+                    (setq my/repl-should-show-hydra t)
+                    (run-at-time 0.5 nil #'dap-hydra/nil))
+                (if (and (not (active-minibuffer-window))
+                         my/repl-should-show-hydra)
+                    (progn
+                      (setq my/repl-should-show-hydra nil)
+                      (run-at-time 0.5 nil #'dap-hydra)))))
+
+            (add-hook 'buffer-list-update-hook #'my/repl-show-hydra)
+
             (defun my/show-debug-windows (session)
               (save-excursion
                 (call-interactively #'dap-ui-repl)
