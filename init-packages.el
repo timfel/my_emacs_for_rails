@@ -428,12 +428,19 @@
   :config (progn
             (require 'lsp-ui-flycheck)
             (require 'lsp-ui-sideline)
+            (setq lsp-java-completion-favorite-static-members (vconcat lsp-java-completion-favorite-static-members
+                                                                       '("com.oracle.graal.python.builtins.PythonBuiltinClassType"
+                                                                         "com.oracle.graal.python.nodes.BuiltinNames"
+                                                                         "com.oracle.graal.python.nodes.SpecialMethodNames"
+                                                                         "com.oracle.graal.python.nodes.SpecialAttributeNames"
+                                                                         "com.oracle.graal.python.nodes.ErrorMessages")))
             (setq
              lsp-java-save-actions-organize-imports t
              lsp-java-format-on-type-enabled nil
              lsp-java-format-comments-enabled nil
              lsp-java-format-enabled nil
              lsp-java-autobuild-enabled nil
+             lsp-java-completion-import-order ["java" "javax" "org" "com"]
              lsp-java-import-order ["java" "javax" "org" "com"])
 
             ;; (puthash "language/progressReport" (lambda (workspace params)
@@ -610,8 +617,8 @@
 (use-package dap-mode
   :ensure t :after lsp-mode
   :config (progn
+            ;; show/hide debug and utility windows naturally
             (setq my/repl-should-show-hydra nil)
-
             (defun my/repl-show-hydra ()
               (if (equalp (buffer-name (window-buffer (selected-window))) "*dap-ui-repl*")
                   (progn
@@ -622,7 +629,6 @@
                     (progn
                       (setq my/repl-should-show-hydra nil)
                       (run-at-time 0.5 nil #'dap-hydra)))))
-
             (add-hook 'buffer-list-update-hook #'my/repl-show-hydra)
 
             (defun my/show-debug-windows (session)
@@ -656,12 +662,31 @@
             (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
             (add-hook 'dap-terminated-hook (lambda (arg) (call-interactively #'dap-hydra/nil)))
 
+            ;; default settings
             (dap-mode 1)
             (dap-ui-mode 1)
             (dap-tooltip-mode 1)
             (tooltip-mode 1)
             (define-key dap-ui-session-mode-map [C-mouse-1] 'dap-ui-session-select)
             (setq dap-auto-show-output nil)))
+
+(use-package dap-lldb
+  :after dap-mode
+  :config (progn
+            (setq
+             dap-lldb-debug-program
+             `(,(expand-file-name "~/.emacs.d/llvm-project/lldb/build/bin/lldb-vscode")))
+            (dap-register-debug-template
+             "LLDB::Attach"
+             (list :type "lldb"
+                   :cwd nil
+                   :request "launch"
+                   :stopOnEntry t
+                   :name "LLDB::Run"))
+            (setq dap-lldb-debugged-program-function
+                  (lambda (program)
+                    (interactive "fSelect process executable to attach to: ")
+                    (expand-file-name program)))))
 
 (use-package dap-hydra
   :after dap-mode)
