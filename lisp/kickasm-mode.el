@@ -334,6 +334,12 @@ The list might be extended in the future in case more strings are needed."
 	(if (re-search-forward "Writing Vice symbol file: \\([^\n]*\\)" nil t)
 	    (setq vicesymname (buffer-substring (match-beginning 1) (match-end 1))))))
 
+    (if (and
+         (not breakname)
+         (string-suffix-p ".prg" runnablename))
+        (setq breakname (replace-regexp-in-string
+                         (regexp-quote ".prg") ".dbg" runnablename nil 'literal)))
+
     (list compwin runnablename vicesymname breakname)))
 
 (defun kickasm-run-vice ()
