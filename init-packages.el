@@ -5,7 +5,8 @@
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
 (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
-(package-initialize)
+(if (version< emacs-version "27")
+    (package-initialize))
 
 (condition-case nil
     (require 'use-package)
@@ -378,6 +379,7 @@
             ;; (define-key lsp-mode-map (kbd "C-M-.") #'lsp-find-references)
             ;; performance tips from readme
             (setq gc-cons-threshold 100000000) ;; 100mb
+            (setq lsp-prefer-capf t)
             (setq read-process-output-max (* 1024 1024)) ;; 1mb
             ;; settings
             (setq lsp-ui-flycheck-live-reporting t
@@ -397,7 +399,7 @@
                   lsp-ui-sideline-showcode-actions nil
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
-                  lsp-idle-delay 0.500
+                  lsp-idle-delay 1.000
                   lsp-ui-sideline-code-actions-prefix "💡 "
                   lsp-ui-sideline-update-mode 'line)
             (if (equalp (getenv "WSL") "1")

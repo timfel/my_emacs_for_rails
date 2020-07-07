@@ -26,7 +26,8 @@
 
 (if (eq window-system 'x)
     ;; (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
-    (set-default-font "-*-terminus-medium-*-*-*-16-*-*-*-*-*-*-*"))
+    (add-to-list 'default-frame-alist
+		 '(font . "-*-terminus-medium-*-*-*-16-*-*-*-*-*-*-*")))
 
 (setq-default fill-column 80)
 (global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph)))
