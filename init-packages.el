@@ -462,6 +462,7 @@
                       (lambda ()
                         (set-fill-column 100)
                         (c-set-offset 'arglist-cont-nonempty 16)))
+            (define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
             (add-hook 'java-mode-hook #'lsp)
             ;; (add-hook 'java-mode-hook 'doom-modeline-mode)
             (add-hook 'java-mode-hook 'friendly-whitespace)
