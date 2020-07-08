@@ -38,6 +38,15 @@
   :group 'lsp-graalvm
   :type 'string)
 
+;; (add-hook 'lsp-managed-mode-hook
+;;           (seq-filter
+;;            (lambda (workspace)
+;;              (= (-> workspace lsp--workspace-client lsp--client-server-id symbol-name) 'graallsp))
+;;            (lsp-workspaces))
+;;            (server-id (-> workspace lsp--workspace-client lsp--client-server-id symbol-name (propertize 'face 'bold-italic)))
+;;           (lambda ()
+;;             (let (oldproc (lsp-session-get-metadata pname))
+;;               (if oldproc (delete-process oldproc)))))
 
 (defun lsp-graalvm-server-command (main-port)
   (let ((delegates ""))
