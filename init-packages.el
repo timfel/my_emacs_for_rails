@@ -468,7 +468,7 @@
             (add-hook 'java-mode-hook 'friendly-whitespace)
             (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
             (add-hook 'java-mode-hook (lambda () (company-mode t)))
-            (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
+            ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
             ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))
                       ))
 
