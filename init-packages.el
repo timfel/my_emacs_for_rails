@@ -948,6 +948,7 @@
                ;; org-caldav-url "https://stbeehive.oracle.com/caldav/st/home/tim.felgentreff%40oracle.com/calendars/"
                ;; org-caldav-calendar-id "MyCalendar"
                ;; org-caldav-inbox (expand-file-name "~/.emacs.d/caldav-calendar.org")
+               org-caldav-sync-direction 'cal->org ;; never push org to calendar, i use this readonly
                org-icalendar-timezone "UTC"
                org-caldav-delete-org-entries t
                org-caldav-delete-calendar-entries nil)
