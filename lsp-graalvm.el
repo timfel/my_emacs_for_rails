@@ -3,9 +3,9 @@
 (defcustom lsp-graalvm-download-url
   (cond
    ((eq system-type 'darwin)
-    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.0.0/graalvm-ce-java8-darwin-amd64-20.0.0.tar.gz")
+    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.1.0/graalvm-ce-java8-darwin-amd64-20.1.0.tar.gz")
    ((eq system-type 'gnu/linux)
-    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.0.0/graalvm-ce-java8-linux-amd64-20.0.0.tar.gz"))
+    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.1.0/graalvm-ce-java8-linux-amd64-20.1.0.tar.gz"))
   "URL to download the GraalVM from"
   :group 'lsp-graalvm
   :type 'string)
@@ -20,9 +20,7 @@
   :group 'lsp-graalvm
   :type 'string)
 
-(defcustom lsp-graalvm-js-delegate-server
-  ;; TODO: switch to "npx javascript-typescript-langserver -p %d" once that is included in GraalVM
-  (concat "node " (f-join lsp-graalvm-install-dir "jre/languages/js/bin/javascript-typescript-langserver -p %d"))
+(defcustom lsp-graalvm-js-delegate-server "npx javascript-typescript-langserver -p %d"
   "Commandline to launch delegate server. Leave %d in the commandline for the port/"
   :group 'lsp-graalvm
   :type 'string)
