@@ -519,7 +519,8 @@
       (let ((name (buffer-name buffer))
             (mode (with-current-buffer buffer major-mode)))
         (if (eq mode 'java-mode)
-            (if (not (buffer-modified-p buffer))
+            (if (and (not (buffer-modified-p buffer))
+                     (not (eq (current-buffer) buffer)))
                 (kill-buffer buffer)))))))
 
 (defun my/lsp/import-all-eclipse-projects ()
