@@ -853,9 +853,9 @@
             ) ; progn
 
   :init (setq
-         wl-init-file "~/.emacs.d/wanderlust/wl.el"
-         wl-address-file "~/.emacs.d/wanderlust/addresses"
-         wl-folders-file "~/.emacs.d/wanderlust/folders"
+         wl-init-file (expand-file-name "~/.emacs.d/wanderlust/wl.el")
+         wl-address-file (expand-file-name "~/.emacs.d/wanderlust/addresses")
+         wl-folders-file (expand-file-name "~/.emacs.d/wanderlust/folders")
          ;; SMTP server for mail posting.
          wl-smtp-posting-server "stbeehive.oracle.com"
          wl-smtp-posting-port 465
@@ -896,7 +896,7 @@
 
          wl-stay-folder-window t
          wl-folder-window-width 25
-         wl-folder-use-frame t
+         wl-folder-use-frame nil
 
          wl-message-ignored-field-list '("^.*")
          wl-message-visible-field-list '("^From:" "^To:" "^Cc:" "^Date:" "^Subject:")
@@ -906,10 +906,10 @@
          wl-message-window-size '(1 . 2)
 
          ;; Always download emails without confirmation
-         wl-prefetch-threshold 30000
-         wl-message-buffer-prefetch-threshold 30000
-         elmo-message-fetch-threshold 30000
-         elmo-folder-update-threshold 100
+         wl-prefetch-threshold nil
+         wl-message-buffer-prefetch-threshold nil
+         elmo-message-fetch-threshold nil
+         elmo-folder-update-threshold nil
 
          ;; Rendering of messages using 'shr', Emacs' simple html
          ;; renderer, but without fancy coloring that distorts the
@@ -924,7 +924,37 @@
 
          mime-edit-split-message nil
          )
-)
+  )
+
+
+(use-package calfw
+  :ensure t
+  :init (progn
+          (require 'calfw-org)
+          (setq cfw:org-overwrite-default-keybinding t)))
+(use-package org-caldav
+  :ensure t
+  :config (progn
+            (let ((oracle-cal (expand-file-name "~/org/oracle-cal.org"))
+                  (graalvm-cal (expand-file-name "~/org/graalvm-cal.org")))
+              (setq
+               org-caldav-calendars
+               `((:url "https://stbeehive.oracle.com/caldav/st/home/tim.felgentreff%40oracle.com/calendars/"
+                       :calendar-id "MyCalendar"
+                       :inbox ,oracle-cal)
+                 (:url "https://stbeehive.oracle.com/caldav/st/home/GRAALVM-SHARED-CALENDAR_WW%40oracle.com/calendars/"
+                       :calendar-id "MyCalendar"
+                       :inbox ,graalvm-cal))
+               ;; org-caldav-url "https://stbeehive.oracle.com/caldav/st/home/tim.felgentreff%40oracle.com/calendars/"
+               ;; org-caldav-calendar-id "MyCalendar"
+               ;; org-caldav-inbox (expand-file-name "~/.emacs.d/caldav-calendar.org")
+               org-icalendar-timezone "UTC"
+               org-caldav-delete-org-entries t
+               org-caldav-delete-calendar-entries nil)
+              (add-to-list 'org-agenda-files oracle-cal)
+              (add-to-list 'org-agenda-files graalvm-cal)
+              org-agenda-files
+            )))
 
 ;; Interactively Do Things (highly recommended, but not strictly required)
 (use-package ido
