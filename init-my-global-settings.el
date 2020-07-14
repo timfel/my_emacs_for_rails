@@ -43,16 +43,6 @@
 ;; Narrow (C-x n n)
 (put 'narrow-to-region 'disabled nil)
 
-;; Start the emacs server
-;; (setq server-use-tcp t) ;; Use TCP mode, my socket is often unavailable
-;; (setq server-host "127.0.0.1")
-(if (functionp 'server-running-p)
-    (if (server-running-p)
-        (server-force-stop))
-    (if (file-exists-p "~/.emacs.d/server/server")
-        (delete-file "~/.emacs.d/server/server"))
-    (server-start))
-
 ;; Include Texlive path
 (if (file-exists-p "/usr/local/texlive/2014/bin/x86_64-linux/")
     (setenv "PATH" (concat "/usr/local/texlive/2014/bin/x86_64-linux/:" (getenv "PATH"))))
@@ -147,34 +137,6 @@
         (quit-window nil nil)
         (xref--show-location (xref-item-location xref) t)
         (next-error-found buffer (current-buffer)))))
-
-;; Sessions
-(desktop-save-mode 1)
-(setq history-length 250)
-(setq desktop-restore-eager 5)
-(add-to-list 'desktop-globals-to-save 'file-name-history)
-(setq desktop-buffers-not-to-save
-      (concat "\\("
-	      "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
-	      "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
-	      "\\)$"))
-(add-to-list 'desktop-modes-not-to-save 'dired-mode)
-(add-to-list 'desktop-modes-not-to-save 'Info-mode)
-(add-to-list 'desktop-modes-not-to-save 'info-lookup-mode)
-(add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
-(add-to-list 'desktop-modes-not-to-save 'grep-mode)
-(add-to-list 'desktop-modes-not-to-save 'magit-mode)
-;; (if (not (eq (emacs-pid) (desktop-owner)))
-;;     (progn
-;;       (desktop-save-mode nil)
-      
-;;       (setq lsp-java-workspace-dir
-;;             (expand-file-name (locate-user-emacs-file "workspace2/"))))
-;;   (run-with-idle-timer
-;;    30 ; seconds
-;;    t  ; repeat
-;;    'desktop-save-in-desktop-dir))
-
 
 ;; ISearch word under cursor
 (defun my-isearch-word-at-point ()
@@ -381,3 +343,43 @@
 
 ;; always infer indentation style for c++
 (add-hook 'c++-mode-hook 'infer-indentation-style)
+
+
+;; the below is only for the "main" emacs
+(if (equalp (frame-parameter nil 'name) "evolution")
+    (progn
+      (org-caldav-sync)
+      (save-some-buffers 'no-confirm)
+      (cfw:open-org-calendar)
+      (wl))
+  (progn
+    ;; Sessions
+    (desktop-save-mode 1)
+    (setq history-length 250)
+    (setq desktop-restore-eager 5)
+    (add-to-list 'desktop-globals-to-save 'file-name-history)
+    (setq desktop-buffers-not-to-save
+          (concat "\\("
+	          "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
+	          "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
+	          "\\)$"))
+    (add-to-list 'desktop-modes-not-to-save 'dired-mode)
+    (add-to-list 'desktop-modes-not-to-save 'Info-mode)
+    (add-to-list 'desktop-modes-not-to-save 'info-lookup-mode)
+    (add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
+    (add-to-list 'desktop-modes-not-to-save 'grep-mode)
+    (add-to-list 'desktop-modes-not-to-save 'magit-mode)
+    (run-with-idle-timer
+     30 ; seconds
+     t  ; repeat
+     'desktop-save-in-desktop-dir)
+
+    ;; Start the emacs server
+    ;; (setq server-use-tcp t) ;; Use TCP mode, my socket is often unavailable
+    ;; (setq server-host "127.0.0.1")
+    (if (functionp 'server-running-p)
+        (if (server-running-p)
+            (server-force-stop))
+      (if (file-exists-p "~/.emacs.d/server/server")
+          (delete-file "~/.emacs.d/server/server"))
+      (server-start))))
