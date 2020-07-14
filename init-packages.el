@@ -783,6 +783,148 @@
 ;; Tramp
 (use-package tramp :ensure t)
 
+(use-package wl
+  :ensure wanderlust
+  :commands (wl)
+  :bind (:map wl-summary-mode-map
+              ("b a" . (lambda () (interactive) (djcb-wl-summary-refile "%Archives.2019")))
+              ;;Swap a and A in summary mode, so citing original message is on a and no-cite on A.
+              ("A" . wl-summary-reply)
+              ("a" . wl-summary-reply-with-citation)
+              ("r b" . jjgr-bbdb-mua-auto-update)
+              )
+  :hook ((wl-mail-send-pre . djcb-wl-draft-subject-check)
+         (wl-mail-send-pre . djcb-wl-draft-attachment-check)
+         (wl-mail-setup . wl-draft-config-exec))
+  :config (progn
+            (print "Wanderlust configured")
+            (defun jjgr-bbdb-mua-auto-update ()
+              (interactive)
+              (wl-summary-enter-handler)
+              (bbdb-mua-auto-update nil 'query)
+              (mime-preview-quit))
+
+            (defun djcb-wl-summary-refile (&optional folder)
+              "refile the current message to FOLDER; if FOLDER is nil, use the default"
+              (interactive)
+              (wl-summary-refile (wl-summary-message-number) folder)
+              (wl-summary-exec))
+
+            ;; Store sent emails in the current folder
+            (defun jjgr-determine-fcc-buffer ()
+              (if (or (equal wl-message-buffer-cur-folder "%INBOX")
+                      (null wl-message-buffer-cur-folder))
+                  "%Sent"
+                wl-message-buffer-cur-folder))
+            (setq wl-fcc 'jjgr-determine-fcc-buffer)
+
+            ;; Check messages for missing subject or abstract
+            (defun djcb-wl-draft-subject-check ()
+              "check whether the message has a subject before sending"
+              (if (and (< (length (std11-field-body "Subject")) 1)
+                       (null (y-or-n-p "No subject! Send current draft?")))
+                  (error "Abort.")))
+
+            (defun djcb-wl-draft-attachment-check ()
+              "if attachment is mention but none included, warn the the user"
+              (save-excursion
+                (goto-char 0)
+                (unless ;; don't we have an attachment?
+                    (re-search-forward "^Content-Disposition: attachment" nil t)
+                  (when ;; no attachment; did we mention an attachment?
+                      (or (re-search-forward "attach" nil t)
+                          (re-search-forward "anhang" nil t)
+                          (re-search-forward "anbei" nil t)
+                          (re-search-forward "adjunt" nil t))
+                    (unless (y-or-n-p "Possibly missing an attachment. Send current draft?")
+                      (error "Abort."))))))
+
+            (if (boundp 'mail-user-agent)
+                (setq mail-user-agent 'wl-user-agent))
+            (if (fboundp 'define-mail-user-agent)
+                (define-mail-user-agent
+                  'wl-user-agent
+                  'wl-user-agent-compose
+                  'wl-draft-send
+                  'wl-draft-kill
+                  'mail-send-hook))
+
+            ;; (require 'bbdb)
+            ) ; progn
+
+  :init (setq
+         wl-init-file "~/.emacs.d/wanderlust/wl.el"
+         wl-address-file "~/.emacs.d/wanderlust/addresses"
+         wl-folders-file "~/.emacs.d/wanderlust/folders"
+         ;; SMTP server for mail posting.
+         wl-smtp-posting-server "stbeehive.oracle.com"
+         wl-smtp-posting-port 465
+         wl-smtp-posting-user "tim.felgentreff@oracle.com"
+         wl-smtp-authenticate-type "login"
+         wl-smtp-connection-type 'ssl
+         wl-from "tim.felgentreff@oracle.com"
+
+         ;; Do not cache passwords. The cache corrupts server
+         ;; secrets.
+         password-cache nil
+
+         elmo-imap4-default-user "tim.felgentreff@oracle.com"
+         elmo-imap4-default-server "stbeehive.oracle.com"
+         elmo-imap4-default-port 993
+         elmo-imap4-default-authenticate-type 'clear
+         elmo-imap4-default-stream-type 'ssl
+         elmo-passwd-storage-type 'auth-source
+
+         ;; Location of archives
+         elmo-archive-folder-path "~/Mail"
+
+         ;; Location of MH and Maildir folders
+         elmo-localdir-folder-path "~/Mail/"
+         elmo-maildir-folder-path "~/Mail/"
+
+         wl-message-id-domain "tim.felgentreff@oracle.com"
+         wl-from "Tim Felgentreff <tim.felgentreff@oracle.com>"
+         ;; mime-edit-default-signature "~/OnlineFolder/Library/dot.signature"
+         wl-forward-subject-prefix "Fwd: "
+
+         wl-default-folder "%Inbox" ;; my main inbox
+         ;; wl-biff-check-folder-list '("%Inbox") ;; check every 180 seconds
+         ;; wl-biff-check-interval 180
+
+         wl-draft-folder "%Drafts"  ;; store drafts in 'postponed'
+         wl-trash-folder "%Trash"   ;; put trash in 'trash'
+
+         wl-stay-folder-window t
+         wl-folder-window-width 25
+         wl-folder-use-frame t
+
+         wl-message-ignored-field-list '("^.*")
+         wl-message-visible-field-list '("^From:" "^To:" "^Cc:" "^Date:" "^Subject:")
+         wl-message-sort-field-list wl-message-visible-field-list
+         wl-summary-width 120 ;; No width
+         wl-summary-default-sort-spec 'date
+         wl-message-window-size '(1 . 2)
+
+         ;; Always download emails without confirmation
+         wl-prefetch-threshold 30000
+         wl-message-buffer-prefetch-threshold 30000
+         elmo-message-fetch-threshold 30000
+         elmo-folder-update-threshold 100
+
+         ;; Rendering of messages using 'shr', Emacs' simple html
+         ;; renderer, but without fancy coloring that distorts the
+         ;; looks
+         mime-view-text/html-previewer 'shr
+         ;; shr-use-colors nil
+
+         ;; wl-draft-config-alist
+         ;; '(((string-match "1" "1")
+         ;;    (bottom . "\n--\n") (bottom-file . "~/OnlineFolder/Library/dot.signature"))
+         ;;   )
+
+         mime-edit-split-message nil
+         )
+)
 
 ;; Interactively Do Things (highly recommended, but not strictly required)
 (use-package ido
