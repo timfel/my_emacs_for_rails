@@ -53,15 +53,25 @@
                     (let ((cmd (eval (intern (concat "lsp-graalvm-" name "-delegate-server"))))
                           (pname (format "graalvm-%s-delegate" name)))
                       (if cmd
-                          (let ((port (lsp--find-available-port "localhost" (cl-incf lsp--tcp-port))))
+                          (let ((port (lsp--find-available-port "localhost" (cl-incf lsp--tcp-port)))
+                                (delegate-command-buffer (concat "*" pname "*")))
+                            ;; kill old delegate servers that may be hanging around
+                            (let ((oldproc (lsp-session-get-metadata pname)))
+                              (when oldproc
+                                (delete-process oldproc)
+                                (sit-for 1)))
+                            (let ((oldproc (get-buffer-process delegate-command-buffer)))
+                              (when oldproc
+                                (delete-process oldproc)
+                                (kill-buffer delegate-command-buffer)
+                                (sit-for 1)))
                             ;; launch the delegate language servers that are installed inside our graalvm
-                            (let (oldproc (lsp-session-get-metadata pname))
-                              (if oldproc (delete-process oldproc)))
                             (lsp-session-set-metadata
                              pname
                              (start-process-shell-command pname
-                                                          (get-buffer-create (concat "*" pname "*"))
+                                                          (get-buffer-create delegate-command-buffer)
                                                           (f-join lsp-graalvm-install-dir "bin" (format cmd port))))
+                            (sit-for 5)
                             (setq delegates
                                   (concat delegates (format "%s@%d," name port)))))))
                   (list "R" "python" "js" "ruby")))
