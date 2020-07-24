@@ -665,6 +665,10 @@
 
             (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
             (add-hook 'dap-terminated-hook (lambda (arg) (call-interactively #'dap-hydra/nil)))
+            (define-advice dap-ui-expressions-refresh (:around (orig-fun &rest args) dap-ui-error-catcher)
+              (condition-case nil
+                  (apply orig-fun args)
+                (error nil)))
 
             ;; default settings
             (dap-mode 1)
