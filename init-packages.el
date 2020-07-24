@@ -791,37 +791,14 @@
   :ensure wanderlust
   :commands (wl)
   :bind (:map wl-summary-mode-map
-              ("b a" . (lambda () (interactive) (djcb-wl-summary-refile "%Archives.2019")))
               ;;Swap a and A in summary mode, so citing original message is on a and no-cite on A.
               ("A" . wl-summary-reply)
-              ("a" . wl-summary-reply-with-citation)
-              ("r b" . jjgr-bbdb-mua-auto-update)
-              )
+              ("a" . wl-summary-reply-with-citation))
   :hook ((wl-mail-send-pre . djcb-wl-draft-subject-check)
-         (wl-mail-send-pre . djcb-wl-draft-attachment-check)
-         (wl-mail-setup . wl-draft-config-exec))
+         (wl-mail-send-pre . djcb-wl-draft-attachment-check))
   :config (progn
             (print "Wanderlust configured")
-            (defun jjgr-bbdb-mua-auto-update ()
-              (interactive)
-              (wl-summary-enter-handler)
-              (bbdb-mua-auto-update nil 'query)
-              (mime-preview-quit))
-
-            (defun djcb-wl-summary-refile (&optional folder)
-              "refile the current message to FOLDER; if FOLDER is nil, use the default"
-              (interactive)
-              (wl-summary-refile (wl-summary-message-number) folder)
-              (wl-summary-exec))
-
-            ;; Store sent emails in the current folder
-            (defun jjgr-determine-fcc-buffer ()
-              (if (or (equal wl-message-buffer-cur-folder "%INBOX")
-                      (null wl-message-buffer-cur-folder))
-                  "%Sent"
-                wl-message-buffer-cur-folder))
-            (setq wl-fcc 'jjgr-determine-fcc-buffer)
-
+            
             ;; Check messages for missing subject or abstract
             (defun djcb-wl-draft-subject-check ()
               "check whether the message has a subject before sending"
@@ -842,6 +819,28 @@
                           (re-search-forward "adjunt" nil t))
                     (unless (y-or-n-p "Possibly missing an attachment. Send current draft?")
                       (error "Abort."))))))
+            
+            ;; tfel: I have a bug somewhere when creating drafts where a number is
+            ;; passed to elmo-date-get-datevec, which needs a timestamp string. we
+            ;; fall back to the current time in that case.
+            (define-advice wl-summary-reply (:around (orig-fun &rest args) set-msg-id)
+              (setq current-msg-number (random 100))
+              (apply orig-fun args))
+
+            (define-advice elmo-date-get-datevec (:around (orig-fun &rest args) convert-elmo-datevec-arg)
+              (if (stringp (car args))
+                  (apply orig-fun args)
+                (timezone-fix-time (current-time-string) (current-time-zone) nil)))
+
+            (define-advice wl-draft-config-info-filename (:around (orig-fun &rest args) ensure-draft-filename)
+              (if (not (numberp (car args)))
+                  (setcar args current-msg-number))
+              (apply orig-fun args))
+
+            (define-advice wl-draft-config-info-operation (:around (orig-fun &rest args) ensure-draft-filename)
+              (if (not (numberp (car args)))
+                  (setcar args current-msg-number))
+              (apply orig-fun args))
 
             (if (boundp 'mail-user-agent)
                 (setq mail-user-agent 'wl-user-agent))
@@ -851,11 +850,7 @@
                   'wl-user-agent-compose
                   'wl-draft-send
                   'wl-draft-kill
-                  'mail-send-hook))
-
-            ;; (require 'bbdb)
-            ) ; progn
-
+                  'mail-send-hook)))
   :init (setq
          wl-init-file (expand-file-name "~/.emacs.d/wanderlust/wl.el")
          wl-address-file (expand-file-name "~/.emacs.d/wanderlust/addresses")
@@ -867,6 +862,7 @@
          wl-smtp-authenticate-type "login"
          wl-smtp-connection-type 'ssl
          wl-from "tim.felgentreff@oracle.com"
+         smtp-local-domain "localhost"
 
          ;; Do not cache passwords. The cache corrupts server
          ;; secrets.
@@ -902,10 +898,13 @@
          wl-folder-window-width 25
          wl-folder-use-frame nil
 
+         wl-summary-always-sticky-folder-list t
+         wl-summary-line-format "%n%T%P %D/%M (%W) %h:%m %t%[%25(%c %f%) %] %s"
+         wl-summary-width nil
+
          wl-message-ignored-field-list '("^.*")
          wl-message-visible-field-list '("^From:" "^To:" "^Cc:" "^Date:" "^Subject:")
          wl-message-sort-field-list wl-message-visible-field-list
-         wl-summary-width 120 ;; No width
          wl-summary-default-sort-spec 'date
          wl-message-window-size '(1 . 2)
 
@@ -914,6 +913,7 @@
          wl-message-buffer-prefetch-threshold nil
          elmo-message-fetch-threshold nil
          elmo-folder-update-threshold nil
+         elmo-network-session-idle-timeout 120
 
          ;; Rendering of messages using 'shr', Emacs' simple html
          ;; renderer, but without fancy coloring that distorts the
@@ -930,6 +930,73 @@
          )
   )
 
+(use-package bbdb
+  :ensure t
+  :after (wl)
+  :commands (bbdb-initialize)
+  :hook
+  ((mail-setup . bbdb-mail-aliases)
+   (message-setup . bbdb-mail-aliases)
+   (wl-mail-setup . jjgr-add-bbdb-tab-completion))
+
+  :init
+  (setq bbdb-file "~/.emacs.d/bbdb"
+        bbdb-mua-pop-up t
+        bbdb-mua-pop-up-window-size t)
+
+  :config
+  (progn
+    (bbdb-initialize 'wl)
+    (bbdb-mua-auto-update-init 'wl)
+
+    (setq
+     bbdb-offer-save 1                        ;; 1 means save-without-asking
+     
+     bbdb-use-pop-up t                        ;; allow popups for addresses
+     bbdb-electric-p t                        ;; be disposable with SPC
+     bbdb-popup-target-lines  1               ;; very small
+     
+     bbdb-dwim-net-address-allow-redundancy t ;; always use full name
+     bbdb-quiet-about-name-mismatches 2       ;; show name-mismatches 2 secs
+
+     bbdb-always-add-address t                ;; add new addresses to existing...
+     ;; ...contacts automatically
+     bbdb-canonicalize-redundant-nets-p t     ;; x@foo.bar.cx => x@bar.cx
+
+     bbdb-completion-type nil                 ;; complete on anything
+
+     bbdb-complete-name-allow-cycling t       ;; cycle through matches
+     ;; this only works partially
+
+     bbbd-message-caching-enabled t           ;; be fast
+     bbdb-use-alternate-names t               ;; use AKA
+
+
+     bbdb-elided-display t                    ;; single-line addresses
+
+     ;; auto-create addresses from mail
+     bbdb/mail-auto-create-p 'bbdb-ignore-some-messages-hook   
+     bbdb-ignore-some-messages-alist ;; don't ask about fake addresses
+     ;; NOTE: there can be only one entry per header (such as To, From)
+     ;; http://flex.ee.uec.ac.jp/texi/bbdb/bbdb_11.html
+
+     '(( "From" . "no.?reply\\|DAEMON\\|daemon\\|facebookmail\\|twitter")))
+
+    (defun my-bbdb-complete-mail ()
+      "If on a header field, calls `bbdb-complete-mail' to complete the name."
+      (interactive)
+      (when (< (point)
+               (save-excursion
+                 (goto-char (point-min))
+                 (search-forward (concat "\n" mail-header-separator "\n") nil 0)
+                 (point)))
+        (bbdb-complete-mail)))
+
+    (defun jjgr-add-bbdb-tab-completion ()
+      (define-key (current-local-map) (kbd "<tab>")
+        'my-bbdb-complete-mail))
+    )
+  )
 
 (use-package calfw
   :ensure t
