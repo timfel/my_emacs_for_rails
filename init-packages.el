@@ -707,6 +707,26 @@
             (dap-mode 1)
             (dap-ui-mode 1)
             (dap-tooltip-mode 1)
+            ;; (require 'dap-gdb-lldb)
+
+            (dap-register-debug-template
+             "GDB Stratagus-Dbg + Wargus"
+             (list :type "gdb"
+                   :request "launch"
+                   :name "GDB Stratagus-Dbg + Wargus"
+                   :target "/home/tim/Dev/stratagus/dev/stratagus/build/stratagus-dbg"
+                   :arguments "-d /home/tim/.stratagus/data.Wargus -W"
+                   :cwd "/home/tim/Dev/stratagus/dev/wargus"))
+
+            (dap-register-debug-template
+             "GDB Stratagus-Dbg + War1gus"
+             (list :type "gdb"
+                   :request "launch"
+                   :name "GDB Stratagus-Dbg + War1gus"
+                   :target "/home/tim/Dev/stratagus/dev/stratagus/build/stratagus-dbg"
+                   :arguments "-d /home/tim/.stratagus/data.War1gus -W"
+                   :cwd "/home/tim/Dev/stratagus/dev/war1gus"))
+            
             (tooltip-mode 1)
             (define-key dap-ui-session-mode-map [C-mouse-1] 'dap-ui-session-select)
             (setq dap-auto-show-output nil)))
@@ -717,17 +737,15 @@
             (setq
              dap-lldb-debug-program
              `(,(expand-file-name "~/.emacs.d/llvm-project/lldb/build/bin/lldb-vscode")))
-            (dap-register-debug-template
-             "LLDB::Attach"
-             (list :type "lldb"
-                   :cwd nil
-                   :request "launch"
-                   :stopOnEntry t
-                   :name "LLDB::Run"))
-            (setq dap-lldb-debugged-program-function
-                  (lambda (program)
-                    (interactive "fSelect process executable to attach to: ")
-                    (expand-file-name program)))))
+
+            (defun dap-lldb-attach (file)
+              (interactive "f")
+              (let ((pid (shell-command-to-string (format "pidof %s" (f-base file)))))
+                (dap-debug (list :type "lldb"
+                                 :request "attach"
+                                 :program file
+                                 :pid pid
+                                 :name "LLDB::Attach"))))))
 
 (use-package dap-hydra
   :after dap-mode)
