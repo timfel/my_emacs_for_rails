@@ -327,11 +327,17 @@
 (use-package treemacs :ensure t)
 (use-package lsp-mode
   :ensure t
-  :init (setq lsp-print-io nil
-              lsp-enable-snippet t
-              lsp-enable-indentation nil
-              lsp-before-save-edits t
-              lsp-enable-file-watchers nil))
+  :init (progn
+          (setq lsp-print-io nil
+                lsp-enable-snippet t
+                lsp-enable-indentation nil
+                lsp-before-save-edits t
+                lsp-enable-file-watchers nil)
+
+          (if (not (f-exists-p lsp-clients-emmy-lua-jar-path))
+              (url-copy-file
+               "https://github.com/EmmyLua/EmmyLua-LanguageServer/releases/download/0.3.6/EmmyLua-LS-all.jar"
+               lsp-clients-emmy-lua-jar-path))))
   ;; :config (progn
   ;;           (add-hook 'lsp-workspace-folders-changed-hook                      
   ;;                     (lambda (added-folders removed-folders)
@@ -352,13 +358,7 @@
   ;;                             (project-select project-name)
   ;;                             (project-refresh))))))))
 (use-package hydra :ensure t)
-(use-package company-lsp
-  :ensure t
-  :commands company-lsp
-  :after company
-  :init (add-to-list 'company-backends #'company-lsp)
-  :config (setq company-lsp-cache-candidates t
-                company-lsp-filter-candidates t))
+
 (use-package lsp-ui
   :ensure t
   :hook (lsp-mode . lsp-ui-mode)
