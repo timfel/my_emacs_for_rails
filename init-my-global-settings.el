@@ -349,9 +349,11 @@
 (cond
  ((equalp (frame-parameter nil 'name) "evolution")
   (setq desktop-base-file-name "evolution-emacs.desktop")
-  (org-caldav-sync)
+  (condition-case nil
+      (org-caldav-sync)
+    (error nil))
   (save-some-buffers 'no-confirm)
-  (cfw:open-org-calendar)
+  ;; (cfw:open-org-calendar)
   (wl))
  ((equalp (frame-parameter nil 'name) (concat invocation-name "@" system-name))
   ;; the default emacs
