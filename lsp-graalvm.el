@@ -3,9 +3,9 @@
 (defcustom lsp-graalvm-download-url
   (cond
    ((eq system-type 'darwin)
-    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.1.0/graalvm-ce-java8-darwin-amd64-20.1.0.tar.gz")
+    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.2.0/graalvm-ce-java8-darwin-amd64-20.2.0.tar.gz")
    ((eq system-type 'gnu/linux)
-    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.1.0/graalvm-ce-java8-linux-amd64-20.1.0.tar.gz"))
+    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.2.0/graalvm-ce-java8-linux-amd64-20.2.0.tar.gz"))
   "URL to download the GraalVM from"
   :group 'lsp-graalvm
   :type 'string)
@@ -30,8 +30,7 @@
   :group 'lsp-graalvm
   :type 'string)
 
-;; TODO: enable R
-(defcustom lsp-graalvm-R-delegate-server nil ; "R --slave -e 'languageserver::run(port=%d)'"
+(defcustom lsp-graalvm-R-delegate-server "R --slave -e 'languageserver::run(port=%d)'"
   "Commandline to launch delegate server. Leave %d in the commandline for the port/"
   :group 'lsp-graalvm
   :type 'string)
@@ -129,9 +128,8 @@
        ("sh" "-c" (format "python3 -m venv %s && %s -m pip install python-language-server"
                           install-dir
                           (f-join install-dir "bin" "python3"))
-        ;; TODO: enable R
-        ;;  (lsp--info "Installing GraalVM delegate language server for R"))
-        ;; ("sh" "-c" (f-join install-dir "bin" "R --slave -e 'install.packages(\"languageserver\")'")
+        (lsp--info "Installing GraalVM delegate language server for R"))
+       ("sh" "-c" (f-join install-dir "bin" "R --vanilla --quiet -e 'utils::install.packages(\"languageserver\", Ncpus=1, INSTALL_opts=\"--no-docs --no-byte-compile --no-staged-install --no-test-load --use-vanilla\")'")
         (progn (lsp--info "Done installing GraalVM language server.")
                (funcall cb)))))))
 
