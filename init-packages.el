@@ -115,6 +115,7 @@
                                     (?B . (:foreground "LightSteelBlue"))
                                     (?C . (:foreground "OliveDrab")))
                org-agenda-window-setup 'current-window
+               org-clock-idle-time 15
                org-capture-templates
                (list
                 ;; schedule new todo items to today by default
@@ -334,6 +335,7 @@
                 lsp-before-save-edits t
                 lsp-enable-file-watchers nil)
 
+          (require 'lsp-lua)
           (if (not (f-exists-p lsp-clients-emmy-lua-jar-path))
               (url-copy-file
                "https://github.com/EmmyLua/EmmyLua-LanguageServer/releases/download/0.3.6/EmmyLua-LS-all.jar"
@@ -382,23 +384,26 @@
             (setq lsp-prefer-capf t)
             (setq read-process-output-max (* 1024 1024)) ;; 1mb
             ;; settings
-            (setq lsp-ui-flycheck-live-reporting t
+            (setq lsp-ui-flycheck-live-reporting nil
                   lsp-print-performance nil
                   lsp-report-if-no-buffer t
                   lsp-enable-snippet t
                   lsp-enable-xref t
                   lsp-enable-completion-at-point t
                   lsp-response-timeout 10
+                  lsp-diagnostic-clean-after-change nil
                   lsp-eldoc-render-all t
                   lsp-ui-peek-always-show t
+                  lsp-ui-doc-enable nil
                   lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit t
                   lsp-ui-sideline-enable nil
-                  lsp-ui-sideline-show-symbol t
-                  lsp-ui-sideline-show-hover t
+                  lsp-ui-sideline-show-symbol nil
+                  lsp-ui-sideline-show-hover nil
                   lsp-ui-sideline-showcode-actions nil
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
+                  lsp-eldoc-enable-hover nil
                   lsp-idle-delay 1.000
                   lsp-ui-sideline-code-actions-prefix "💡 "
                   lsp-ui-sideline-update-mode 'line)
@@ -983,79 +988,76 @@
          )
   )
 
-(use-package bbdb
-  :ensure t
-  :after (wl)
-  :commands (bbdb-initialize)
-  :hook
-  ((mail-setup . bbdb-mail-aliases)
-   (message-setup . bbdb-mail-aliases)
-   (wl-mail-setup . jjgr-add-bbdb-tab-completion))
+;; (use-package bbdb
+;;   :ensure t
+;;   :after (wl)
+;;   :commands (bbdb-initialize)
+;;   :hook
+;;   ((mail-setup . bbdb-mail-aliases)
+;;    (message-setup . bbdb-mail-aliases)
+;;    (wl-mail-setup . jjgr-add-bbdb-tab-completion))
 
-  :init
-  (setq bbdb-file "~/.emacs.d/bbdb"
-        bbdb-mua-pop-up t
-        bbdb-mua-pop-up-window-size t)
+;;   :init
+;;   (setq bbdb-file "~/.emacs.d/bbdb"
+;;         bbdb-mua-pop-up t
+;;         bbdb-mua-pop-up-window-size t)
 
-  :config
-  (progn
-    (bbdb-initialize 'wl)
-    (bbdb-mua-auto-update-init 'wl)
+;;   :config
+;;   (progn
+;;     (bbdb-initialize 'wl)
+;;     (bbdb-mua-auto-update-init 'wl)
 
-    (setq
-     bbdb-offer-save 1                        ;; 1 means save-without-asking
+;;     (setq
+;;      bbdb-offer-save 1                        ;; 1 means save-without-asking
      
-     bbdb-use-pop-up t                        ;; allow popups for addresses
-     bbdb-electric-p t                        ;; be disposable with SPC
-     bbdb-popup-target-lines  1               ;; very small
+;;      bbdb-use-pop-up t                        ;; allow popups for addresses
+;;      bbdb-electric-p t                        ;; be disposable with SPC
+;;      bbdb-popup-target-lines  1               ;; very small
      
-     bbdb-dwim-net-address-allow-redundancy t ;; always use full name
-     bbdb-quiet-about-name-mismatches 2       ;; show name-mismatches 2 secs
+;;      bbdb-dwim-net-address-allow-redundancy t ;; always use full name
+;;      bbdb-quiet-about-name-mismatches 2       ;; show name-mismatches 2 secs
 
-     bbdb-always-add-address t                ;; add new addresses to existing...
-     ;; ...contacts automatically
-     bbdb-canonicalize-redundant-nets-p t     ;; x@foo.bar.cx => x@bar.cx
+;;      bbdb-always-add-address t                ;; add new addresses to existing...
+;;      ;; ...contacts automatically
+;;      bbdb-canonicalize-redundant-nets-p t     ;; x@foo.bar.cx => x@bar.cx
 
-     bbdb-completion-type nil                 ;; complete on anything
+;;      bbdb-completion-type nil                 ;; complete on anything
 
-     bbdb-complete-name-allow-cycling t       ;; cycle through matches
-     ;; this only works partially
+;;      bbdb-complete-name-allow-cycling t       ;; cycle through matches
+;;      ;; this only works partially
 
-     bbbd-message-caching-enabled t           ;; be fast
-     bbdb-use-alternate-names t               ;; use AKA
+;;      bbbd-message-caching-enabled t           ;; be fast
+;;      bbdb-use-alternate-names t               ;; use AKA
 
 
-     bbdb-elided-display t                    ;; single-line addresses
+;;      bbdb-elided-display t                    ;; single-line addresses
 
-     ;; auto-create addresses from mail
-     bbdb/mail-auto-create-p 'bbdb-ignore-some-messages-hook   
-     bbdb-ignore-some-messages-alist ;; don't ask about fake addresses
-     ;; NOTE: there can be only one entry per header (such as To, From)
-     ;; http://flex.ee.uec.ac.jp/texi/bbdb/bbdb_11.html
+;;      ;; auto-create addresses from mail
+;;      bbdb/mail-auto-create-p 'bbdb-ignore-some-messages-hook   
+;;      bbdb-ignore-some-messages-alist ;; don't ask about fake addresses
+;;      ;; NOTE: there can be only one entry per header (such as To, From)
+;;      ;; http://flex.ee.uec.ac.jp/texi/bbdb/bbdb_11.html
 
-     '(( "From" . "no.?reply\\|DAEMON\\|daemon\\|facebookmail\\|twitter")))
+;;      '(( "From" . "no.?reply\\|DAEMON\\|daemon\\|facebookmail\\|twitter")))
 
-    (defun my-bbdb-complete-mail ()
-      "If on a header field, calls `bbdb-complete-mail' to complete the name."
-      (interactive)
-      (when (< (point)
-               (save-excursion
-                 (goto-char (point-min))
-                 (search-forward (concat "\n" mail-header-separator "\n") nil 0)
-                 (point)))
-        (bbdb-complete-mail)))
+;;     (defun my-bbdb-complete-mail ()
+;;       "If on a header field, calls `bbdb-complete-mail' to complete the name."
+;;       (interactive)
+;;       (when (< (point)
+;;                (save-excursion
+;;                  (goto-char (point-min))
+;;                  (search-forward (concat "\n" mail-header-separator "\n") nil 0)
+;;                  (point)))
+;;         (bbdb-complete-mail)))
 
-    (defun jjgr-add-bbdb-tab-completion ()
-      (define-key (current-local-map) (kbd "<tab>")
-        'my-bbdb-complete-mail))
-    )
-  )
+;;     (defun jjgr-add-bbdb-tab-completion ()
+;;       (define-key (current-local-map) (kbd "<tab>")
+;;         'my-bbdb-complete-mail))
+;;     )
+;;   )
 
 (use-package calfw
-  :ensure t
-  :init (progn
-          (require 'calfw-org)
-          (setq cfw:org-overwrite-default-keybinding t)))
+  :ensure t)
 (use-package org-caldav
   :ensure t
   :config (progn
