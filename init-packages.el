@@ -78,6 +78,7 @@
             ;;                              (local-set-key (kbd "<return>") 'org-insert-heading)
             ;;                              (local-set-key (kbd "M-<return>") 'org-insert-subheading)))
             (add-hook 'org-mode-hook (lambda () (run-at-time "1 sec" nil (lambda () (fci-mode 0)))))
+            (require 'org-tempo)
             (global-set-key (kbd "C-c a") 'org-agenda)
             (define-key global-map (kbd "C-c c") 'org-capture)
             (let ((todos (expand-file-name "~/OneDrive/todo.org"))
@@ -713,24 +714,6 @@
             (dap-ui-mode 1)
             (dap-tooltip-mode 1)
             ;; (require 'dap-gdb-lldb)
-
-            (dap-register-debug-template
-             "GDB Stratagus-Dbg + Wargus"
-             (list :type "gdb"
-                   :request "launch"
-                   :name "GDB Stratagus-Dbg + Wargus"
-                   :target "/home/tim/Dev/stratagus/dev/stratagus/build/stratagus-dbg"
-                   :arguments "-d /home/tim/.stratagus/data.Wargus -W"
-                   :cwd "/home/tim/Dev/stratagus/dev/wargus"))
-
-            (dap-register-debug-template
-             "GDB Stratagus-Dbg + War1gus"
-             (list :type "gdb"
-                   :request "launch"
-                   :name "GDB Stratagus-Dbg + War1gus"
-                   :target "/home/tim/Dev/stratagus/dev/stratagus/build/stratagus-dbg"
-                   :arguments "-d /home/tim/.stratagus/data.War1gus -W"
-                   :cwd "/home/tim/Dev/stratagus/dev/war1gus"))
             
             (tooltip-mode 1)
             (define-key dap-ui-session-mode-map [C-mouse-1] 'dap-ui-session-select)
@@ -743,17 +726,50 @@
              dap-lldb-debug-program
              `(,(expand-file-name "~/.emacs.d/llvm-project/lldb/build/bin/lldb-vscode")))
 
-            (defun dap-lldb-attach (file)
-              (interactive "f")
+            (defun dap-cppdbg-gdb-attach (file)
+              (interactive "fPath to running executable: ")
               (let ((pid (shell-command-to-string (format "pidof %s" (f-base file)))))
-                (dap-debug (list :type "lldb"
-                                 :request "attach"
-                                 :program file
-                                 :pid pid
-                                 :name "LLDB::Attach"))))))
+                (progn
+                  (message (format "%s" pid))
+                  (dap-debug (list :type "cppdbg"
+                                   :request "attach"
+                                   :program (expand-file-name file)
+                                   :MIMode "gdb"
+                                   :processId pid
+                                   :name "cpptools::Attach GDB")))))
+
+            (defun dap-cppdbg-lldb-attach (file)
+              (interactive "fPath to running executable: ")
+              (let ((pid (shell-command-to-string (format "pidof %s" (f-base file)))))
+                (progn
+                  (message (format "%s" pid))
+                  (dap-debug (list :type "cppdbg"
+                                   :request "attach"
+                                   :program (expand-file-name file)
+                                   :MIMode "lldb"
+                                   :processId pid
+                                   :name "cpptools::Attach LLDB")))))
+
+            (defun dap-lldb-attach (file)
+              (interactive "fPath to running executable: ")
+              (let ((pid (shell-command-to-string (format "pidof %s" (f-base file)))))
+                (progn
+                  (message (format "%s" pid))
+                  (dap-debug (list :type "lldb-vscode"
+                                   :request "attach"
+                                   :program (expand-file-name file)
+                                   :pid pid
+                                   :stopOnEntry nil
+                                   :name "LLDB::Attach")))))))
 
 (use-package dap-hydra
   :after dap-mode)
+
+(use-package dap-cpptools
+  :after dap-mode)
+
+(use-package csharp-mode
+  :ensure t)
 
 (use-package dap-node
   :after dap-mode
