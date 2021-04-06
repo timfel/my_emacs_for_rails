@@ -443,11 +443,13 @@
                                                                          "com.oracle.graal.python.nodes.SpecialAttributeNames"
                                                                          "com.oracle.graal.python.nodes.ErrorMessages")))
             (setq
-             lsp-java-save-actions-organize-imports t
+             lsp-java-content-provider-preferred "fernflower"
+             lsp-java-save-actions-organize-imports nil
              lsp-java-format-on-type-enabled nil
              lsp-java-format-comments-enabled nil
              lsp-java-format-enabled nil
              lsp-java-autobuild-enabled nil
+             lsp-java-inhibit-message t
              lsp-java-completion-import-order ["java" "javax" "org" "com"]
              lsp-java-import-order ["java" "javax" "org" "com"])
 
@@ -466,7 +468,7 @@
             ;; adjust open list indentation
             (add-hook 'java-mode-hook
                       (lambda ()
-                        (set-fill-column 100)
+                        (set-fill-column 99)
                         (c-set-offset 'arglist-cont-nonempty 16)))
             (define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
             (add-hook 'java-mode-hook #'lsp)
@@ -930,11 +932,20 @@
          wl-address-file (expand-file-name "~/.emacs.d/wanderlust/addresses")
          wl-folders-file (expand-file-name "~/.emacs.d/wanderlust/folders")
          ;; SMTP server for mail posting.
-         wl-smtp-posting-server "stbeehive.oracle.com"
-         wl-smtp-posting-port 465
-         wl-smtp-posting-user "tim.felgentreff@oracle.com"
-         wl-smtp-authenticate-type "login"
-         wl-smtp-connection-type 'ssl
+
+         ;; old: beehive
+         ;; wl-smtp-posting-server "stbeehive.oracle.com"
+         ;; wl-smtp-posting-port 465
+         ;; wl-smtp-connection-type 'ssl
+         ;; wl-smtp-authenticate-type "login"
+
+         ;; new: outlook
+         wl-smtp-posting-server "smtp.office365.com"
+         wl-smtp-posting-port 587
+         wl-smtp-connection-type 'starttls
+         wl-smtp-authenticate-type "plain"
+
+         wl-smtp-posting-user "2tim.felgentreff@oracle.com"
          wl-from "tim.felgentreff@oracle.com"
          smtp-local-domain "localhost"
 
@@ -943,10 +954,18 @@
          password-cache nil
 
          elmo-imap4-default-user "tim.felgentreff@oracle.com"
-         elmo-imap4-default-server "stbeehive.oracle.com"
+         ;; old: beehive
+         ;; elmo-imap4-default-server "stbeehive.oracle.com"
+         ;; elmo-imap4-default-port 993
+         ;; elmo-imap4-default-authenticate-type 'clear
+         ;; elmo-imap4-default-stream-type 'ssl
+
+         ;; new: outlook
+         elmo-imap4-default-server "outlook.office365.com"
          elmo-imap4-default-port 993
          elmo-imap4-default-authenticate-type 'clear
          elmo-imap4-default-stream-type 'ssl
+
          elmo-passwd-storage-type 'auth-source
 
          ;; Location of archives
@@ -1137,6 +1156,7 @@
                   (goto-char position))))
             (global-set-key [(control .)] 'ido-goto-symbol)))
 
+(use-package erefactor :ensure t)
 
 ;; local lisp code
 (add-to-list 'load-path (locate-user-emacs-file "lisp/rml"))
@@ -1147,6 +1167,8 @@
 (progn (global-set-key [(control -)] 'redo))
 (require 'sudo-save)
 (autoload 'pypytrace-mode "pypytrace-mode" "PyPy JIT Trace mode" t)
+
+(autoload 'jsonnet-mode "jsonnet-mode" "Jsonnet mode" t)
 
 (autoload 'kickasm-mode "kickasm-mode" "KickAssembler mode" t)
 (add-hook 'kickasm-mode-hook
