@@ -338,9 +338,11 @@
 
           (require 'lsp-lua)
           (if (not (f-exists-p lsp-clients-emmy-lua-jar-path))
-              (url-copy-file
-               "https://github.com/EmmyLua/EmmyLua-LanguageServer/releases/download/0.3.6/EmmyLua-LS-all.jar"
-               lsp-clients-emmy-lua-jar-path))))
+              (progn
+                (mkdir (f-dirname lsp-clients-emmy-lua-jar-path) t)
+                (url-copy-file
+                 "https://github.com/EmmyLua/EmmyLua-LanguageServer/releases/download/0.3.6/EmmyLua-LS-all.jar"
+                 lsp-clients-emmy-lua-jar-path)))))
   ;; :config (progn
   ;;           (add-hook 'lsp-workspace-folders-changed-hook                      
   ;;                     (lambda (added-folders removed-folders)
@@ -816,10 +818,10 @@
 
 ;; The spacemacs default colors
 (condition-case nil
-    (load-theme 'spacemacs-light t)
+    (load-theme 'spacemacs-dark t)
   (error
    (package-install 'spacemacs-theme)
-   (load-theme 'spacemacs-light t)))
+   (load-theme 'spacemacs-dark t)))
 
 
 ;; Flyspell options
@@ -1092,7 +1094,10 @@
 ;;   )
 
 (use-package calfw
-  :ensure t)
+  :ensure t
+  :init (progn
+          ; (require 'calfw-org)
+          (setq cfw:org-overwrite-default-keybinding t)))
 (use-package org-caldav
   :ensure t
   :config (progn

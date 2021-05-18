@@ -254,7 +254,7 @@
   (insert (shell-command-to-string "timeout 0.1 xsel")))
 (advice-add 'x-clipboard-yank :override #'xclip-paste)
 
-(x-clipboard-yank)
+;; (x-clipboard-yank)
 
 (setq-default indent-tabs-mode nil)
 
