@@ -818,10 +818,10 @@
 
 ;; The spacemacs default colors
 (condition-case nil
-    (load-theme 'spacemacs-dark t)
+    (load-theme 'spacemacs-light t)
   (error
    (package-install 'spacemacs-theme)
-   (load-theme 'spacemacs-dark t)))
+   (load-theme 'spacemacs-light t)))
 
 
 ;; Flyspell options
