@@ -24,10 +24,13 @@
 (push '(font-backend xft x) default-frame-alist)
 (setq font-lock-maximum-decoration t)
 
+
 (if (eq window-system 'x)
     ;; (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
-    (add-to-list 'default-frame-alist
-		 '(font . "-*-terminus-medium-*-*-*-16-*-*-*-*-*-*-*")))
+    (set-face-attribute 'default nil :family "Terminus (TTF)"  :height 120))
+    ;; (set-face-attribute 'default nil :family "Noto Mono"  :height 100)
+    ;; (add-to-list 'default-frame-alist
+    ;;     	 '(font . "-*-terminus-medium-*-*-*-16-*-*-*-*-*-*-*")))
 
 (setq-default fill-column 80)
 (global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph)))
