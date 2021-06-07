@@ -126,7 +126,10 @@
 ;; tags and navigation
 (use-package ggtags :ensure t)
 (use-package xcscope :ensure t)
-(use-package projectile :ensure t)
+(use-package projectile
+  :ensure t
+  :config (setq
+           projectile-enable-caching t))
 (use-package helm :ensure t)
 (use-package helm-etags-plus
   :ensure t
@@ -383,7 +386,12 @@
             ;; (define-key lsp-mode-map (kbd "M-.") #'lsp-find-definition)
             ;; (define-key lsp-mode-map (kbd "C-M-.") #'lsp-find-references)
             ;; performance tips from readme
-            (setq gc-cons-threshold 100000000) ;; 100mb
+	    (defun my-minibuffer-setup-hook ()
+	       (setq gc-cons-threshold most-positive-fixnum))
+            (defun my-minibuffer-exit-hook ()
+               (setq gc-cons-threshold 800000))
+            (add-hook 'minibuffer-setup-hook #'my-minibuffer-setup-hook)
+            (add-hook 'minibuffer-exit-hook #'my-minibuffer-exit-hook)
             (setq lsp-prefer-capf t)
             (setq read-process-output-max (* 1024 1024)) ;; 1mb
             ;; settings
@@ -1162,6 +1170,17 @@
             (global-set-key [(control .)] 'ido-goto-symbol)))
 
 (use-package erefactor :ensure t)
+
+(use-package dumb-jump :ensure t
+  :config (defhydra dumb-jump-hydra (:color blue :columns 3)
+    "Dumb Jump"
+    ("j" dumb-jump-go "Go")
+    ("o" dumb-jump-go-other-window "Other window")
+    ("e" dumb-jump-go-prefer-external "Go external")
+    ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
+    ("i" dumb-jump-go-prompt "Prompt")
+    ("l" dumb-jump-quick-look "Quick look")
+    ("b" dumb-jump-back "Back")))
 
 ;; local lisp code
 (add-to-list 'load-path (locate-user-emacs-file "lisp/rml"))
