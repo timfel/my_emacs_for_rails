@@ -60,11 +60,11 @@
 ;; Standard copy'n'paste
 ;; (cua-mode 1)
 ;; fix clipboard
-(if window-system
-    (progn
-      (mouse-wheel-mode t)
-      (setq x-select-enable-clipboard t)
-      (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)))
+;; (if window-system
+;;     (progn
+;;       (mouse-wheel-mode t)
+;;       (setq x-select-enable-clipboard t)
+;;       (setq interprogram-paste-function 'x-selection-value)))
 (column-number-mode t)
 
 ;; Use the default browser on linux
