@@ -129,7 +129,7 @@
 (use-package projectile
   :ensure t
   :config (setq
-           projectile-enable-caching t))
+           projectile-enable-caching nil))
 (use-package helm :ensure t)
 (use-package helm-etags-plus
   :ensure t
