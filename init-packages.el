@@ -478,8 +478,23 @@
             ;; adjust open list indentation
             (add-hook 'java-mode-hook
                       (lambda ()
+                        (my/lsp/kill-old-java-buffers)
                         (set-fill-column 99)
-                        (c-set-offset 'arglist-cont-nonempty 16)))
+                        (c-set-offset 'substatement-open 0)
+                        (c-set-offset 'case-label '+)
+                        (c-set-offset 'arglist-close 0)
+                        (if (assoc 'inexpr-class c-offsets-alist)
+                            (c-set-offset 'inexpr-class 0))
+                        (c-set-offset 'arglist-cont-nonempty
+                                      (lambda (syntax)
+                                        (save-excursion
+                                          (if (and (= (length c-syntactic-context) 2)
+                                                   (eq (caar c-syntactic-context) 'arglist-cont-nonempty)
+                                                   (or
+                                                    (eq (caadr c-syntactic-context) 'statement-block-intro)
+                                                    (eq (caadr c-syntactic-context) 'block-close)))
+                                              0
+                                            16))))))
             (define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
             (add-hook 'java-mode-hook #'lsp)
             ;; (add-hook 'java-mode-hook 'doom-modeline-mode)
