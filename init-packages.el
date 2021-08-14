@@ -478,7 +478,6 @@
             ;; adjust open list indentation
             (add-hook 'java-mode-hook
                       (lambda ()
-                        (my/lsp/kill-old-java-buffers)
                         (set-fill-column 99)
                         (c-set-offset 'substatement-open 0)
                         (c-set-offset 'case-label '+)
