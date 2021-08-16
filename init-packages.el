@@ -339,6 +339,9 @@
                 lsp-before-save-edits t
                 lsp-enable-file-watchers nil)
 
+          (load (locate-user-emacs-file "lsp-netbeans.el"))
+          (load (locate-user-emacs-file "lsp-graalvm.el"))
+
           (require 'lsp-lua)
           (if (not (f-exists-p lsp-clients-emmy-lua-jar-path))
               (progn
