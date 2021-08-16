@@ -1,11 +1,37 @@
+;;; lsp-graalvm.el --- Apache Netbeans Language Server Client settings         -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2021  Tim Felgentreff
+
+;; Author: Tim Felgentreff <timfelgentreff@gmail.com>
+;; Keywords: ruby python R javascript graalvm lsp
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; LSP client for the built-in GraalVM language server
+
+;;; Code:
+
 (require 'lsp-mode)
 
 (defcustom lsp-graalvm-download-url
   (cond
    ((eq system-type 'darwin)
-    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.2.0/graalvm-ce-java8-darwin-amd64-20.2.0.tar.gz")
+    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-21.2.0/graalvm-ce-java11-darwin-amd64-21.2.0.tar.gz")
    ((eq system-type 'gnu/linux)
-    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.2.0/graalvm-ce-java8-linux-amd64-20.2.0.tar.gz"))
+    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-21.2.0/graalvm-ce-java11-linux-amd64-21.2.0.tar.gz"))
   "URL to download the GraalVM from"
   :group 'lsp-graalvm
   :type 'string)
@@ -34,16 +60,6 @@
   "Commandline to launch delegate server. Leave %d in the commandline for the port/"
   :group 'lsp-graalvm
   :type 'string)
-
-;; (add-hook 'lsp-managed-mode-hook
-;;           (seq-filter
-;;            (lambda (workspace)
-;;              (= (-> workspace lsp--workspace-client lsp--client-server-id symbol-name) 'graallsp))
-;;            (lsp-workspaces))
-;;            (server-id (-> workspace lsp--workspace-client lsp--client-server-id symbol-name (propertize 'face 'bold-italic)))
-;;           (lambda ()
-;;             (let (oldproc (lsp-session-get-metadata pname))
-;;               (if oldproc (delete-process oldproc)))))
 
 (defun lsp-graalvm-server-command (main-port)
   (let ((delegates ""))
@@ -116,9 +132,9 @@
         (lsp--info "Extracting GraalVM..."))
        ("sh" "-c" unzip-script
         (lsp--info "Installing GraalVM languages..."))
-       ("sh" "-c" (f-join install-dir "bin" "gu install ruby R python")
+       ("sh" "-c" (f-join install-dir "bin" "gu install ruby R python nodejs")
         (lsp--info "Setting up TruffleRuby OpenSSL gem..."))
-       ("sh" "-c" (f-join install-dir "jre" "languages" "ruby" "lib" "truffle" "post_install_hook.sh")
+       ("sh" "-c" (f-join install-dir "languages" "ruby" "lib" "truffle" "post_install_hook.sh")
         (lsp--info "Installing GraalVM delegate language server for JavaScript"))
        ("sh" "-c" (f-join install-dir "bin" "npm install -g javascript-typescript-langserver")
         (lsp--info "Installing GraalVM delegate language server for Ruby"))
@@ -136,8 +152,8 @@
 
 (lsp-register-client
  (make-lsp-client
-  :new-connection (lsp-tcp-connection 'lsp-graalvm-server-command)
+  :new-connection (lsp-tcp-connection #'lsp-graalvm-server-command)
   :major-modes '(python-mode ruby-mode js-mode javascript-mode)
   :server-id 'graallsp
-  :priority 10
+  :priority -1
   :download-server-fn #'lsp-graalvm--install-server))

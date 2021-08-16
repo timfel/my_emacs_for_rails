@@ -1,13 +1,60 @@
+;;; lsp-netbeans.el --- Apache Netbeans Language Server Client settings         -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2021  Tim Felgentreff
+
+;; Author: Tim Felgentreff <timfelgentreff@gmail.com>
+;; Keywords: java groovy graalvm lsp
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; LSP and DAP client for the Apache Netbeans LSP server.
+
+;; Currently missing many features that are in the VSCode extension, including, but not limited to:
+;; - All custom commands, such as
+;;     java.build.workspace
+;;     java.generate.getters
+;;     java.generate.setters
+;;     java.generate.getters.setters
+;;     java.generate.implementMethod
+;;     java.generate.overrideMethod
+;;     java.generate.equals.hashCode
+;;     java.generate.delegateMethod
+;;     java.generate.constructor
+;;     java.generate.logger
+;;     java.generate.toString
+;;     graalvm.pause.script
+;;     java.super.implementation
+;; - Groovy support
+;; - Managing/running/debugging unittest directly
+;; - GraalVM Native Image launch/debug configuration
+;; - Attach to JVM process debug configs
+;; - Launch JVM debug config
+
+;;; Code:
+
 (require 'lsp-mode)
 (require 'dap-mode)
 
 (defcustom lsp-netbeans-download-url "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ASF/vsextensions/apache-netbeans-java/12.4.301/vspackage"
-  "URL to download the server from"
+  "URL to download the Apache Netbeans LSP server from"
   :group 'lsp-netbeans
   :type 'string)
 
 (defcustom lsp-netbeans-install-dir (f-join lsp-server-install-dir "asf.apache-netbeans-java")
-  "Apache Netbeans Java Language Server installation dir"
+  "Apache Netbeans language server installation dir"
   :group 'lsp-netbeans
   :type 'string)
 
@@ -50,30 +97,6 @@
   :multi-root t
   :download-server-fn #'lsp-netbeans--install-server))
 
-;; TODO: commands
-;; java.build.workspace
-;; java.generate.getters
-;; java.generate.setters
-;; java.generate.getters.setters
-;; java.generate.implementMethod
-;; java.generate.overrideMethod
-;; java.generate.equals.hashCode
-;; java.generate.delegateMethod
-;; java.generate.constructor
-;; java.generate.logger
-;; java.generate.toString
-;;
-;; (defun lsp-netbeans-super-implementation ()
-;;   (interactive)
-;;   (lsp-send-execute-command
-;;    "java.super.implementation"
-;;    (vector
-;;     "file:///...java"
-;;     (list
-;;      :range (list
-;;              :start (list :line 1385 :character 20)
-;;              :end (list :line 1385 :character 24))))))
-
 (defun dap-netbeans--populate-attach-args (conf)
   (dap--put-if-absent conf :hostName (read-string "Enter host: " "localhost"))
   (dap--put-if-absent conf :port (read-string "Enter port: " "8000"))
@@ -85,7 +108,6 @@
   (setq conf (plist-put conf :type "java8+"))
 
   (setq conf (pcase (plist-get conf :request)
-               ;; ("launch" (dap-java--populate-launch-args conf))
                ("attach" (dap-netbeans--populate-attach-args conf))
                (_ (dap-netbeans--populate-attach-args conf))))
 
@@ -105,9 +127,3 @@
                                    :name "Attach to Port"
                                    :hostName "localhost"
                                    :port nil))
-;; (dap-register-debug-template "Java8+ Process Attach"
-;;                              (list :id "com.sun.jdi.ProcessAttach"
-;;                                    :type "java8+"
-;;                                    :request "attach"
-;;                                    :name "Attach to Process"
-;;                                    :processId nil))
