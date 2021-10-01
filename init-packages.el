@@ -1,6 +1,7 @@
 (require 'compile)
 (require 'cc-mode)
-
+(require 'hl-line)
+(require 'gud)
 
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
@@ -153,46 +154,46 @@
 ;; (use-package company-box
 ;;  :ensure t
 ;;  :hook (company-mode . company-box-mode))
-(use-package flycheck
-  :ensure t
-  :init
-  (progn
-    (define-fringe-bitmap 'my-flycheck-fringe-indicator
-      (vector #b00000000
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00011100
-              #b00111110
-              #b00111110
-              #b00111110
-              #b00011100
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00000000
-              #b00000000))
-
-    (flycheck-define-error-level 'error
-      :severity 2
-      :overlay-category 'flycheck-error-overlay
-      :fringe-bitmap 'my-flycheck-fringe-indicator
-      :fringe-face 'flycheck-fringe-error)
-
-    (flycheck-define-error-level 'warning
-      :severity 1
-      :overlay-category 'flycheck-warning-overlay
-      :fringe-bitmap 'my-flycheck-fringe-indicator
-      :fringe-face 'flycheck-fringe-warning)
-
-    (flycheck-define-error-level 'info
-      :severity 0
-      :overlay-category 'flycheck-info-overlay
-      :fringe-bitmap 'my-flycheck-fringe-indicator
-      :fringe-face 'flycheck-fringe-info)))
+;; (use-package flycheck
+;;   :ensure t
+;;   :init
+;;   (progn
+;;     (define-fringe-bitmap 'my-flycheck-fringe-indicator
+;;       (vector #b00000000
+;;               #b00000000
+;;               #b00000000
+;;               #b00000000
+;;               #b00000000
+;;               #b00000000
+;;               #b00000000
+;;               #b00011100
+;;               #b00111110
+;;               #b00111110
+;;               #b00111110
+;;               #b00011100
+;;               #b00000000
+;;               #b00000000
+;;               #b00000000
+;;               #b00000000
+;;               #b00000000))
+;; 
+;;     (flycheck-define-error-level 'error
+;;       :severity 2
+;;       :overlay-category 'flycheck-error-overlay
+;;       :fringe-bitmap 'my-flycheck-fringe-indicator
+;;       :fringe-face 'flycheck-fringe-error)
+;; 
+;;     (flycheck-define-error-level 'warning
+;;       :severity 1
+;;       :overlay-category 'flycheck-warning-overlay
+;;       :fringe-bitmap 'my-flycheck-fringe-indicator
+;;       :fringe-face 'flycheck-fringe-warning)
+;; 
+;;     (flycheck-define-error-level 'info
+;;       :severity 0
+;;       :overlay-category 'flycheck-info-overlay
+;;       :fringe-bitmap 'my-flycheck-fringe-indicator
+;;       :fringe-face 'flycheck-fringe-info)))
 
 
 ;; Git(hub)
@@ -222,7 +223,7 @@
   :after request)
 (use-package cssh :ensure t)
 (use-package switch-window :ensure t)
-(use-package autopair :ensure t)
+;; (use-package autopair :ensure t)
 (use-package popup :ensure t)
 (use-package fuzzy :ensure t)
 (use-package pcache :ensure t)
@@ -257,13 +258,13 @@
 (use-package all-the-icons
   :demand t
   :ensure t)
-;; (use-package doom-modeline
-;;   :demand t
-;;   :after all-the-icons
-;;   :ensure t
-;;   :hook (after-init . doom-modeline-mode)
-;;   :config (setq doom-modeline-minor-modes nil
-;;                 doom-modeline-buffer-file-name-style 'truncate-all))
+(use-package doom-modeline
+  :demand t
+  :after all-the-icons
+  :ensure t
+  :hook (after-init . doom-modeline-mode)
+  :config (setq doom-modeline-minor-modes nil
+                doom-modeline-buffer-file-name-style 'truncate-all))
 
 ;; LaTeX
 (use-package tex
@@ -409,6 +410,7 @@
                   lsp-eldoc-render-all t
                   lsp-ui-peek-always-show t
                   lsp-ui-doc-enable nil
+                  lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit t
                   lsp-ui-sideline-enable nil
@@ -498,7 +500,7 @@
                                               0
                                             16))))))
             (define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
-            (add-hook 'java-mode-hook #'lsp)
+            ;; (add-hook 'java-mode-hook #'lsp)
             ;; (add-hook 'java-mode-hook 'doom-modeline-mode)
             (add-hook 'java-mode-hook 'friendly-whitespace)
             (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
@@ -691,7 +693,8 @@
   (lsp-send-notification
    (lsp-make-request "java/buildWorkspace" t)))
 (use-package dap-mode
-  :ensure t :after lsp-mode
+  :ensure t
+  :after lsp-mode
   :config (progn
             ;; show/hide debug and utility windows naturally
             (setq my/repl-should-show-hydra nil)
@@ -1188,6 +1191,11 @@
 
 (use-package erefactor :ensure t)
 
+(use-package esup
+  :ensure t
+  ;; To use MELPA Stable use ":pin melpa-stable",
+  :pin melpa)
+
 (use-package dumb-jump :ensure t
   :config (defhydra dumb-jump-hydra (:color blue :columns 3)
     "Dumb Jump"
@@ -1199,18 +1207,15 @@
     ("l" dumb-jump-quick-look "Quick look")
     ("b" dumb-jump-back "Back")))
 
+(use-package jsonnet-mode
+  :ensure t)
+
 ;; local lisp code
-(add-to-list 'load-path (locate-user-emacs-file "lisp/rml"))
-(autoload 'rml-mode "rml-mode" "RML Mode" t)
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
-(autoload 'darkroom-mode "darkroom-mode" "Darkroom Mode" t)
 (require 'redo+)
 (progn (global-set-key [(control -)] 'redo))
 (require 'sudo-save)
 (autoload 'pypytrace-mode "pypytrace-mode" "PyPy JIT Trace mode" t)
-
-(autoload 'jsonnet-mode "jsonnet-mode" "Jsonnet mode" t)
-
 (autoload 'kickasm-mode "kickasm-mode" "KickAssembler mode" t)
 (add-hook 'kickasm-mode-hook
           (lambda () (add-hook 'before-save-hook
