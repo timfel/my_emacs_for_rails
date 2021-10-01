@@ -61,6 +61,11 @@
   :group 'lsp-graalvm
   :type 'string)
 
+(defcustom lsp-graalvm-languages '("R" "js" "python" "ruby")
+  "Which languages to enable this server for"
+  :group 'lsp-graalvm
+  :type '(set (const "R") (const "js") (const "python") (const "ruby")))
+
 (defun lsp-graalvm-server-command (main-port)
   (let ((delegates ""))
     (if (> main-port 0)
@@ -89,7 +94,7 @@
                             (sit-for 5)
                             (setq delegates
                                   (concat delegates (format "%s@%d," name port)))))))
-                  (list "R" "python" "js" "ruby")))
+                  lsp-graalvm-languages))
     (if (string-match-p ",$" delegates)
         (setq delegates (substring delegates 0 -1)))
     `(,(f-join lsp-graalvm-install-dir "bin" "js")
