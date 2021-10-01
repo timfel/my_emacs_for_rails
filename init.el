@@ -36,18 +36,19 @@
  '(kickasm-c64debugger-command
    "/home/tim/.emacs.d/c64debugger/c64debugger -autojmp -wait 4000")
  '(kickasm-vice-command "x64")
+ '(lsp-graalvm-languages '("python" "ruby"))
  '(lsp-tcp-connection-timeout 20)
  '(lsp-ui-doc-position 'top)
  '(markdown-command "cmark-gfm --extension table")
  '(org-agenda-files
-   '("/home/tim/org/graalvm-cal.org" "/home/tim/OneDrive/todo.org" "/home/tim/OneDrive/notes.org" "/home/tim/org/oracle-cal.org"))
+   '("/home/tim/OneDrive/todo.org" "/home/tim/OneDrive/notes.org"))
  '(org-file-apps
    '((auto-mode . emacs)
      ("\\.mm\\'" . default)
      ("\\.x?html?\\'" . default)
      ("\\.pdf\\'" . "evince %s")))
  '(package-selected-packages
-   '(dumb-jump erefactor auth-source-xoauth2 csharp-mode org-caldav calfw calfw-org wl wanderlust posframe lsp-python-ms lsp-java-treemacs treemacs-icons company-box doom-modeline dracula-theme magit-popup thesaurus flycheck company-lsp treemacs fill-column-indicator textmate logito pcache fuzzy popup autopair switch-window cssh gh magithub magit-svn magit gist helm-etags-plus projectile xcscope org-mode ruby-electric lua-mode markdown-mode sass-mode rspec-mode haml-mode yaml-mode org-link-minor-mode helm-projectile helm markdown-preview-mode markdown-mode+ spacemacs-theme term-keys lsp-java dap-mode lsp-ui lsp-mode tree-mode oauth2))
+   '(jsonnet-mode dumb-jump erefactor auth-source-xoauth2 csharp-mode org-caldav calfw calfw-org wl wanderlust posframe lsp-python-ms lsp-java-treemacs treemacs-icons company-box doom-modeline dracula-theme magit-popup thesaurus flycheck company-lsp treemacs fill-column-indicator textmate logito pcache fuzzy popup autopair switch-window cssh gh magithub magit-svn magit gist helm-etags-plus projectile xcscope org-mode ruby-electric lua-mode markdown-mode sass-mode rspec-mode haml-mode yaml-mode org-link-minor-mode helm-projectile helm markdown-preview-mode markdown-mode+ spacemacs-theme term-keys lsp-java dap-mode lsp-ui lsp-mode tree-mode oauth2))
  '(pdf-view-midnight-colors '("#655370" . "#fbf8ef"))
  '(safe-local-variable-values
    '((reftex-default-bibliography "fallback.bib")
