@@ -1,4 +1,3 @@
-(package-initialize)
 (load (expand-file-name (locate-user-emacs-file "init-packages.el")))
 (load (expand-file-name (locate-user-emacs-file "init-my-functions.el")))
 (load (expand-file-name (locate-user-emacs-file "init-my-global-settings.el")))
