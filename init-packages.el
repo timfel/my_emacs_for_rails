@@ -1,13 +1,13 @@
+(package-initialize)
 (require 'compile)
 (require 'cc-mode)
 (require 'hl-line)
 (require 'gud)
 
-(require 'package)
+(setq warning-minimum-level :error)
+
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
 (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
-(if (version< emacs-version "27")
-    (package-initialize))
 
 (condition-case nil
     (require 'use-package)
@@ -1127,35 +1127,35 @@
 ;;     )
 ;;   )
 
-(use-package calfw
-  :ensure t
-  :init (progn
-          ; (require 'calfw-org)
-          (setq cfw:org-overwrite-default-keybinding t)))
-(use-package org-caldav
-  :ensure t
-  :config (progn
-            (let ((oracle-cal (expand-file-name "~/org/oracle-cal.org"))
-                  (graalvm-cal (expand-file-name "~/org/graalvm-cal.org")))
-              (setq
-               org-caldav-calendars
-               `((:url "https://stbeehive.oracle.com/caldav/st/home/tim.felgentreff%40oracle.com/calendars/"
-                       :calendar-id "MyCalendar"
-                       :inbox ,oracle-cal)
-                 (:url "https://stbeehive.oracle.com/caldav/st/home/GRAALVM-SHARED-CALENDAR_WW%40oracle.com/calendars/"
-                       :calendar-id "MyCalendar"
-                       :inbox ,graalvm-cal))
-               ;; org-caldav-url "https://stbeehive.oracle.com/caldav/st/home/tim.felgentreff%40oracle.com/calendars/"
-               ;; org-caldav-calendar-id "MyCalendar"
-               ;; org-caldav-inbox (expand-file-name "~/.emacs.d/caldav-calendar.org")
-               org-caldav-sync-direction 'cal->org ;; never push org to calendar, i use this readonly
-               org-icalendar-timezone "UTC"
-               org-caldav-delete-org-entries t
-               org-caldav-delete-calendar-entries nil)
-              (add-to-list 'org-agenda-files oracle-cal)
-              (add-to-list 'org-agenda-files graalvm-cal)
-              org-agenda-files
-            )))
+;; (use-package calfw
+;;   :ensure t
+;;   :init (progn
+;;           ; (require 'calfw-org)
+;;           (setq cfw:org-overwrite-default-keybinding t)))
+;; (use-package org-caldav
+;;   :ensure t
+;;   :config (progn
+;;             (let ((oracle-cal (expand-file-name "~/org/oracle-cal.org"))
+;;                   (graalvm-cal (expand-file-name "~/org/graalvm-cal.org")))
+;;               (setq
+;;                org-caldav-calendars
+;;                `((:url "https://stbeehive.oracle.com/caldav/st/home/tim.felgentreff%40oracle.com/calendars/"
+;;                        :calendar-id "MyCalendar"
+;;                        :inbox ,oracle-cal)
+;;                  (:url "https://stbeehive.oracle.com/caldav/st/home/GRAALVM-SHARED-CALENDAR_WW%40oracle.com/calendars/"
+;;                        :calendar-id "MyCalendar"
+;;                        :inbox ,graalvm-cal))
+;;                ;; org-caldav-url "https://stbeehive.oracle.com/caldav/st/home/tim.felgentreff%40oracle.com/calendars/"
+;;                ;; org-caldav-calendar-id "MyCalendar"
+;;                ;; org-caldav-inbox (expand-file-name "~/.emacs.d/caldav-calendar.org")
+;;                org-caldav-sync-direction 'cal->org ;; never push org to calendar, i use this readonly
+;;                org-icalendar-timezone "UTC"
+;;                org-caldav-delete-org-entries t
+;;                org-caldav-delete-calendar-entries nil)
+;;               (add-to-list 'org-agenda-files oracle-cal)
+;;               (add-to-list 'org-agenda-files graalvm-cal)
+;;               org-agenda-files
+;;             )))
 
 ;; Interactively Do Things (highly recommended, but not strictly required)
 (use-package ido
