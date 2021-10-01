@@ -259,12 +259,18 @@
   :demand t
   :ensure t)
 (use-package doom-modeline
+  ;; remember to run (all-the-icons-install-fonts) manually some time
   :demand t
   :after all-the-icons
   :ensure t
   :hook (after-init . doom-modeline-mode)
   :config (setq doom-modeline-minor-modes nil
-                doom-modeline-buffer-file-name-style 'truncate-all))
+                doom-modeline-minor-modes t
+                doom-modeline-bar-width 4
+                doom-modeline-hud nil
+                doom-modeline-vcs-max-length 28
+                doom-modeline-lsp t
+                doom-modeline-buffer-file-name-style 'auto))
 
 ;; LaTeX
 (use-package tex
