@@ -1221,6 +1221,7 @@
 (require 'redo+)
 (progn (global-set-key [(control -)] 'redo))
 (require 'sudo-save)
+(require 'javap-handler)
 (autoload 'pypytrace-mode "pypytrace-mode" "PyPy JIT Trace mode" t)
 (autoload 'kickasm-mode "kickasm-mode" "KickAssembler mode" t)
 (add-hook 'kickasm-mode-hook
