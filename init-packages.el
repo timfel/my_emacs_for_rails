@@ -121,7 +121,7 @@
                org-capture-templates
                (list
                 ;; schedule new todo items to today by default
-                (list "n" "note" 'entry (list 'file+datetree notes) "* %?\nEntered on %U\n  %i\n  %a")
+                (list "n" "note" 'entry (list 'file+datetree notes) "* %?\nEntered on %U\n")
                 (list "t" "todo" 'entry (list 'file+headline todos "Tasks") "* TODO [#A] %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n"))))))
 
 ;; tags and navigation
@@ -346,7 +346,8 @@
                 lsp-before-save-edits t
                 lsp-enable-file-watchers nil)
 
-          (load (locate-user-emacs-file "lsp-netbeans.el"))
+          (load (locate-user-emacs-file "lsp-netbeans/lsp-netbeans.el"))
+          (load (locate-user-emacs-file "lsp-netbeans/dap-netbeans.el"))
           (load (locate-user-emacs-file "lsp-graalvm.el"))
 
           (require 'lsp-lua)
