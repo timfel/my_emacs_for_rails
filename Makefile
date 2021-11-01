@@ -12,9 +12,9 @@ $(PACKAGE_DIR): $(PACKAGE_ID)-pkg.el
 
 $(PACKAGE_ID)-pkg.el: *.el
 	@echo "(define-package"   > $@
-	@echo '  "lsp-netbeans"' >> $@
+	@echo '  "lsp-graalvm"' >> $@
 	@echo '  "$(VERSION)"'   >> $@
-	@echo '  "A package to use the Netbeans based LSP and DAP server with emacs-lsp."' >> $@
+	@echo '  "A package to use the GraalVM based LSP server with emacs-lsp."' >> $@
 
 clean:
 	rm -f ../$(PACKAGE_NAME).tar
