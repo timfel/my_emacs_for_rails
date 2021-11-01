@@ -29,9 +29,9 @@
 (defcustom lsp-graalvm-download-url
   (cond
    ((eq system-type 'darwin)
-    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-21.2.0/graalvm-ce-java11-darwin-amd64-21.2.0.tar.gz")
+    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-21.3.0/graalvm-ce-java11-darwin-amd64-21.3.0.tar.gz")
    ((eq system-type 'gnu/linux)
-    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-21.2.0/graalvm-ce-java11-linux-amd64-21.2.0.tar.gz"))
+    "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-21.3.0/graalvm-ce-java11-linux-amd64-21.3.0.tar.gz"))
   "URL to download the GraalVM from"
   :group 'lsp-graalvm
   :type 'string)
