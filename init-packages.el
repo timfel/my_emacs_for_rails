@@ -409,7 +409,7 @@
             (setq lsp-prefer-capf t)
             (setq read-process-output-max (* 1024 1024)) ;; 1mb
             ;; settings
-            (setq lsp-ui-flycheck-live-reporting nil
+            (setq lsp-ui-flycheck-live-reporting t
                   lsp-print-performance nil
                   lsp-report-if-no-buffer t
                   lsp-enable-snippet t
@@ -419,7 +419,7 @@
                   lsp-diagnostic-clean-after-change nil
                   lsp-eldoc-render-all t
                   lsp-ui-peek-always-show t
-                  lsp-ui-doc-enable nil
+                  lsp-ui-doc-enable t
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit t
@@ -429,8 +429,8 @@
                   lsp-ui-sideline-showcode-actions nil
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
-                  lsp-eldoc-enable-hover nil
-                  lsp-idle-delay 1.000
+                  lsp-eldoc-enable-hover t
+                  lsp-idle-delay 2.000
                   lsp-ui-sideline-code-actions-prefix "💡 "
                   lsp-ui-sideline-update-mode 'line)
             (if (equalp (getenv "WSL") "1")
