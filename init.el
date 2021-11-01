@@ -51,7 +51,8 @@
    '(jsonnet-mode dumb-jump erefactor auth-source-xoauth2 csharp-mode org-caldav calfw calfw-org wl wanderlust posframe lsp-python-ms lsp-java-treemacs treemacs-icons company-box doom-modeline dracula-theme magit-popup thesaurus flycheck company-lsp treemacs fill-column-indicator textmate logito pcache fuzzy popup autopair switch-window cssh gh magithub magit-svn magit gist helm-etags-plus projectile xcscope org-mode ruby-electric lua-mode markdown-mode sass-mode rspec-mode haml-mode yaml-mode org-link-minor-mode helm-projectile helm markdown-preview-mode markdown-mode+ spacemacs-theme term-keys lsp-java dap-mode lsp-ui lsp-mode tree-mode oauth2))
  '(pdf-view-midnight-colors '("#655370" . "#fbf8ef"))
  '(safe-local-variable-values
-   '((reftex-default-bibliography "fallback.bib")
+   '((flycheck-disabled-checkers emacs-lisp-checkdoc)
+     (reftex-default-bibliography "fallback.bib")
      (whitespace-line-column . 80)
      (eval ignore-errors "Write-contents-functions is a buffer-local alternative to before-save-hook"
            (add-hook 'write-contents-functions
