@@ -340,7 +340,7 @@
 (use-package lsp-mode
   :ensure t
   :init (progn
-          (setq lsp-print-io nil
+          (setq lsp-print-io t
                 lsp-enable-snippet t
                 lsp-enable-indentation nil
                 lsp-before-save-edits t
