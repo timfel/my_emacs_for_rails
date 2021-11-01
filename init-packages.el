@@ -346,10 +346,6 @@
                 lsp-before-save-edits t
                 lsp-enable-file-watchers nil)
 
-          (load (locate-user-emacs-file "lsp-netbeans/lsp-netbeans.el"))
-          (load (locate-user-emacs-file "lsp-netbeans/dap-netbeans.el"))
-          (load (locate-user-emacs-file "lsp-graalvm.el"))
-
           (require 'lsp-lua)
           (if (not (f-exists-p lsp-clients-emmy-lua-jar-path))
               (progn
@@ -377,6 +373,13 @@
   ;;                             (project-select project-name)
   ;;                             (project-refresh))))))))
 (use-package hydra :ensure t)
+
+(use-package lsp-netbeans
+  :load-path "lsp-netbeans")
+(use-package dap-netbeans
+  :load-path "lsp-netbeans")
+(use-package lsp-graalvm
+  :load-path "lsp-graalvm")
 
 (use-package lsp-ui
   :ensure t
