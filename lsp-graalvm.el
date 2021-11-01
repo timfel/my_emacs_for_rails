@@ -162,3 +162,11 @@
   :server-id 'graallsp
   :priority -1
   :download-server-fn #'lsp-graalvm--install-server))
+
+(provide 'lsp-graalvm)
+
+;;; lsp-graalvm.el ends here
+
+;; Local Variables:
+;; flycheck-disabled-checkers: (emacs-lisp-checkdoc)
+;; End:
