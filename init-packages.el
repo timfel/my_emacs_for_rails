@@ -706,20 +706,6 @@
   :ensure t
   :after lsp-mode
   :config (progn
-            ;; show/hide debug and utility windows naturally
-            (setq my/repl-should-show-hydra nil)
-            (defun my/repl-show-hydra ()
-              (if (equalp (buffer-name (window-buffer (selected-window))) "*dap-ui-repl*")
-                  (progn
-                    (setq my/repl-should-show-hydra t)
-                    (run-at-time 0.5 nil #'dap-hydra/nil))
-                (if (and (not (active-minibuffer-window))
-                         my/repl-should-show-hydra)
-                    (progn
-                      (setq my/repl-should-show-hydra nil)
-                      (run-at-time 0.5 nil #'dap-hydra)))))
-            (add-hook 'buffer-list-update-hook #'my/repl-show-hydra)
-
             (defun my/show-debug-windows (session)
               (save-excursion
                 (call-interactively #'dap-ui-repl)
@@ -752,14 +738,13 @@
             (add-hook 'dap-terminated-hook (lambda (arg) (call-interactively #'dap-hydra/nil)))
 
             ;; default settings
-            (dap-mode 1)
-            (dap-ui-mode 1)
-            (dap-tooltip-mode 1)
+            (setq
+             dap-auto-configure-features '(sessions locals controls tooltip)
+             dap-auto-show-output nil
+             dap-print-io t)
+            (dap-auto-configure-mode)
             ;; (require 'dap-gdb-lldb)
-            
-            (tooltip-mode 1)
-            (define-key dap-ui-session-mode-map [C-mouse-1] 'dap-ui-session-select)
-            (setq dap-auto-show-output nil)))
+            ))
 
 (use-package dap-lldb
   :after dap-mode
@@ -843,9 +828,9 @@
                       (lambda (arg) (fset 'my/dap-debug 'dap-debug)))
 
             (define-key java-mode-map (kbd "C-c C-d") #'my/dap-debug)
-            (define-key java-mode-map (kbd "C-c C-c") #'my/lsp/build-mx-project)
-            (define-key java-mode-map (kbd "C-c m") #'my/lsp/run-mx-command)
-            (define-key java-mode-map (kbd "C-c C-x t") #'dap-breakpoint-toggle)
+            ;; (define-key java-mode-map (kbd "C-c C-c") #'my/lsp/build-mx-project)
+            ;; (define-key java-mode-map (kbd "C-c m") #'my/lsp/run-mx-command)
+            ;; (define-key java-mode-map (kbd "C-c C-x t") #'dap-breakpoint-toggle)
 
             (dap-register-debug-template "Java Attach com.oracle.graal.python"
                                          (list :type "java"
