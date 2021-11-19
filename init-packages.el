@@ -340,7 +340,7 @@
 (use-package lsp-mode
   :ensure t
   :init (progn
-          (setq lsp-print-io t
+          (setq lsp-print-io nil
                 lsp-enable-snippet t
                 lsp-enable-indentation nil
                 lsp-before-save-edits t
@@ -417,7 +417,7 @@
                   lsp-enable-completion-at-point t
                   lsp-response-timeout 10
                   lsp-diagnostic-clean-after-change nil
-                  lsp-eldoc-render-all t
+                  lsp-eldoc-render-all nil
                   lsp-ui-peek-always-show t
                   lsp-ui-doc-enable t
                   lsp-ui-doc-max-height 30
@@ -425,11 +425,11 @@
                   lsp-ui-doc-use-webkit t
                   lsp-ui-sideline-enable nil
                   lsp-ui-sideline-show-symbol nil
-                  lsp-ui-sideline-show-hover nil
+                  lsp-ui-sideline-show-hover t
                   lsp-ui-sideline-showcode-actions nil
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
-                  lsp-eldoc-enable-hover t
+                  lsp-eldoc-enable-hover nil
                   lsp-idle-delay 2.000
                   lsp-ui-sideline-code-actions-prefix "💡 "
                   lsp-ui-sideline-update-mode 'line)
@@ -741,7 +741,7 @@
             (setq
              dap-auto-configure-features '(sessions locals controls tooltip)
              dap-auto-show-output nil
-             dap-print-io t)
+             dap-print-io nil)
             (dap-auto-configure-mode)
             ;; (require 'dap-gdb-lldb)
             ))
