@@ -3,4 +3,5 @@ session.*
 *.desktop
 lsp-netbeans
 lsp-graalvm
+.cache
 
