@@ -179,6 +179,17 @@
         (progn (lsp--info "Done installing GraalVM language server.")
                (funcall cb)))))))
 
+(defun lsp-graalvm-dry-run ()
+  (interactive)
+  (lsp-request-async "workspace/executeCommand"
+                     (list :command "dry_run"
+                           :arguments (vector (format "file://%s" (buffer-file-name))))
+                     (lambda (result)
+                       (setf (lsp--workspace-status-string (cl-first (lsp-workspaces))) nil)
+                       (force-mode-line-update)
+                       (pcase result
+                         (1 (lsp--info "Successfully build project."))
+                         (2 (lsp--error "Failed to build project."))))))
 
 (lsp-register-client
  (make-lsp-client
