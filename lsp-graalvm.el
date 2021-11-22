@@ -41,7 +41,7 @@
   :group 'lsp-graalvm
   :type 'string)
 
-(defcustom lsp-graalvm-python-delegate-server "pyls --tcp --port %d"
+(defcustom lsp-graalvm-python-delegate-server (format "%s %s" (f-join "pyls_venv" "bin" "pyls") "--tcp --port %d")
   "Commandline to launch delegate server. Leave %d in the commandline for the port/"
   :group 'lsp-graalvm
   :type 'string)
@@ -91,7 +91,7 @@
                              (start-process-shell-command pname
                                                           (get-buffer-create delegate-command-buffer)
                                                           (f-join lsp-graalvm-install-dir "bin" (format cmd port))))
-                            (sit-for 5)
+                            (sit-for 10)
                             (setq delegates
                                   (concat delegates (format "%s@%d," name port)))))))
                   lsp-graalvm-languages))
@@ -141,16 +141,29 @@
         (lsp--info "Setting up TruffleRuby OpenSSL gem..."))
        ("sh" "-c" (f-join install-dir "languages" "ruby" "lib" "truffle" "post_install_hook.sh")
         (lsp--info "Installing GraalVM delegate language server for JavaScript"))
-       ("sh" "-c" (f-join install-dir "bin" "npm install -g javascript-typescript-langserver")
+       ("sh" "-c" (if (seq-contains-p lsp-graalvm-languages "js")
+                      (f-join install-dir "bin" "npm install -g javascript-typescript-langserver")
+                    "echo Skipped")
         (lsp--info "Installing GraalVM delegate language server for Ruby"))
-       ("sh" "-c" (f-join install-dir "bin" "gem install solargraph")
+       ("sh" "-c" (if (seq-contains-p lsp-graalvm-languages "ruby")
+                      (f-join install-dir "bin" "gem install solargraph")
+                    "echo Skipped")
+        (lsp--info "Creating venv for GraalVM language server for Python"))
+       ("sh" "-c" (if (seq-contains-p lsp-graalvm-languages "python")
+                      (format "%s -m venv %s"
+                              (f-join install-dir "bin" "graalpython")
+                              (f-join install-dir "bin" "pyls_venv"))
+                    "echo Skipped")
         (lsp--info "Installing GraalVM delegate language server for Python"))
-       ;; TODO: use graalpython here
-       ("sh" "-c" (format "python3 -m venv %s && %s -m pip install python-language-server"
-                          install-dir
-                          (f-join install-dir "bin" "python3"))
+       ("sh" "-c" (if (seq-contains-p lsp-graalvm-languages "python")
+                      (format "VIRTUAL_ENV=%s %s -m pip install python-language-server"
+                              (f-join install-dir "bin" "pyls_venv")
+                              (f-join install-dir "bin" "pyls_venv" "bin" "graalpython"))
+                    "echo Skipped")
         (lsp--info "Installing GraalVM delegate language server for R"))
-       ("sh" "-c" (f-join install-dir "bin" "R --vanilla --quiet -e 'utils::install.packages(\"languageserver\", Ncpus=1, INSTALL_opts=\"--no-docs --no-byte-compile --no-staged-install --no-test-load --use-vanilla\")'")
+       ("sh" "-c" (if (seq-contains-p lsp-graalvm-languages "R")
+                      (f-join install-dir "bin" "R --vanilla --quiet -e 'utils::install.packages(\"languageserver\", Ncpus=1, INSTALL_opts=\"--no-docs --no-byte-compile --no-staged-install --no-test-load --use-vanilla\")'")
+                    "echo Skipped")
         (progn (lsp--info "Done installing GraalVM language server.")
                (funcall cb)))))))
 
