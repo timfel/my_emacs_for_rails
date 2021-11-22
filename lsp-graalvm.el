@@ -66,43 +66,55 @@
   :group 'lsp-graalvm
   :type '(set (const "R") (const "js") (const "python") (const "ruby")))
 
+(defcustom lsp-graalvm-custom-server nil
+  "Wait for a user-started server to connect to for a few seconds"
+  :group 'lsp-graalvm
+  :type 'boolean)
+
 (defun lsp-graalvm-server-command (main-port)
   (let ((delegates ""))
     (if (> main-port 0)
-        (seq-mapn (lambda (name)
-                    (let ((cmd (eval (intern (concat "lsp-graalvm-" name "-delegate-server"))))
-                          (pname (format "graalvm-%s-delegate" name)))
-                      (if cmd
-                          (let ((port (lsp--find-available-port "localhost" (cl-incf lsp--tcp-port)))
-                                (delegate-command-buffer (concat "*" pname "*")))
-                            ;; kill old delegate servers that may be hanging around
-                            (let ((oldproc (lsp-session-get-metadata pname)))
-                              (when oldproc
-                                (delete-process oldproc)
-                                (sit-for 1)))
-                            (let ((oldproc (get-buffer-process delegate-command-buffer)))
-                              (when oldproc
-                                (delete-process oldproc)
-                                (kill-buffer delegate-command-buffer)
-                                (sit-for 1)))
-                            ;; launch the delegate language servers that are installed inside our graalvm
-                            (lsp-session-set-metadata
-                             pname
-                             (start-process-shell-command pname
-                                                          (get-buffer-create delegate-command-buffer)
-                                                          (f-join lsp-graalvm-install-dir "bin" (format cmd port))))
-                            (sit-for 10)
-                            (setq delegates
-                                  (concat delegates (format "%s@%d," name port)))))))
-                  lsp-graalvm-languages))
-    (if (string-match-p ",$" delegates)
-        (setq delegates (substring delegates 0 -1)))
-    `(,(f-join lsp-graalvm-install-dir "bin" "js")
-      "--jvm"
-      "--experimental-options"
-      "--polyglot"
-      ,(format "--lsp.Delegates=%s" delegates)
-      ,(format "--lsp=%d" main-port))))
+        (if lsp-graalvm-custom-server
+            (progn
+              (message "Waiting for server on port %d" main-port)
+              (sit-for 15))
+          (progn
+            (seq-mapn (lambda (name)
+                        (let ((cmd (eval (intern (concat "lsp-graalvm-" name "-delegate-server"))))
+                              (pname (format "graalvm-%s-delegate" name)))
+                          (if cmd
+                              (let ((port (lsp--find-available-port "localhost" (cl-incf lsp--tcp-port)))
+                                    (delegate-command-buffer (concat "*" pname "*")))
+                                ;; kill old delegate servers that may be hanging around
+                                (let ((oldproc (lsp-session-get-metadata pname)))
+                                  (when oldproc
+                                    (delete-process oldproc)
+                                    (sit-for 1)))
+                                (let ((oldproc (get-buffer-process delegate-command-buffer)))
+                                  (when oldproc
+                                    (delete-process oldproc)
+                                    (kill-buffer delegate-command-buffer)
+                                    (sit-for 1)))
+                                ;; launch the delegate language servers that are installed inside our graalvm
+                                (lsp-session-set-metadata
+                                 pname
+                                 (start-process-shell-command pname
+                                                              (get-buffer-create delegate-command-buffer)
+                                                              (f-join lsp-graalvm-install-dir "bin" (format cmd port))))
+                                (sit-for 10)
+                                (setq delegates
+                                      (concat delegates (format "%s@%d," name port)))))))
+                      lsp-graalvm-languages)
+            (if (string-match-p ",$" delegates)
+                (setq delegates (substring delegates 0 -1))))))
+    (if lsp-graalvm-custom-server
+        '("/usr/bin/sleep" "2147483648")
+      `(,(f-join lsp-graalvm-install-dir "bin" "js")
+        "--jvm"
+        "--experimental-options"
+        "--polyglot"
+        ,(format "--lsp.Delegates=%s" delegates)
+        ,(format "--lsp=%d" main-port)))))
 
 
 (defmacro lsp-graalvm--multiple-async-shell-commands (error-callback &rest commands)
