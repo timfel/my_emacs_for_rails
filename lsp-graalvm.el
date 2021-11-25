@@ -163,14 +163,16 @@
         (lsp--info "Creating venv for GraalVM language server for Python"))
        ("sh" "-c" (if (seq-contains-p lsp-graalvm-languages "python")
                       (format "%s -m venv %s"
-                              (f-join install-dir "bin" "graalpython")
+                              ;; TODO: will work once graalpython supports pyls
+                              ;; (f-join install-dir "bin" "graalpython")
+                              "python3"
                               (f-join install-dir "bin" "pyls_venv"))
                     "echo Skipped")
         (lsp--info "Installing GraalVM delegate language server for Python"))
        ("sh" "-c" (if (seq-contains-p lsp-graalvm-languages "python")
                       (format "VIRTUAL_ENV=%s %s -m pip install python-language-server"
                               (f-join install-dir "bin" "pyls_venv")
-                              (f-join install-dir "bin" "pyls_venv" "bin" "graalpython"))
+                              (f-join install-dir "bin" "pyls_venv" "bin" "python"))
                     "echo Skipped")
         (lsp--info "Installing GraalVM delegate language server for R"))
        ("sh" "-c" (if (seq-contains-p lsp-graalvm-languages "R")
@@ -190,6 +192,14 @@
                        (pcase result
                          (1 (lsp--info "Successfully build project."))
                          (2 (lsp--error "Failed to build project."))))))
+
+(defun lsp-graalvm-get-coverage ()
+  (interactive)
+  (lsp-request-async "workspace/executeCommand"
+                     (list :command "get_coverage"
+                           :arguments (vector (format "file://%s" (buffer-file-name))))
+                     (lambda (result)
+                       result)))
 
 (lsp-register-client
  (make-lsp-client
