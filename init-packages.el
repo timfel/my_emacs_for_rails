@@ -86,8 +86,9 @@
             (add-to-list 'auto-mode-alist '("Rakefile$" . ruby-mode))
             (add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode))))
 (use-package org
-  :mode ("\\.org$")
-  :ensure t
+  :commands org-mode
+  :bind (("C-c a" . org-agend)
+         ("C-c c" . org-capture))
   :config (progn
             ;; (add-hook 'org-mode-hook (lambda ()
             ;;                            (progn
@@ -95,8 +96,6 @@
             ;;                              (local-set-key (kbd "M-<return>") 'org-insert-subheading)))
             (add-hook 'org-mode-hook (lambda () (run-at-time "1 sec" nil (lambda () (fci-mode 0)))))
             (require 'org-tempo)
-            (global-set-key (kbd "C-c a") 'org-agenda)
-            (define-key global-map (kbd "C-c c") 'org-capture)
             (let ((todos (expand-file-name "~/OneDrive/todo.org"))
                   (notes (expand-file-name "~/OneDrive/notes.org")))
               (setq
@@ -383,10 +382,12 @@
 (use-package hydra :ensure t)
 
 (use-package lsp-netbeans
-  :hook java-mode
+  :defer t
+  :hook (java-mode . (lambda () (require 'lsp-netbeans)))
   :load-path "lsp-netbeans")
 (use-package dap-netbeans
-  :hook java-mode
+  :defer t
+  :hook (java-mode . (lambda () (require 'dap-netbeans)))
   :load-path "lsp-netbeans")
 (use-package lsp-graalvm
   :defer t
@@ -463,7 +464,8 @@
 (use-package lsp-python-ms
   :ensure t
   :after (lsp-mode)
-  :hook python-mode
+  :defer t
+  :hook (python-mode . (lambda () (require 'lsp-python-ms)))
   :config (setq
            lsp-python-ms-python-executable-cmd "python3")
   )
@@ -471,7 +473,8 @@
 (use-package lsp-java
   :disabled
   :ensure t
-  :hook java-mode
+  :defer t
+  :hook (java-mode . (lambda () (require 'lsp-java)))
   :after (lsp-mode flycheck company)
   :config (progn
             (require 'lsp-ui-flycheck)
@@ -763,7 +766,8 @@
 
 (use-package dap-lldb
   :after dap-mode
-  :hook (c-mode . c++-mode)
+  :defer t
+  :hook ((c-mode c++-mode) . (lambda () (require 'dap-lldb)))
   :config (progn
             (setq
              dap-lldb-debug-program
@@ -809,7 +813,8 @@
   :after dap-mode)
 
 (use-package dap-cpptools
-  :hook (c-mode . c++-mode)
+  :defer t
+  :hook ((c-mode c++-mode) . (lambda () (require 'dap-cpptools)))
   :after dap-mode)
 
 (use-package csharp-mode
@@ -915,6 +920,7 @@
               ;;Swap a and A in summary mode, so citing original message is on a and no-cite on A.
               ("A" . wl-summary-reply)
               ("a" . wl-summary-reply-with-citation))
+  :defer t
   :hook ((wl-mail-send-pre . djcb-wl-draft-subject-check)
          (wl-mail-send-pre . djcb-wl-draft-attachment-check))
   :config (progn
