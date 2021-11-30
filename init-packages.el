@@ -9,6 +9,8 @@
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
 (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
 
+(setq use-package-verbose t)
+
 (condition-case nil
     (require 'use-package)
   (file-error
@@ -18,11 +20,9 @@
 
 ;; additional modes I like
 (use-package yaml-mode :ensure t
-  :config (progn
-            (add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
-            (add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
-            (add-to-list 'auto-mode-alist '("Gemfile.lock$" . yaml-mode))))
+  :mode ("\\.yml$" "\\.yaml$" "Gemfile.lock$"))
 (use-package coffee-mode :ensure t
+  :mode ("\\.coffee$")
   :config (progn (add-hook 'coffee-mode-hook
                            '(lambda() (progn
                                         ;; Enable compile-on-save if there is already a *.coffee & *.js file
@@ -32,14 +32,28 @@
                                         (setq coffee-args-compile '("-c" "--bare"))
                                         (set (make-local-variable 'tab-width) 2)
                                         (define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer))))))
-(use-package haml-mode :ensure t)
-(use-package rspec-mode :ensure t)
-(use-package sass-mode :ensure t)
-(use-package markdown-mode :ensure t)
-(use-package lua-mode :ensure t)
-(use-package json-mode :ensure t)
-(use-package ruby-electric :ensure t)
+(use-package haml-mode :ensure t
+  :mode ("\\.haml$"))
+(use-package rspec-mode :ensure t :after ruby)
+(use-package sass-mode :ensure t :defer t)
+(use-package markdown-mode :ensure t
+  :mode ("\\.md$"))
+(use-package lua-mode :ensure t
+  :config (progn
+            (require 'lsp)
+            (require 'lsp-lua)
+            (if (not (f-exists-p lsp-clients-emmy-lua-jar-path))
+                (progn
+                  (mkdir (f-dirname lsp-clients-emmy-lua-jar-path) t)
+                  (url-copy-file
+                   "https://github.com/EmmyLua/EmmyLua-LanguageServer/releases/download/0.3.6/EmmyLua-LS-all.jar"
+                   lsp-clients-emmy-lua-jar-path))))
+  :mode ("\\.lua$"))
+(use-package json-mode :ensure t
+  :mode ("\\.json$"))
+(use-package ruby-electric :ensure t :after ruby)
 (use-package ruby-mode :ensure t
+  :mode ("\\.rb$")
   :config (progn
             ;; Patch ruby-mode
             (defun ruby-accurate-end-of-block (&optional end)
@@ -72,6 +86,7 @@
             (add-to-list 'auto-mode-alist '("Rakefile$" . ruby-mode))
             (add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode))))
 (use-package org
+  :mode ("\\.org$")
   :ensure t
   :config (progn
             ;; (add-hook 'org-mode-hook (lambda ()
@@ -125,14 +140,15 @@
                 (list "t" "todo" 'entry (list 'file+headline todos "Tasks") "* TODO [#A] %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n"))))))
 
 ;; tags and navigation
-(use-package ggtags :ensure t)
-(use-package xcscope :ensure t)
+;; (use-package ggtags :ensure t)
+;; (use-package xcscope :ensure t)
 (use-package projectile
   :ensure t
   :config (setq
            projectile-enable-caching nil))
 (use-package helm :ensure t)
 (use-package helm-etags-plus
+  :disabled
   :ensure t
   :config (progn
             (global-set-key (kbd "M-.") 'helm-etags-plus-select)))
@@ -140,7 +156,6 @@
   :ensure t
   :config (progn
             (global-set-key (kbd "C-t") 'helm-projectile-find-file)))
-
 
 ;; Auto completion
 (use-package yasnippet
@@ -200,9 +215,9 @@
 ;; (use-package gist :ensure t)
 ;; (use-package magit-popup :ensure t)
 (use-package magit
+  :bind ("C-x C-z" . magit-status)
   :ensure t
   :config (progn
-            (global-set-key (kbd "C-x C-z") 'magit-status)
             ;; (add-hook 'magit-mode-hook 'magit-load-config-extensions)
             ;; (setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
             (setq magit-auto-revert-tracked-only t)
@@ -214,8 +229,7 @@
 ;; Tools
 (use-package ace-window
   :ensure t
-  :config (progn
-            (global-set-key (kbd "C-x o") 'ace-window)))
+  :bind ("C-x o" . ace-window))
 (use-package fic-mode :ensure t)
 (use-package request :ensure t)
 (use-package mw-thesaurus
@@ -274,6 +288,7 @@
 
 ;; LaTeX
 (use-package tex
+  :mode ("\\.tex$")
   :ensure auctex
   :if (executable-find "pdflatex")
   :config (progn
@@ -306,6 +321,7 @@
             (setq TeX-save-query nil)
             (setq TeX-parse-self t)))
 (use-package reftex
+  :after tex
   :ensure t
   :if (executable-find "pdflatex")
   :config (progn
@@ -344,15 +360,7 @@
                 lsp-enable-snippet t
                 lsp-enable-indentation nil
                 lsp-before-save-edits t
-                lsp-enable-file-watchers nil)
-
-          (require 'lsp-lua)
-          (if (not (f-exists-p lsp-clients-emmy-lua-jar-path))
-              (progn
-                (mkdir (f-dirname lsp-clients-emmy-lua-jar-path) t)
-                (url-copy-file
-                 "https://github.com/EmmyLua/EmmyLua-LanguageServer/releases/download/0.3.6/EmmyLua-LS-all.jar"
-                 lsp-clients-emmy-lua-jar-path)))))
+                lsp-enable-file-watchers nil)))
   ;; :config (progn
   ;;           (add-hook 'lsp-workspace-folders-changed-hook                      
   ;;                     (lambda (added-folders removed-folders)
@@ -375,10 +383,14 @@
 (use-package hydra :ensure t)
 
 (use-package lsp-netbeans
+  :hook java-mode
   :load-path "lsp-netbeans")
 (use-package dap-netbeans
+  :hook java-mode
   :load-path "lsp-netbeans")
 (use-package lsp-graalvm
+  :defer t
+  :commands lsp-graalvm-dry-run
   :load-path "lsp-graalvm")
 
 (use-package lsp-ui
@@ -411,6 +423,8 @@
             ;; settings
             (setq lsp-ui-flycheck-live-reporting t
                   lsp-print-performance nil
+                  lsp-enable-symbol-highlighting nil ;; XXX: crashes me often!
+                  lsp-enable-links nil ;; XXX: crashes me often!
                   lsp-report-if-no-buffer t
                   lsp-enable-snippet t
                   lsp-enable-xref t
@@ -449,14 +463,15 @@
 (use-package lsp-python-ms
   :ensure t
   :after (lsp-mode)
-  :hook (python-mode . (lambda ()
-                         (require 'lsp-python-ms)))
+  :hook python-mode
   :config (setq
            lsp-python-ms-python-executable-cmd "python3")
   )
 
 (use-package lsp-java
+  :disabled
   :ensure t
+  :hook java-mode
   :after (lsp-mode flycheck company)
   :config (progn
             (require 'lsp-ui-flycheck)
@@ -748,6 +763,7 @@
 
 (use-package dap-lldb
   :after dap-mode
+  :hook (c-mode . c++-mode)
   :config (progn
             (setq
              dap-lldb-debug-program
@@ -793,9 +809,11 @@
   :after dap-mode)
 
 (use-package dap-cpptools
+  :hook (c-mode . c++-mode)
   :after dap-mode)
 
 (use-package csharp-mode
+  :mode ("\\.cs$")
   :ensure t)
 
 (use-package dap-node
@@ -816,6 +834,7 @@
     (use-package posframe :ensure t))
 
 (use-package dap-java
+  :disabled
   :after (dap-mode lsp-java)
   :config (progn
             (setq dap-java-default-debug-port 8000)
@@ -889,6 +908,7 @@
 (use-package tramp :ensure t)
 
 (use-package wl
+  :disabled
   :ensure wanderlust
   :commands (wl)
   :bind (:map wl-summary-mode-map
@@ -1192,17 +1212,21 @@
   :pin melpa)
 
 (use-package dumb-jump :ensure t
-  :config (defhydra dumb-jump-hydra (:color blue :columns 3)
-    "Dumb Jump"
-    ("j" dumb-jump-go "Go")
-    ("o" dumb-jump-go-other-window "Other window")
-    ("e" dumb-jump-go-prefer-external "Go external")
-    ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
-    ("i" dumb-jump-go-prompt "Prompt")
-    ("l" dumb-jump-quick-look "Quick look")
-    ("b" dumb-jump-back "Back")))
+  :config (progn
+            (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+
+            (defhydra dumb-jump-hydra (:color blue :columns 3)
+              "Dumb Jump"
+              ("j" dumb-jump-go "Go")
+              ("o" dumb-jump-go-other-window "Other window")
+              ("e" dumb-jump-go-prefer-external "Go external")
+              ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
+              ("i" dumb-jump-go-prompt "Prompt")
+              ("l" dumb-jump-quick-look "Quick look")
+              ("b" dumb-jump-back "Back"))))
 
 (use-package jsonnet-mode
+  :mode ("\\.jsonnet$")
   :ensure t)
 
 ;; local lisp code
