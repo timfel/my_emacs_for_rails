@@ -35,8 +35,9 @@
  '(kickasm-c64debugger-command
    "/home/tim/.emacs.d/c64debugger/c64debugger -autojmp -wait 4000")
  '(kickasm-vice-command "x64")
- '(lsp-graalvm-languages '("python" "ruby"))
- '(lsp-netbeans-jdk "/home/tim/graalvms/graalvm-ce-java17-21.3.0/")
+ '(lsp-graalvm-custom-server t)
+ '(lsp-graalvm-languages '("python"))
+ '(lsp-netbeans-jdk "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-21.3-b03/")
  '(lsp-tcp-connection-timeout 20)
  '(lsp-ui-doc-position 'top)
  '(markdown-command "cmark-gfm --extension table")
