@@ -1171,37 +1171,86 @@
   :ensure t
   :config (progn
             (ido-mode t)
-            (defun ido-goto-symbol ()
-              "Will update the imenu index and then use ido to select a symbol to navigate to."
+
+            (defun ido-goto-symbol (&optional symbol-list)
+              "Refresh imenu and jump to a place in the buffer using Ido."
               (interactive)
-              (imenu--make-index-alist)
-              (let ((name-and-pos '())
-                    (symbol-names '()))
-                (cl-flet ((addsymbols (symbol-list)
-                                   (when (listp symbol-list)
-                                     (dolist (symbol symbol-list)
-                                       (let ((name nil) (position nil))
-                                         (cond
-                                          ((and (listp symbol) (imenu--subalist-p symbol))
-                                           (addsymbols symbol))
+              (unless (featurep 'imenu)
+                (require 'imenu nil t))
+              (cond
+               ((not symbol-list)
+                (let ((ido-mode ido-mode)
+                      (ido-enable-flex-matching
+                       (if (boundp 'ido-enable-flex-matching)
+                           ido-enable-flex-matching t))
+                      name-and-pos symbol-names position)
+                  (unless ido-mode
+                    (ido-mode 1)
+                    (setq ido-enable-flex-matching t))
+                  (while (progn
+                           (imenu--cleanup)
+                           (setq imenu--index-alist nil)
+                           (ido-goto-symbol (imenu--make-index-alist))
+                           (setq selected-symbol
+                                 (ido-completing-read "Symbol? " symbol-names))
+                           (string= (car imenu--rescan-item) selected-symbol)))
+                  (unless (and (boundp 'mark-active) mark-active)
+                    (push-mark nil t nil))
+                  (setq position (cdr (assoc selected-symbol name-and-pos)))
+                  (cond
+                   ((overlayp position)
+                    (goto-char (overlay-start position)))
+                   (t
+                    (goto-char position)))))
+               ((listp symbol-list)
+                (dolist (symbol symbol-list)
+                  (let (name position)
+                    (cond
+                     ((and (listp symbol) (imenu--subalist-p symbol))
+                      (ido-goto-symbol symbol))
+                     ((listp symbol)
+                      (setq name (car symbol))
+                      (setq position (cdr symbol)))
+                     ((stringp symbol)
+                      (setq name symbol)
+                      (setq position
+                            (get-text-property 1 'org-imenu-marker symbol))))
+                    (unless (or (null position) (null name)
+                                (string= (car imenu--rescan-item) name))
+                      (add-to-list 'symbol-names name)
+                      (add-to-list 'name-and-pos (cons name position))))))))
 
-                                          ((listp symbol)
-                                           (setq name (car symbol))
-                                           (setq position (if (overlayp (cdr symbol))
-                                                              (overlay-start (cdr symbol))
-                                                            (cdr symbol))))
+            ;; (defun ido-goto-symbol ()
+            ;;   "Will update the imenu index and then use ido to select a symbol to navigate to."
+            ;;   (interactive)
+            ;;   (imenu--make-index-alist)
+            ;;   (let ((name-and-pos '())
+            ;;         (symbol-names '()))
+            ;;     (cl-flet ((addsymbols (symbol-list)
+            ;;                        (when (listp symbol-list)
+            ;;                          (dolist (symbol symbol-list)
+            ;;                            (let ((name nil) (position nil))
+            ;;                              (cond
+            ;;                               ((and (listp symbol) (imenu--subalist-p symbol))
+            ;;                                (addsymbols symbol))
 
-                                          ((stringp symbol)
-                                           (setq name symbol)
-                                           (setq position (get-text-property 1 'org-imenu-marker symbol))))
+            ;;                               ((listp symbol)
+            ;;                                (setq name (car symbol))
+            ;;                                (setq position (if (overlayp (cdr symbol))
+            ;;                                                   (overlay-start (cdr symbol))
+            ;;                                                 (cdr symbol))))
 
-                                         (unless (or (null position) (null name))
-                                           (add-to-list 'symbol-names name)
-                                           (add-to-list 'name-and-pos (cons name position))))))))
-                  (addsymbols imenu--index-alist))
-                (let* ((selected-symbol (ido-completing-read "Symbol? " symbol-names))
-                       (position (cdr (assoc selected-symbol name-and-pos))))
-                  (goto-char position))))
+            ;;                               ((stringp symbol)
+            ;;                                (setq name symbol)
+            ;;                                (setq position (get-text-property 1 'org-imenu-marker symbol))))
+
+            ;;                              (unless (or (null position) (null name))
+            ;;                                (add-to-list 'symbol-names name)
+            ;;                                (add-to-list 'name-and-pos (cons name position))))))))
+            ;;       (addsymbols imenu--index-alist))
+            ;;     (let* ((selected-symbol (ido-completing-read "Symbol? " symbol-names))
+            ;;            (position (cdr (assoc selected-symbol name-and-pos))))
+            ;;       (goto-char position))))
             (global-set-key [(control .)] 'ido-goto-symbol)))
 
 (use-package erefactor :ensure t)
