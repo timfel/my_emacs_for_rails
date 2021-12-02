@@ -470,6 +470,38 @@
            lsp-python-ms-python-executable-cmd "python3")
   )
 
+;; Global Java settings
+(add-hook 'java-mode-hook
+          (lambda ()
+            (set-fill-column 99)
+            (c-set-offset 'substatement-open 0)
+            (c-set-offset 'case-label '+)
+            (c-set-offset 'arglist-close 0)
+            (if (assoc 'inexpr-class c-offsets-alist)
+                (c-set-offset 'inexpr-class 0))
+            (c-set-offset 'arglist-cont-nonempty
+                          (lambda (syntax)
+                            (save-excursion
+                              (if (and (= (length c-syntactic-context) 2)
+                                       (eq (caar c-syntactic-context) 'arglist-cont-nonempty)
+                                       (or
+                                        (eq (caadr c-syntactic-context) 'statement-block-intro)
+                                        (eq (caadr c-syntactic-context) 'block-close)))
+                                  0
+                                16))))))
+(define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
+(add-hook 'java-mode-hook 'friendly-whitespace)
+(add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
+(add-hook 'java-mode-hook (lambda () (company-mode t)))
+
+;; bind C-c C-d dynamically
+(fset 'my/dap-debug 'dap-debug)
+(add-hook 'dap-session-created-hook
+          (lambda (arg) (fset 'my/dap-debug 'dap-hydra)))
+(add-hook 'dap-terminated-hook
+          (lambda (arg) (fset 'my/dap-debug 'dap-debug)))
+(define-key java-mode-map (kbd "C-c C-d") #'my/dap-debug)
+
 (use-package lsp-java
   :disabled
   :ensure t
@@ -509,33 +541,11 @@
             ;;                                             "nativebuild")))))
             ;;          (lsp--client-notification-handlers (gethash 'jdtls lsp-clients)))
             ;; adjust open list indentation
-            (add-hook 'java-mode-hook
-                      (lambda ()
-                        (set-fill-column 99)
-                        (c-set-offset 'substatement-open 0)
-                        (c-set-offset 'case-label '+)
-                        (c-set-offset 'arglist-close 0)
-                        (if (assoc 'inexpr-class c-offsets-alist)
-                            (c-set-offset 'inexpr-class 0))
-                        (c-set-offset 'arglist-cont-nonempty
-                                      (lambda (syntax)
-                                        (save-excursion
-                                          (if (and (= (length c-syntactic-context) 2)
-                                                   (eq (caar c-syntactic-context) 'arglist-cont-nonempty)
-                                                   (or
-                                                    (eq (caadr c-syntactic-context) 'statement-block-intro)
-                                                    (eq (caadr c-syntactic-context) 'block-close)))
-                                              0
-                                            16))))))
-            (define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
             ;; (add-hook 'java-mode-hook #'lsp)
             ;; (add-hook 'java-mode-hook 'doom-modeline-mode)
-            (add-hook 'java-mode-hook 'friendly-whitespace)
-            (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
-            (add-hook 'java-mode-hook (lambda () (company-mode t)))
             ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
             ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))
-                      ))
+            ))
 
 (defun my/lsp/find-eclipse-projects-recursively (directory)
   (let ((current-directory-list (directory-files directory)))
@@ -844,14 +854,6 @@
   :config (progn
             (setq dap-java-default-debug-port 8000)
 
-            ;; bind C-c C-d dynamically
-            (fset 'my/dap-debug 'dap-debug)
-            (add-hook 'dap-session-created-hook
-                      (lambda (arg) (fset 'my/dap-debug 'dap-hydra)))
-            (add-hook 'dap-terminated-hook
-                      (lambda (arg) (fset 'my/dap-debug 'dap-debug)))
-
-            (define-key java-mode-map (kbd "C-c C-d") #'my/dap-debug)
             ;; (define-key java-mode-map (kbd "C-c C-c") #'my/lsp/build-mx-project)
             ;; (define-key java-mode-map (kbd "C-c m") #'my/lsp/run-mx-command)
             ;; (define-key java-mode-map (kbd "C-c C-x t") #'dap-breakpoint-toggle)
