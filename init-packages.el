@@ -283,7 +283,7 @@
                 doom-modeline-hud nil
                 doom-modeline-vcs-max-length 28
                 doom-modeline-lsp t
-                doom-modeline-buffer-file-name-style 'auto))
+                doom-modeline-buffer-file-name-style 'truncate-all))
 
 ;; LaTeX
 (use-package tex
