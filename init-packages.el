@@ -85,9 +85,12 @@
             (add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
             (add-to-list 'auto-mode-alist '("Rakefile$" . ruby-mode))
             (add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode))))
+
 (use-package org
   :commands org-mode
   :bind (("C-c a" . org-agend)
+         ("S-<right>" . org-shiftright)
+         ("S-<left>" . org-shiftleft)
          ("C-c c" . org-capture))
   :config (progn
             ;; (add-hook 'org-mode-hook (lambda ()
