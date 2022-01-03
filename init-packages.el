@@ -385,11 +385,9 @@
 (use-package hydra :ensure t)
 
 (use-package lsp-netbeans
-  :defer t
   :hook (java-mode . (lambda () (require 'lsp-netbeans)))
   :load-path "lsp-netbeans")
 (use-package dap-netbeans
-  :defer t
   :hook (java-mode . (lambda () (require 'dap-netbeans)))
   :load-path "lsp-netbeans")
 (use-package lsp-graalvm
@@ -441,6 +439,7 @@
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit t
+                  lsp-ui-doc-show-with-cursor t
                   lsp-ui-sideline-enable nil
                   lsp-ui-sideline-show-symbol nil
                   lsp-ui-sideline-show-hover t
@@ -494,7 +493,7 @@
                                 16))))))
 (define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
 (add-hook 'java-mode-hook 'friendly-whitespace)
-(add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
+;; (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
 (add-hook 'java-mode-hook (lambda () (company-mode t)))
 
 ;; bind C-c C-d dynamically
