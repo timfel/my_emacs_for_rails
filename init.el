@@ -37,7 +37,7 @@
  '(kickasm-vice-command "x64")
  '(lsp-graalvm-custom-server t)
  '(lsp-graalvm-languages '("python"))
- '(lsp-netbeans-jdk "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-21.3-b03/")
+ '(lsp-netbeans-jdk "/home/tim/.mx/jdks/labsjdk-ce-17-jvmci-22.0-b02")
  '(lsp-tcp-connection-timeout 20)
  '(lsp-ui-doc-position 'top)
  '(markdown-command "cmark-gfm --extension table")
