@@ -356,6 +356,7 @@
 ;; LSP and especially Java
 (use-package treemacs :ensure t)
 (use-package lsp-mode
+  :preface (setq lsp-use-plists t)
   :ensure t
   :init (progn
           (setq lsp-print-io nil
@@ -431,7 +432,7 @@
                   lsp-enable-snippet t
                   lsp-enable-xref t
                   lsp-enable-completion-at-point t
-                  lsp-response-timeout 10
+                  lsp-response-timeout 15
                   lsp-diagnostic-clean-after-change nil
                   lsp-eldoc-render-all nil
                   lsp-ui-peek-always-show t
@@ -439,7 +440,7 @@
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit t
-                  lsp-ui-doc-show-with-cursor t
+                  lsp-ui-doc-show-with-cursor nil
                   lsp-ui-sideline-enable nil
                   lsp-ui-sideline-show-symbol nil
                   lsp-ui-sideline-show-hover t
