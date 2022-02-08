@@ -418,7 +418,7 @@
 	    (defun my-minibuffer-setup-hook ()
 	       (setq gc-cons-threshold most-positive-fixnum))
             (defun my-minibuffer-exit-hook ()
-               (setq gc-cons-threshold 800000))
+              (setq gc-cons-threshold 10000000))
             (add-hook 'minibuffer-setup-hook #'my-minibuffer-setup-hook)
             (add-hook 'minibuffer-exit-hook #'my-minibuffer-exit-hook)
             (setq lsp-prefer-capf t)
@@ -432,7 +432,7 @@
                   lsp-enable-snippet t
                   lsp-enable-xref t
                   lsp-enable-completion-at-point t
-                  lsp-response-timeout 15
+                  lsp-response-timeout 60
                   lsp-diagnostic-clean-after-change nil
                   lsp-eldoc-render-all nil
                   lsp-ui-peek-always-show t
@@ -449,6 +449,8 @@
                   lsp-ui-sideline-delay 2
                   lsp-eldoc-enable-hover nil
                   lsp-idle-delay 2.000
+                  lsp-modeline-diagnostics-enable nil
+                  lsp-modeline-code-actions-enable nil
                   lsp-ui-sideline-code-actions-prefix "💡 "
                   lsp-ui-sideline-update-mode 'line)
             (if (equalp (getenv "WSL") "1")
