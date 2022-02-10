@@ -26,10 +26,10 @@
 (setq font-lock-maximum-decoration t)
 
 
-(if (eq window-system 'x)
-    ;; (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
-    (set-face-attribute 'default nil :family "Terminus (TTF)"  :height 120))
-    ;; (set-face-attribute 'default nil :family "Noto Mono"  :height 100)
+(if (memq window-system '(x pgtk))
+    (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
+    ;; (set-face-attribute 'default nil :family "Terminus (TTF)"  :height 100))
+    ;; (set-face-attribute 'default nil :family "Noto Sans Mono" :height 110)
     ;; (add-to-list 'default-frame-alist
     ;;     	 '(font . "-*-terminus-medium-*-*-*-16-*-*-*-*-*-*-*")))
 
