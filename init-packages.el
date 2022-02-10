@@ -386,11 +386,15 @@
 (use-package hydra :ensure t)
 
 (use-package lsp-netbeans
+  :after lsp-treemacs
   :hook (java-mode . (lambda () (require 'lsp-netbeans)))
   :load-path "lsp-netbeans")
+
 (use-package dap-netbeans
+  :after lsp-treemacs
   :hook (java-mode . (lambda () (require 'dap-netbeans)))
   :load-path "lsp-netbeans")
+
 (use-package lsp-graalvm
   :defer t
   :commands lsp-graalvm-dry-run
@@ -464,7 +468,8 @@
 
 (use-package lsp-treemacs
   :ensure t
-  :commands lsp-treemacs-errors-list)
+  :commands lsp-treemacs-errors-list
+  :config (lsp-treemacs-sync-mode t))
 
 (use-package lsp-python-ms
   :ensure t
