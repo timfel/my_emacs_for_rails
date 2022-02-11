@@ -386,9 +386,54 @@
 (use-package hydra :ensure t)
 
 (use-package lsp-netbeans
-  :after lsp-treemacs
+  :after (lsp-treemacs hydra)
   :hook (java-mode . (lambda () (require 'lsp-netbeans)))
-  :load-path "lsp-netbeans")
+  :load-path "lsp-netbeans"
+  :bind (("<f5>" . hydra-netbeans/body))
+  :config (progn
+            (defhydra hydra-netbeans (:exit nil :hint nil)
+              "
+^Actions^           ^Navigation^                    ^Views^               ^Config
+------------------------------------------------------------------------------------------------
+_a_: Refactoring   _u_: Goto super implementation   _T_: Tests            _e_: Edit workspace 
+_A_: Source        _r_: Find references             _S_: Symbols          _E_: Switch workspace
+_p_: Debug process _d_: Find definitions            _C_: Call hierarchy   _N_: Nuke
+_s_: Debug socket  ^ ^                              _H_: Type hierarchy
+_t_: Debug test    ^ ^                              _P_: Packages
+^ ^                ^ ^                              _W_: Workspace
+"
+              ("a" lsp-netbeans-refactor-action)
+              ("A" lsp-netbeans-source-action)
+	      ("p" (dap-debug (list :type "java8+" :request "Process")))
+	      ("s" (dap-debug (list :type "java8+" :request "Socket")))
+	      ("t" dap-netbeans-debug-test)
+
+              ("u" lsp-netbeans-super-impl)
+              ("r" xref-find-references)
+              ("d" xref-find-definitions)
+
+              ("T" lsp-netbeans-project-tests)
+              ("S" lsp-treemacs-symbols)
+              ("C" lsp-treemacs-call-hierarchy)
+              ("H" lsp-treemacs-type-hierarchy)
+              ("P" lsp-netbeans-get-project-packages)
+              ("W" treemacs)
+
+              ("e" treemacs-edit-workspaces :color blue)
+              ("E" (treemacs t))
+              ("N" (progn
+                     (condition-case nil
+                         (lsp-netbeans-clear-caches)
+                       (error nil))
+                     (->> (lsp-session)
+                          (lsp-session-folder->servers)
+                          (hash-table-values)
+                          (-flatten)
+                          (-uniq)
+                          (-map #'lsp-workspace-shutdown))
+                     (lsp-netbeans-kill-userdir)))
+
+              ("q" nil "finish"))))
 
 (use-package dap-netbeans
   :after lsp-treemacs
