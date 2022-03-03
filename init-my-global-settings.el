@@ -371,7 +371,7 @@
         (delete-file "~/.emacs.d/server/server"))
     (server-start)))
  (t
-  (setq desktop-base-file-name (concat (frame-parameter nil 'name) "-emacs.desktop"))))
+  (setq desktop-base-file-name "emacs.desktop")))
 
 ;; Sessions
 (desktop-save-mode 1)
@@ -390,6 +390,7 @@
 (add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
 (add-to-list 'desktop-modes-not-to-save 'grep-mode)
 (add-to-list 'desktop-modes-not-to-save 'magit-mode)
+(add-to-list 'desktop-modes-not-to-save 'treemacs-mode)
 (run-with-idle-timer
  30 ; seconds
  t  ; repeat
