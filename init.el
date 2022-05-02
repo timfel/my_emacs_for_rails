@@ -12,6 +12,7 @@
  '(column-number-mode t)
  '(custom-safe-themes
    '("274fa62b00d732d093fc3f120aca1b31a6bb484492f31081c1814a858e25c72e" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" default))
+ '(dap-stack-trace-limit 40)
  '(darkroom-mode-enable-fullscreen nil)
  '(doc-view-continuous t)
  '(frame-background-mode 'light)
