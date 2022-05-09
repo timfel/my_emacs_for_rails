@@ -332,6 +332,9 @@
               (if (file-exists-p result)
                   (setq loc result))))))))
 
+(defun lsp-netbeans--resolve-with-focus (action)
+  (message "what to do?"))
+
 (lsp-register-client
  (make-lsp-client
   :new-connection (lsp-tcp-connection 'lsp-netbeans-server-command)
@@ -348,6 +351,8 @@
   :uri-handlers (lsp-ht ("sourcefor" #'lsp-netbeans--file-sourceFor))
   :request-handlers (ht
                      ("window/showQuickPick" #'lsp-netbeans--show-quick-pick))
+  :action-handlers (ht
+                    ("workbench.action.focusActiveEditorGroup" #'lsp-netbeans--resolve-with-focus))
   :download-server-fn #'lsp-netbeans--install-server))
 
 (defun lsp-netbeans--treemacs-sync ()
