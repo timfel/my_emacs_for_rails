@@ -192,3 +192,20 @@ Non-interactive arguments are Begin End Regexp"
         (progn
           (setq url-proxy-services nil)
           (message "Proxies disabled"))))))
+
+
+
+(defun proced-settings ()
+  (proced-toggle-auto-update 1))
+
+(add-hook 'proced-mode-hook 'proced-settings)
+
+(defun htop ()
+  (interactive)
+  (proced)
+  (display-buffer-in-side-window
+   (get-buffer "*Proced*")
+   '((window-height . 0.1)
+     (side . bottom)
+     (slot . -1)
+     (dedicated))))

@@ -355,15 +355,23 @@
 
 ;; LSP and especially Java
 (use-package treemacs :ensure t)
+(use-package which-key
+  :ensure t
+  :config (progn
+            (which-key-mode)
+            (which-key-setup-side-window-right-bottom)))
 (use-package lsp-mode
+  :hook ((lsp-mode . lsp-enable-which-key-integration))
   :preface (setq lsp-use-plists t)
   :ensure t
-  :init (progn
-          (setq lsp-print-io nil
-                lsp-enable-snippet t
-                lsp-enable-indentation nil
-                lsp-before-save-edits t
-                lsp-enable-file-watchers nil)))
+  :config (progn
+            (setq lsp-print-io nil
+                  lsp-lens-enable nil
+                  lsp-completion-enable-additional-text-edit nil
+                  lsp-enable-snippet t
+                  lsp-enable-indentation nil
+                  lsp-before-save-edits t
+                  lsp-enable-file-watchers nil)))
   ;; :config (progn
   ;;           (add-hook 'lsp-workspace-folders-changed-hook                      
   ;;                     (lambda (added-folders removed-folders)
@@ -490,8 +498,12 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                   lsp-report-if-no-buffer t
                   lsp-enable-snippet t
                   lsp-enable-xref t
-                  lsp-enable-completion-at-point t
-                  lsp-response-timeout 60
+                  lsp-completion-enable t
+                  lsp-completion-filter-on-incomplete nil
+                  lsp-completion-show-detail nil
+                  lsp-completion-show-kind nil
+                  lsp-completion-sort-initial-results nil
+                  lsp-response-timeout 5
                   lsp-diagnostic-clean-after-change nil
                   lsp-eldoc-render-all nil
                   lsp-ui-peek-always-show t
@@ -505,9 +517,9 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                   lsp-ui-sideline-show-hover t
                   lsp-ui-sideline-showcode-actions nil
                   lsp-ui-sideline-ignore-duplicate t
-                  lsp-ui-sideline-delay 2
+                  lsp-ui-sideline-delay 5
                   lsp-eldoc-enable-hover nil
-                  lsp-idle-delay 2.000
+                  lsp-idle-delay 5.000
                   lsp-modeline-diagnostics-enable nil
                   lsp-modeline-code-actions-enable nil
                   lsp-ui-sideline-code-actions-prefix "💡 "
@@ -850,7 +862,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 
             (defun dap-cppdbg-gdb-attach (file)
               (interactive "fPath to running executable: ")
-              (let ((pid (shell-command-to-string (format "pidof %s" (f-base file)))))
+              (let ((pid (shell-command-to-string (format "pidof -s %s" (f-base file)))))
                 (progn
                   (message (format "%s" pid))
                   (dap-debug (list :type "cppdbg"
@@ -1353,19 +1365,35 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 
 ;; local lisp code
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
-(require 'redo+)
-(progn (global-set-key [(control -)] 'redo))
-(require 'sudo-save)
-(require 'javap-handler)
-(require 'symon)
-(symon-mode)
-(autoload 'pypytrace-mode "pypytrace-mode" "PyPy JIT Trace mode" t)
-(autoload 'kickasm-mode "kickasm-mode" "KickAssembler mode" t)
-(add-hook 'kickasm-mode-hook
-          (lambda () (add-hook 'before-save-hook
-                               (lambda ()
-                                 (whitespace-cleanup)
-                                 (indent-region (point-min) (point-max) nil)
-                                 (untabify (point-min) (point-max)))
-                               nil
-                               'local)))
+
+(use-package pypytrace-mode
+  :defer t
+  :commands pypytrace-mode)
+
+(use-package kickasm-mode
+  :defer t
+  :commands kickasm-mode
+  :init (add-hook 'kickasm-mode-hook
+                  (lambda () (add-hook 'before-save-hook
+                                       (lambda ()
+                                         (whitespace-cleanup)
+                                         (indent-region (point-min) (point-max) nil)
+                                         (untabify (point-min) (point-max)))
+                                       nil
+                                       'local))))
+
+(use-package sudo-save)
+
+(use-package redo+
+  :config (global-set-key [(control -)] 'redo))
+
+(use-package symon
+  :defer t)
+
+(use-package javap-handler)
+
+(use-package narrow-indirect
+  :config (progn
+             (define-key ctl-x-4-map "nd" #'ni-narrow-to-defun-indirect-other-window)
+             (define-key ctl-x-4-map "nn" #'ni-narrow-to-region-indirect-other-window)
+             (define-key ctl-x-4-map "np" #'ni-narrow-to-page-indirect-other-window)))
