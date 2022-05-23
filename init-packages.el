@@ -943,11 +943,12 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                                                :port 8000))))
 
 ;; The spacemacs default colors
-(condition-case nil
-    (load-theme 'spacemacs-light t)
-  (error
-   (package-install 'spacemacs-theme)
-   (load-theme 'spacemacs-light t)))
+(let ((theme (if window-system 'spacemacs-light 'spacemacs-dark)))
+  (condition-case nil
+      (load-theme theme t)
+    (error
+     (package-install 'spacemacs-theme)
+     (load-theme theme t))))
 
 
 ;; Flyspell options
