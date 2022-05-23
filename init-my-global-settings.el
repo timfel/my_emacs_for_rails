@@ -412,3 +412,6 @@
           (shell-command-to-string "wl-paste -n | tr -d \r")))
       (setq interprogram-cut-function 'wl-copy)
       (setq interprogram-paste-function 'wl-paste)))
+
+(global-set-key (kbd "C-z") 'beep)
+
