@@ -169,8 +169,12 @@ Non-interactive arguments are Begin End Regexp"
   (interactive "p")
   (move-line (if (null n) 1 n)))
 
-(global-set-key (kbd "M-<up>") 'move-line-up)
-(global-set-key (kbd "M-<down>") 'move-line-down)
+(if window-system
+    (progn
+      (global-set-key (kbd "M-<up>") 'move-line-up)
+      (global-set-key (kbd "M-<down>") 'move-line-down))
+  (global-set-key (kbd "ESC <up>") 'move-line-up)
+  (global-set-key (kbd "ESC <down>") 'move-line-down))
 
 (defun update-proxies-from-wpad ()
   (interactive)
