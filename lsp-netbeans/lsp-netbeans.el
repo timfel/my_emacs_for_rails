@@ -59,6 +59,13 @@
   :group 'lsp-netbeans
   :type 'directory)
 
+(defcustom lsp-netbeans-busy-spinner t
+  "Show a busy indicator when the lsp server process is consuming lots of CPU"
+  :group 'lsp-netbeans
+  :type 'boolean)
+
+(defvar lsp-netbeans--busy-spinner-spinner nil)
+
 (defcustom lsp-netbeans-install-dir (f-join lsp-server-install-dir "asf.apache-netbeans-java")
   "Apache Netbeans language server installation dir"
   :group 'lsp-netbeans
@@ -360,7 +367,11 @@
                      ("window/showQuickPick" #'lsp-netbeans--show-quick-pick))
   :action-handlers (ht
                     ("workbench.action.focusActiveEditorGroup" #'lsp-netbeans--resolve-with-focus))
+  :initialized-fn #'lsp-netbeans--initialized
   :download-server-fn #'lsp-netbeans--install-server))
+
+(defun lsp-netbeans--initialized (_ws)
+  (lsp-netbeans--make-busy-spinner))
 
 (defun lsp-netbeans--treemacs-sync ()
   (if (bound-and-true-p lsp-treemacs-sync-mode)
@@ -386,6 +397,48 @@
 (with-eval-after-load 'lsp-treemacs
   (add-hook 'treemacs-switch-workspace-hook #'lsp-netbeans--treemacs-sync)
   (lsp-netbeans--treemacs-sync))
+
+(defun lsp-netbeans--busy-spinner-start ()
+  (if-let* ((ws (lsp-find-workspace 'netbeans nil))
+            (proc (lsp--workspace-cmd-proc ws))
+            (output-buffer (get-buffer-create "*lsp-netbeans-cpu-usage*")))
+      ; check the cpu usage of the netbeans process and show a spinner, if it is
+      ; high
+      (make-process
+       :name "lsp-netbeans-cpu-usage-check"
+       :buffer output-buffer
+       :command `("/bin/bash"
+                  "-c"
+                  ,(format
+                    "top -b -d 0.1 -n 2 -p $(ps --ppid `ps --ppid $(ps --ppid %s -o pid=) -o pid=` -o pid=) | tail -1 | awk '{print $9}'"
+                    (process-id proc)))
+       :sentinel (lambda (_ evt)
+                   (if (string-equal evt "finished\n")
+                       (let ((cpu (with-current-buffer output-buffer
+                                    (goto-char (point-max))
+                                    (forward-line -1)
+                                    (thing-at-point 'number))))
+                         (if (> cpu 80)
+                             (if (not lsp-netbeans--busy-spinner-spinner)
+                                 (setq lsp-netbeans--busy-spinner-spinner (spinner-start 'vertical-rising)))
+                           (progn
+                             (spinner-stop lsp-netbeans--busy-spinner-spinner)
+                             (setq lsp-netbeans--busy-spinner-spinner nil)))
+                         (lsp-netbeans--make-busy-spinner)))))
+    ; stop spinner if no ws or proc found
+    (spinner-stop lsp-netbeans--busy-spinner-spinner)))
+
+(defun lsp-netbeans--make-busy-spinner ()
+  (if lsp-netbeans-busy-spinner
+      (run-with-timer 5 nil #'lsp-netbeans--busy-spinner-start)))
+
+(defun lsp-netbeans-start-busy-spinner ()
+  (interactive)
+  (setq lsp-netbeans-busy-spinner nil)
+  ; wait for any previous timer to expire, then run the new one
+  (run-with-timer 10 nil (lambda ()
+                           (setq lsp-netbeans-busy-spinner t)
+                           (lsp-netbeans--busy-spinner-start))))
 
 (provide 'lsp-netbeans)
 
