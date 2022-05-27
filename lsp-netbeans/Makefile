@@ -15,6 +15,7 @@ $(PACKAGE_ID)-pkg.el: *.el
 	@echo '  "lsp-netbeans"' >> $@
 	@echo '  "$(VERSION)"'   >> $@
 	@echo '  "A package to use the Netbeans based LSP and DAP server with emacs-lsp."' >> $@
+	@echo '  \'("spinner" "1.7.4"))' >> $@
 
 clean:
 	rm -f ../$(PACKAGE_NAME).tar
