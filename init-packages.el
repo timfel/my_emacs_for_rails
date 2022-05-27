@@ -503,7 +503,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                   lsp-completion-show-detail nil
                   lsp-completion-show-kind nil
                   lsp-completion-sort-initial-results nil
-                  lsp-response-timeout 5
+                  lsp-response-timeout 30
                   lsp-diagnostic-clean-after-change nil
                   lsp-eldoc-render-all nil
                   lsp-ui-peek-always-show t
