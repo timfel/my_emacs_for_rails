@@ -96,6 +96,13 @@
   :package-version '(lsp-mode . "6.2")
   :lsp-path "netbeans.groovySupport.enabled")
 
+(defcustom-lsp lsp-netbeans-format-settingsPath ""
+  "Path to the file containing exported formatter settings"
+  :type 'file
+  :group 'lsp-netbeans
+  :package-version '(lsp-mode . "6.2")
+  :lsp-path "netbeans.format.settingsPath")
+
 (defun lsp-netbeans-server-command (main-port)
   (let ((cmd (list (f-join lsp-netbeans-install-dir "run.sh"))))
     (if (not (string-empty-p lsp-netbeans-jdk))
