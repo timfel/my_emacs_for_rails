@@ -223,7 +223,38 @@
             ;; (add-hook 'magit-mode-hook 'magit-load-config-extensions)
             ;; (setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
             (setq magit-auto-revert-tracked-only t)
-            (magit-auto-revert-mode)))
+            (magit-auto-revert-mode)
+
+            (defun endless/visit-pull-request-url ()
+              "Visit the current branch's PR on Github."
+              (interactive)
+              (browse-url
+               (format "https://github.com/%s/pull/new/%s"
+                       (replace-regexp-in-string
+                        "\\`.+github\\.com:\\(.+\\)\\.git\\'" "\\1"
+                        (magit-get "remote"
+                                   (or (magit-get-push-remote) (magit-get-remote))
+                                   "url"))
+                       (magit-get-current-branch))))
+
+            (define-key magit-mode-map "v"
+                        #'endless/visit-pull-request-url)
+
+            (defun endless/add-PR-fetch ()
+              "If refs/pull is not defined on a GH repo, define it."
+              (let ((fetch-address
+                     "+refs/pull/*/head:refs/pull/origin/*")
+                    (magit-remotes
+                     (magit-get-all "remote" "origin" "fetch")))
+                (unless (or (not magit-remotes)
+                            (member fetch-address magit-remotes))
+                  (when (string-match
+                         "github" (magit-get "remote" "origin" "url"))
+                    (magit-git-string
+                     "config" "--add" "remote.origin.fetch"
+                     fetch-address)))))
+
+            (add-hook 'magit-mode-hook #'endless/add-PR-fetch)))
 ;; (use-package magit-svn :ensure t)
 ;; (use-package gh :ensure t)
 
@@ -1392,6 +1423,18 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
   :defer t)
 
 (use-package javap-handler)
+
+(use-package sx
+  :ensure t
+  :config (bind-keys :prefix "C-c s"
+                     :prefix-map my-sx-map
+                     :prefix-docstring "Global keymap for SX."
+                     ("q" . sx-tab-all-questions)
+                     ("i" . sx-inbox)
+                     ("o" . sx-open-link)
+                     ("u" . sx-tab-unanswered-my-tags)
+                     ("a" . sx-ask)
+                     ("s" . sx-search)))
 
 (use-package narrow-indirect
   :config (progn
