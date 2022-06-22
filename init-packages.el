@@ -11,6 +11,8 @@
 
 (setq use-package-verbose t)
 
+(setq use-netbeans-instead-of-eclipse-for-java nil)
+
 (condition-case nil
     (require 'use-package)
   (file-error
@@ -165,6 +167,7 @@
   :config (yas-global-mode t))
 (use-package company
   :ensure t
+  :demand t
   :config (progn
             (global-company-mode t)
             (global-set-key (kbd "M-?") 'company-complete)))
@@ -385,7 +388,15 @@
             (setq reftex-default-bibliography (list (expand-file-name "~/Dropbox/Papers/library.bib")))))
 
 ;; LSP and especially Java
-(use-package treemacs :ensure t)
+(use-package treemacs
+  :ensure t
+  :demand t
+  :config
+  (progn
+    (setq treemacs-file-follow-delay 1.0
+          treemacs-width 45
+          treemacs-width-is-initially-locked t)))
+
 (use-package which-key
   :ensure t
   :config (progn
@@ -395,8 +406,9 @@
   :hook ((lsp-mode . lsp-enable-which-key-integration))
   :preface (setq lsp-use-plists t)
   :ensure t
+  :demand t
   :config (progn
-            (setq lsp-print-io nil
+            (setq lsp-print-io t
                   lsp-lens-enable nil
                   lsp-completion-enable-additional-text-edit nil
                   lsp-enable-snippet t
@@ -422,16 +434,19 @@
   ;;                             (project-search-paths-set (project-find project-name) paths)
   ;;                             (project-select project-name)
   ;;                             (project-refresh))))))))
-(use-package hydra :ensure t)
+(use-package hydra :ensure t :demand t)
 
-(use-package lsp-netbeans
-  :after (lsp-treemacs hydra)
-  :hook (java-mode . (lambda () (require 'lsp-netbeans)))
-  :load-path "lsp-netbeans"
-  :bind (("<f5>" . hydra-netbeans/body))
-  :config (progn
-            (defhydra hydra-netbeans (:exit nil :hint nil)
-              "
+(if use-netbeans-instead-of-eclipse-for-java
+    (use-package lsp-netbeans
+      :after (lsp-treemacs hydra)
+      :load-path "lsp-netbeans"
+      :demand t
+      :config (progn
+                (defun lsp-if-netbeans-running ()
+                  (if (lsp-find-workspace 'netbeans nil) (lsp)))
+                (add-hook 'java-mode-hook #'lsp-if-netbeans-running)
+                (defhydra hydra-netbeans (:exit nil :hint nil)
+                  "
 ^Actions^             ^Navigation^                    ^Views^               ^Config
 ----------------------------------------------------------------------------------------------------
 _a_: Refactoring     _u_: Goto super implementation   _T_: Tests            _e_: Edit workspace
@@ -442,52 +457,54 @@ _C-s_: Debug socket  ^ ^                              _H_: Type hierarchy
 _C-t_: Debug test    ^ ^                              _P_: Packages
 ^ ^                  ^ ^                              _W_: Workspace
 "
-              ("a" lsp-netbeans-refactor-action)
-              ("A" lsp-netbeans-source-action)
-              ("C-a" (if (fboundp #'helm-lsp-code-actions)
-                         (helm-lsp-code-actions)
-                       (lsp-execute-code-action nil)))
-	      ("C-p" (dap-debug (list :type "java8+" :request "Process")) :color blue)
-	      ("C-s" (dap-debug (list :type "java8+" :request "Socket")) :color blue)
-	      ("C-t" dap-netbeans-debug-test :color blue)
+                  ("a" lsp-netbeans-refactor-action)
+                  ("A" lsp-netbeans-source-action)
+                  ("C-a" (if (fboundp #'helm-lsp-code-actions)
+                             (helm-lsp-code-actions)
+                           (lsp-execute-code-action nil)))
+	          ("C-p" (dap-debug (list :type "java8+" :request "Process")) :color blue)
+	          ("C-s" (dap-debug (list :type "java8+" :request "Socket")) :color blue)
+	          ("C-t" dap-netbeans-debug-test :color blue)
 
-              ("u" lsp-netbeans-super-impl)
-              ("r" lsp-treemacs-references)
-              ("d" lsp-treemacs-implementations)
-              ("s" (if (fboundp #'helm-lsp-workspace-symbol)
-                       (helm-lsp-workspace-symbol nil)
-                     (lsp-ido-workspace-symbol nil)))
+                  ("u" lsp-netbeans-super-impl)
+                  ("r" lsp-treemacs-references)
+                  ("d" lsp-treemacs-implementations)
+                  ("s" (if (fboundp #'helm-lsp-workspace-symbol)
+                           (helm-lsp-workspace-symbol nil)
+                         (lsp-ido-workspace-symbol nil)))
 
-              ("T" lsp-netbeans-project-tests)
-              ("S" (if (fboundp #'lsp-ui-imenu)
-                       (lsp-ui-imenu)
-                     (lsp-treemacs-symbols)))
-              ("E" (if (fboundp #'helm-lsp-diagnostics)
-                       (helm-lsp-diagnostics nil)
-                     (lsp-treemacs-errors-list)))
-              ("C" lsp-treemacs-call-hierarchy)
-              ("H" lsp-treemacs-type-hierarchy)
-              ("P" lsp-netbeans-get-project-packages)
-              ("W" treemacs)
+                  ("T" lsp-netbeans-project-tests)
+                  ("S" (if (fboundp #'lsp-ui-imenu)
+                           (lsp-ui-imenu)
+                         (lsp-treemacs-symbols)))
+                  ("E" (if (fboundp #'helm-lsp-diagnostics)
+                           (helm-lsp-diagnostics nil)
+                         (lsp-treemacs-errors-list)))
+                  ("C" lsp-treemacs-call-hierarchy)
+                  ("H" lsp-treemacs-type-hierarchy)
+                  ("P" lsp-netbeans-get-project-packages)
+                  ("W" treemacs)
 
-              ("e" treemacs-edit-workspaces :color blue)
-              ("C-e" (treemacs t) :color blue)
-              ("N" (progn
-                     (condition-case nil
-                         (lsp-netbeans-clear-caches)
-                       (error nil))
-                     (->> (lsp-session)
-                          (lsp-session-folder->servers)
-                          (hash-table-values)
-                          (-flatten)
-                          (-uniq)
-                          (-map #'lsp-workspace-shutdown))
-                     (lsp-netbeans-kill-userdir))))))
+                  ("e" treemacs-edit-workspaces :color blue)
+                  ("C-e" (treemacs t) :color blue)
+                  ("N" (progn
+                         (condition-case nil
+                             (lsp-netbeans-clear-caches)
+                           (error nil))
+                         (->> (lsp-session)
+                              (lsp-session-folder->servers)
+                              (hash-table-values)
+                              (-flatten)
+                              (-uniq)
+                              (-map #'lsp-workspace-shutdown))
+                         (lsp-netbeans-kill-userdir))))
+                (bind-key "<f5>" #'hydra-netbeans/body))))
 
-(use-package dap-netbeans
-  :after lsp-treemacs
-  :hook (java-mode . (lambda () (require 'dap-netbeans)))
-  :load-path "lsp-netbeans")
+(if use-netbeans-instead-of-eclipse-for-java
+    (use-package dap-netbeans
+      :after lsp-treemacs
+      :hook (java-mode . (lambda () (require 'dap-netbeans)))
+      :load-path "lsp-netbeans"))
 
 (use-package lsp-graalvm
   :defer t
@@ -566,8 +583,10 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 
 (use-package lsp-treemacs
   :ensure t
+  :demand t
   :commands lsp-treemacs-errors-list
-  :config (lsp-treemacs-sync-mode t))
+  :config (if use-netbeans-instead-of-eclipse-for-java
+              lsp-treemacs-sync-mode))
 
 (use-package lsp-python-ms
   :ensure t
@@ -597,7 +616,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                                         (eq (caadr c-syntactic-context) 'block-close)))
                                   0
                                 16))))))
-(define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
+;; (define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
 (add-hook 'java-mode-hook 'friendly-whitespace)
 ;; (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
 (add-hook 'java-mode-hook (lambda () (company-mode t)))
@@ -610,50 +629,79 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
           (lambda (arg) (fset 'my/dap-debug 'dap-debug)))
 (define-key java-mode-map (kbd "C-c C-d") #'my/dap-debug)
 
-(use-package lsp-java
-  :disabled
-  :ensure t
-  :defer t
-  :hook (java-mode . (lambda () (require 'lsp-java)))
-  :after (lsp-mode flycheck company)
-  :config (progn
-            (require 'lsp-ui-flycheck)
-            (require 'lsp-ui-sideline)
-            (setq lsp-java-completion-favorite-static-members (vconcat lsp-java-completion-favorite-static-members
-                                                                       '("com.oracle.graal.python.builtins.PythonBuiltinClassType"
-                                                                         "com.oracle.graal.python.nodes.BuiltinNames"
-                                                                         "com.oracle.graal.python.nodes.SpecialMethodNames"
-                                                                         "com.oracle.graal.python.nodes.SpecialAttributeNames"
-                                                                         "com.oracle.graal.python.nodes.ErrorMessages")))
-            (setq
-             lsp-java-content-provider-preferred "fernflower"
-             lsp-java-save-actions-organize-imports nil
-             lsp-java-format-on-type-enabled nil
-             lsp-java-format-comments-enabled nil
-             lsp-java-format-enabled nil
-             lsp-java-autobuild-enabled nil
-             lsp-java-inhibit-message t
-             lsp-java-completion-import-order ["java" "javax" "org" "com"]
-             lsp-java-import-order ["java" "javax" "org" "com"])
+(defun treemacs-t ()
+  (interactive)
+  (treemacs t))
 
-            ;; (puthash "language/progressReport" (lambda (workspace params)
-            ;;                                      (lsp-java--progress-report workspace params)
-            ;;                                      (-let [(&hash "status" "complete") params]
-            ;;                                        (when complete
-            ;;                                          (message "Build complete, running mx")
-            ;;                                          (let ((default-directory (file-name-directory (buffer-file-name (current-buffer)))))
-            ;;                                            (start-process
-            ;;                                             "mx-nativebuild"
-            ;;                                             "*mx output*"
-            ;;                                             "~/.graalenv/mx/mx"
-            ;;                                             "nativebuild")))))
-            ;;          (lsp--client-notification-handlers (gethash 'jdtls lsp-clients)))
-            ;; adjust open list indentation
-            ;; (add-hook 'java-mode-hook #'lsp)
-            ;; (add-hook 'java-mode-hook 'doom-modeline-mode)
-            ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
-            ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))
-            ))
+(if (not use-netbeans-instead-of-eclipse-for-java)
+    (use-package lsp-java
+      :ensure t
+      :hook (java-mode . (lambda () (require 'lsp-java)))
+      :bind ("<f5>" . treemacs-t)
+      :after (lsp-mode company lsp-treemacs)
+      :config (progn
+                (require 'lsp-ui-flycheck)
+                (require 'lsp-ui-sideline)
+                (setq lsp-java-completion-favorite-static-members (vconcat lsp-java-completion-favorite-static-members
+                                                                           '("com.oracle.graal.python.builtins.PythonBuiltinClassType"
+                                                                             "com.oracle.graal.python.nodes.BuiltinNames"
+                                                                             "com.oracle.graal.python.nodes.SpecialMethodNames"
+                                                                             "com.oracle.graal.python.nodes.SpecialAttributeNames"
+                                                                             "com.oracle.graal.python.nodes.ErrorMessages")))
+                (setq
+                 lsp-java-content-provider-preferred "fernflower"
+                 lsp-java-save-actions-organize-imports t
+                 lsp-java-format-on-type-enabled t
+                 lsp-java-format-comments-enabled t
+                 lsp-java-format-enabled t
+                 lsp-java-autobuild-enabled nil
+                 lsp-java-inhibit-message t
+                 lsp-java-completion-import-order ["java" "javax" "org" "com"]
+                 lsp-java-import-order ["java" "javax" "org" "com"])
+
+                (defun lsp-java--treemacs-sync ()
+                  (let* ((wsname (treemacs-workspace->name (treemacs-current-workspace)))
+                         (wsuserdir (f-join lsp-server-install-dir
+                                            (format "jdtls.workspace.%s" wsname))))
+                    (if (not (equal lsp-java-workspace-dir wsuserdir))
+                        (progn
+                          ;; shutdown servers
+                          (->> (lsp-session)
+                               (lsp-session-folder->servers)
+                               (hash-table-values)
+                               (-flatten)
+                               (-uniq)
+                               (-map #'lsp-workspace-shutdown))
+                          (setq lsp-java-workspace-dir wsuserdir))))
+                  (message (format "Setting Eclipse workspace to %s" lsp-java-workspace-dir))
+                  lsp-java-workspace-dir)
+
+                (with-eval-after-load 'lsp-treemacs
+                  (add-hook 'treemacs-switch-workspace-hook #'lsp-java--treemacs-sync)
+                  (lsp-java--treemacs-sync))
+
+                (defun lsp-if-jdtls-running ()
+                  (if (lsp-find-workspace 'jdtls nil) (lsp)))
+                (add-hook 'java-mode-hook #'lsp-if-jdtls-running)
+
+                ;; (puthash "language/progressReport" (lambda (workspace params)
+                ;;                                      (lsp-java--progress-report workspace params)
+                ;;                                      (-let [(&hash "status" "complete") params]
+                ;;                                        (when complete
+                ;;                                          (message "Build complete, running mx")
+                ;;                                          (let ((default-directory (file-name-directory (buffer-file-name (current-buffer)))))
+                ;;                                            (start-process
+                ;;                                             "mx-nativebuild"
+                ;;                                             "*mx output*"
+                ;;                                             "~/.graalenv/mx/mx"
+                ;;                                             "nativebuild")))))
+                ;;          (lsp--client-notification-handlers (gethash 'jdtls lsp-clients)))
+                ;; adjust open list indentation
+                ;; (add-hook 'java-mode-hook #'lsp)
+                ;; (add-hook 'java-mode-hook 'doom-modeline-mode)
+                ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
+                ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))
+                )))
 
 (defun my/lsp/find-eclipse-projects-recursively (directory)
   (let ((current-directory-list (directory-files directory)))
@@ -778,10 +826,18 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
   (let* ((base-dir (read-directory-name "Base directory to search projects in: "))
          (base-dirs (completing-read-multiple "Base sub-directories to search projects in: " (directory-files base-dir) nil t))
          (projects-found (seq-mapcat (lambda (elt) (my/lsp/find-eclipse-projects-recursively (concat (file-name-as-directory base-dir) elt))) base-dirs))
-         (projects-to-import (completing-read-multiple "Select projects to import (comma-sep): " projects-found nil t))
+         (projects-to-import (completing-read-multiple "Select projects to import (comma-sep, * for all): " projects-found nil nil))
          (additional-required-projects '())
          (go-again t))
     (require 'xml)
+    (if (equal projects-to-import '("*"))
+        (setq projects-to-import projects-found))
+    (setq projects-to-import
+          (mapcan (lambda (elt)
+                    (if (string-suffix-p "*" elt)
+                        (seq-filter (lambda (elt2) (string-prefix-p (substring elt 0 (- (length elt) 1)) elt2)) projects-found)
+                      (list elt)))
+                  projects-to-import))
     (while go-again
       (setq go-again (length projects-to-import))
       (seq-do (lambda (elt)
@@ -812,7 +868,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                 (let ((name (car (xml-node-children (car (xml-get-children 
                                                           (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
                                                           'name))))))
-                  (if (seq-contains additional-required-projects name)
+                  (if (seq-contains-p additional-required-projects name)
                       (add-to-list 'projects-to-import elt))))
               projects-found)
       ;; if we added projects to the list of projects to import, go deeper
@@ -821,7 +877,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
     ;; add projects to session
     (dolist (elt projects-to-import)
       (let ((exp (expand-file-name elt)))
-        (if (not (seq-contains (lsp-session-folders (lsp-session)) exp))
+        (if (not (seq-contains-p (lsp-session-folders (lsp-session)) exp))
             (progn
               (lsp-workspace-folders-add exp)
               (puthash 'jdtls
@@ -956,22 +1012,23 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 (if (version<= "26" emacs-version)
     (use-package posframe :ensure t))
 
-(use-package dap-java
-  :disabled
-  :after (dap-mode lsp-java)
-  :config (progn
-            (setq dap-java-default-debug-port 8000)
+(if (not use-netbeans-instead-of-eclipse-for-java)
+    (use-package dap-java
+      :after (dap-mode lsp-java)
+      :disabled use-netbeans-instead-of-eclipse-for-java
+      :config (progn
+                (setq dap-java-default-debug-port 8000)
 
-            ;; (define-key java-mode-map (kbd "C-c C-c") #'my/lsp/build-mx-project)
-            ;; (define-key java-mode-map (kbd "C-c m") #'my/lsp/run-mx-command)
-            ;; (define-key java-mode-map (kbd "C-c C-x t") #'dap-breakpoint-toggle)
+                ;; (define-key java-mode-map (kbd "C-c C-c") #'my/lsp/build-mx-project)
+                ;; (define-key java-mode-map (kbd "C-c m") #'my/lsp/run-mx-command)
+                ;; (define-key java-mode-map (kbd "C-c C-x t") #'dap-breakpoint-toggle)
 
-            (dap-register-debug-template "Java Attach com.oracle.graal.python"
-                                         (list :type "java"
-                                               :request "attach"
-                                               :hostName "localhost"
-                                               :projectName "com.oracle.graal.python"
-                                               :port 8000))))
+                (dap-register-debug-template "Java Attach com.oracle.graal.python"
+                                             (list :type "java"
+                                                   :request "attach"
+                                                   :hostName "localhost"
+                                                   :projectName "com.oracle.graal.python"
+                                                   :port 8000)))))
 
 ;; The spacemacs default colors
 (let ((theme (if window-system 'spacemacs-light 'spacemacs-dark)))
