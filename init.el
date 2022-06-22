@@ -38,6 +38,7 @@
  '(kickasm-vice-command "x64")
  '(lsp-graalvm-custom-server t)
  '(lsp-graalvm-languages '("python"))
+ '(lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-17-jvmci-22.0-b02/bin/java")
  '(lsp-netbeans-jdk "/home/tim/.mx/jdks/labsjdk-ce-17-jvmci-22.0-b02")
  '(lsp-tcp-connection-timeout 20)
  '(lsp-ui-doc-position 'top)
