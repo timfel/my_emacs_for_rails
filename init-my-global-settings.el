@@ -374,27 +374,27 @@
   (setq desktop-base-file-name "emacs.desktop")))
 
 ;; Sessions
-(desktop-save-mode 1)
-(setq
- history-length 250
- desktop-restore-eager 5
- desktop-buffers-not-to-save
- (concat "\\("
-	 "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
-	 "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
-	 "\\)$"))
-(add-to-list 'desktop-globals-to-save 'file-name-history)
-(add-to-list 'desktop-modes-not-to-save 'dired-mode)
-(add-to-list 'desktop-modes-not-to-save 'Info-mode)
-(add-to-list 'desktop-modes-not-to-save 'info-lookup-mode)
-(add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
-(add-to-list 'desktop-modes-not-to-save 'grep-mode)
-(add-to-list 'desktop-modes-not-to-save 'magit-mode)
-(add-to-list 'desktop-modes-not-to-save 'treemacs-mode)
-(run-with-idle-timer
- 30 ; seconds
- t  ; repeat
- 'desktop-save-in-desktop-dir)
+;; (desktop-save-mode 1)
+;; (setq
+;;  history-length 250
+;;  desktop-restore-eager 5
+;;  desktop-buffers-not-to-save
+;;  (concat "\\("
+;; 	 "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
+;; 	 "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
+;; 	 "\\)$"))
+;; (add-to-list 'desktop-globals-to-save 'file-name-history)
+;; (add-to-list 'desktop-modes-not-to-save 'dired-mode)
+;; (add-to-list 'desktop-modes-not-to-save 'Info-mode)
+;; (add-to-list 'desktop-modes-not-to-save 'info-lookup-mode)
+;; (add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
+;; (add-to-list 'desktop-modes-not-to-save 'grep-mode)
+;; (add-to-list 'desktop-modes-not-to-save 'magit-mode)
+;; (add-to-list 'desktop-modes-not-to-save 'treemacs-mode)
+;; (run-with-idle-timer
+;;  30 ; seconds
+;;  t  ; repeat
+;;  'desktop-save-in-desktop-dir)
 
 (if (eq window-system 'pgtk)
     (progn
