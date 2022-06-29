@@ -226,38 +226,10 @@
             ;; (add-hook 'magit-mode-hook 'magit-load-config-extensions)
             ;; (setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
             (setq magit-auto-revert-tracked-only t)
-            (magit-auto-revert-mode)
-
-            (defun endless/visit-pull-request-url ()
-              "Visit the current branch's PR on Github."
-              (interactive)
-              (browse-url
-               (format "https://github.com/%s/pull/new/%s"
-                       (replace-regexp-in-string
-                        "\\`.+github\\.com:\\(.+\\)\\.git\\'" "\\1"
-                        (magit-get "remote"
-                                   (or (magit-get-push-remote) (magit-get-remote))
-                                   "url"))
-                       (magit-get-current-branch))))
-
-            (define-key magit-mode-map "v"
-                        #'endless/visit-pull-request-url)
-
-            (defun endless/add-PR-fetch ()
-              "If refs/pull is not defined on a GH repo, define it."
-              (let ((fetch-address
-                     "+refs/pull/*/head:refs/pull/origin/*")
-                    (magit-remotes
-                     (magit-get-all "remote" "origin" "fetch")))
-                (unless (or (not magit-remotes)
-                            (member fetch-address magit-remotes))
-                  (when (string-match
-                         "github" (magit-get "remote" "origin" "url"))
-                    (magit-git-string
-                     "config" "--add" "remote.origin.fetch"
-                     fetch-address)))))
-
-            (add-hook 'magit-mode-hook #'endless/add-PR-fetch)))
+            (magit-auto-revert-mode)))
+(use-package forge
+  :after magit
+  :ensure t)
 ;; (use-package magit-svn :ensure t)
 ;; (use-package gh :ensure t)
 
@@ -627,7 +599,6 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
           (lambda (arg) (fset 'my/dap-debug 'dap-hydra)))
 (add-hook 'dap-terminated-hook
           (lambda (arg) (fset 'my/dap-debug 'dap-debug)))
-(define-key java-mode-map (kbd "C-c C-d") #'my/dap-debug)
 
 (defun treemacs-t ()
   (interactive)
@@ -636,7 +607,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 (if (not use-netbeans-instead-of-eclipse-for-java)
     (use-package lsp-java
       :ensure t
-      :hook (java-mode . (lambda () (require 'lsp-java)))
+      :hook (java-mode . (lambda () (require 'lsp-java) (require 'dap-java)))
       :bind ("<f5>" . treemacs-t)
       :after (lsp-mode company lsp-treemacs)
       :config (progn
@@ -1015,7 +986,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 (if (not use-netbeans-instead-of-eclipse-for-java)
     (use-package dap-java
       :after (dap-mode lsp-java)
-      :disabled use-netbeans-instead-of-eclipse-for-java
+      :bind ("C-c C-d" . my/dap-debug)
       :config (progn
                 (setq dap-java-default-debug-port 8000)
 
