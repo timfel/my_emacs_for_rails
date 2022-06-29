@@ -415,3 +415,28 @@
 
 (global-set-key (kbd "C-z") 'beep)
 
+(defun irccloud ()
+  (interactive)
+
+  (let* ((host "bnc.irccloud.com")
+         (user "phlebas")
+         (port 6697)
+         (password (auth-source-pick-first-password
+                    :host host
+                    :user user
+                    :port (number-to-string port))))
+    (if (not password)
+        (progn
+          (setq password
+                (read-string (format "Enter password for %s@%s:%d: "
+                                     user host port)))
+          (write-region (format "machine %s login %s port %d password %s"
+                                host user port password)
+                        nil
+                        (f-expand "~/.authinfo")
+                        'append)))
+    (erc-tls :server host
+             :port port
+             :nick user
+             :full-name "Tim Felgentreff"
+             :password password)))
