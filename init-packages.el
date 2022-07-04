@@ -643,8 +643,11 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                                (-flatten)
                                (-uniq)
                                (-map #'lsp-workspace-shutdown))
-                          (setq lsp-java-workspace-dir wsuserdir))))
-                  (message (format "Setting Eclipse workspace to %s" lsp-java-workspace-dir))
+                          (setq
+                           lsp-java-workspace-dir wsuserdir
+                           lsp-session-file (expand-file-name (locate-user-emacs-file (format ".lsp-session-v1-%s" wsname)))))))
+                  (message (format "Setting Eclipse workspace to %s, session to %s" lsp-java-workspace-dir lsp-session-file))
+                  (message (format "You may have to adapt %s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs to give the default VM the name that mx told you" lsp-java-workspace-dir))
                   lsp-java-workspace-dir)
 
                 (with-eval-after-load 'lsp-treemacs
