@@ -38,8 +38,8 @@
  '(kickasm-vice-command "x64")
  '(lsp-graalvm-custom-server t)
  '(lsp-graalvm-languages '("python"))
- '(lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-17-jvmci-22.0-b02/bin/java")
- '(lsp-netbeans-jdk "/home/tim/.mx/jdks/labsjdk-ce-17-jvmci-22.0-b02")
+ '(lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-22.0-b02/bin/java")
+ '(lsp-netbeans-jdk "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-22.0-b02")
  '(lsp-tcp-connection-timeout 20)
  '(lsp-ui-doc-position 'top)
  '(markdown-command "cmark-gfm --extension table")
@@ -51,7 +51,7 @@
      ("\\.x?html?\\'" . default)
      ("\\.pdf\\'" . "evince %s")))
  '(package-selected-packages
-   '(forge sx narrow-indirect which-key jsonnet-mode dumb-jump erefactor auth-source-xoauth2 csharp-mode org-caldav calfw calfw-org wl wanderlust posframe lsp-java-treemacs treemacs-icons company-box doom-modeline dracula-theme magit-popup thesaurus flycheck company-lsp treemacs fill-column-indicator textmate logito pcache fuzzy popup autopair switch-window cssh gh magithub magit-svn magit gist helm-etags-plus projectile xcscope org-mode ruby-electric lua-mode markdown-mode sass-mode rspec-mode haml-mode yaml-mode org-link-minor-mode helm-projectile helm markdown-preview-mode markdown-mode+ spacemacs-theme term-keys dap-mode tree-mode oauth2))
+   '(treemacs quelpa-use-package quelpa visual-fill-column forge sx narrow-indirect which-key jsonnet-mode dumb-jump erefactor auth-source-xoauth2 csharp-mode org-caldav calfw calfw-org wl wanderlust posframe lsp-java-treemacs treemacs-icons company-box doom-modeline dracula-theme magit-popup thesaurus flycheck company-lsp fill-column-indicator textmate logito pcache fuzzy popup autopair switch-window cssh gh magithub magit-svn magit gist helm-etags-plus projectile xcscope org-mode ruby-electric lua-mode markdown-mode sass-mode rspec-mode haml-mode yaml-mode org-link-minor-mode helm-projectile helm markdown-preview-mode markdown-mode+ spacemacs-theme term-keys tree-mode oauth2))
  '(pdf-view-midnight-colors '("#655370" . "#fbf8ef"))
  '(proced-auto-update-interval 2)
  '(safe-local-variable-values
