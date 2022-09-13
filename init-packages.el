@@ -1,3 +1,9 @@
+(when (boundp 'package-pinned-packages)
+  (setq package-pinned-packages
+                '((treemacs . "melpa-stable")
+                  ;; "unstable" package
+                  (esup     . "melpa"))))
+
 (package-initialize)
 (require 'compile)
 (require 'cc-mode)
@@ -359,8 +365,18 @@
 
             (setq reftex-default-bibliography (list (expand-file-name "~/Dropbox/Papers/library.bib")))))
 
+(use-package quelpa
+  :ensure t)
+
+(use-package quelpa-use-package
+  :ensure t)
+
 ;; LSP and especially Java
 (use-package treemacs
+  :quelpa (treemacs
+           :fetcher github
+           :repo "Alexander-Miller/treemacs"
+           :commit "2.9")
   :ensure t
   :demand t
   :config
@@ -382,7 +398,7 @@
   :config (progn
             (setq lsp-print-io t
                   lsp-lens-enable nil
-                  lsp-completion-enable-additional-text-edit nil
+                  lsp-completion-enable-additional-text-edit t
                   lsp-enable-snippet t
                   lsp-enable-indentation nil
                   lsp-before-save-edits t
@@ -595,10 +611,19 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 
 ;; bind C-c C-d dynamically
 (fset 'my/dap-debug 'dap-debug)
+
+(defun my/toggle-dap-hydra ()
+  (interactive)
+  (if hydra-curr-map
+      (dap-hydra/nil)
+    (dap-hydra/body)))
+
 (add-hook 'dap-session-created-hook
-          (lambda (arg) (fset 'my/dap-debug 'dap-hydra)))
+          (lambda (arg) (fset 'my/dap-debug 'my/toggle-dap-hydra)))
 (add-hook 'dap-terminated-hook
-          (lambda (arg) (fset 'my/dap-debug 'dap-debug)))
+          (lambda (arg)
+            (dap-hydra/nil)
+            (fset 'my/dap-debug 'dap-debug)))
 
 (defun treemacs-t ()
   (interactive)
@@ -607,6 +632,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 (if (not use-netbeans-instead-of-eclipse-for-java)
     (use-package lsp-java
       :ensure t
+      :demand t
       :hook (java-mode . (lambda () (require 'lsp-java) (require 'dap-java)))
       :bind ("<f5>" . treemacs-t)
       :after (lsp-mode company lsp-treemacs)
@@ -643,6 +669,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                                (-flatten)
                                (-uniq)
                                (-map #'lsp-workspace-shutdown))
+                          (setq lsp--session nil)
                           (setq
                            lsp-java-workspace-dir wsuserdir
                            lsp-session-file (expand-file-name (locate-user-emacs-file (format ".lsp-session-v1-%s" wsname)))))))
@@ -871,42 +898,33 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 (use-package dap-mode
   :ensure t
   :after lsp-mode
+  :bind (("C-c C-d" . my/dap-debug)
+         :map java-mode-map
+         ("C-c C-d" . my/dap-debug))
   :config (progn
             (defun my/show-debug-windows (session)
               (save-excursion
                 (call-interactively #'dap-ui-repl)
-                (delete-window (get-buffer-window "*dap-ui-repl*"))
+                (if (get-buffer-window "*dap-ui-repl*")
+                    (delete-window (get-buffer-window "*dap-ui-repl*")))
                 (display-buffer-in-side-window (get-buffer "*dap-ui-repl*") `((side . bottom)
                                                                               (slot . 1)
-                                                                              (window-height . 10)))
-                (seq-mapn (lambda (name func)
-                            (unless (-> (-compose 'buffer-name 'window-buffer)
-                                        (-map (window-list))
-                                        (-contains? name))
-                              (call-interactively func))
-                            (with-current-buffer name
-                              (visual-line-mode 1)))
-                          (list dap-ui--breakpoints-buffer dap-ui--expressions-buffer dap-ui--locals-buffer dap-ui--sessions-buffer)
-                          '(dap-ui-breakpoints dap-ui-expressions dap-ui-locals dap-ui-sessions))))
+                                                                              (window-height . 10)))))
             (add-hook 'dap-session-created-hook 'my/show-debug-windows)
 
             (defun my/close-debug-windows (session)
               (condition-case nil
-                  (delete-window (get-buffer-window "*dap-ui-repl*" )))
-              (seq-map (lambda (name)
-                         (condition-case nil
-                             (kill-buffer name)
-                           (error nil)))
-                       (list dap-ui--breakpoints-buffer dap-ui--expressions-buffer dap-ui--locals-buffer dap-ui--sessions-buffer)))
+                  (if (get-buffer-window "*dap-ui-repl*")
+                      (delete-window (get-buffer-window "*dap-ui-repl*")))))
             (add-hook 'dap-terminated-hook 'my/close-debug-windows)
 
-            (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
-            (add-hook 'dap-terminated-hook (lambda (arg) (call-interactively #'dap-hydra/nil)))
+            ;; (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
+            ;; (add-hook 'dap-terminated-hook (lambda (arg) (call-interactively #'dap-hydra/nil)))
 
             ;; default settings
             (setq
              dap-auto-configure-features '(sessions locals controls tooltip)
-             dap-auto-show-output nil
+             dap-auto-show-output t
              dap-print-io nil)
             (dap-auto-configure-mode)
             ;; (require 'dap-gdb-lldb)
@@ -989,7 +1007,6 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 (if (not use-netbeans-instead-of-eclipse-for-java)
     (use-package dap-java
       :after (dap-mode lsp-java)
-      :bind ("C-c C-d" . my/dap-debug)
       :config (progn
                 (setq dap-java-default-debug-port 8000)
 
@@ -1472,3 +1489,9 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
              (define-key ctl-x-4-map "nd" #'ni-narrow-to-defun-indirect-other-window)
              (define-key ctl-x-4-map "nn" #'ni-narrow-to-region-indirect-other-window)
              (define-key ctl-x-4-map "np" #'ni-narrow-to-page-indirect-other-window)))
+
+(use-package visual-fill-column
+  :ensure t)
+
+(use-package cmake-mode
+  :commands cmake-mode)

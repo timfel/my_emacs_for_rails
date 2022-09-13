@@ -213,3 +213,7 @@ Non-interactive arguments are Begin End Regexp"
      (side . bottom)
      (slot . -1)
      (dedicated))))
+
+(defun buffer-to-bottom ()
+  (interactive)
+  (display-buffer-in-side-window (current-buffer) '((side . bottom))))
