@@ -217,3 +217,9 @@ Non-interactive arguments are Begin End Regexp"
 (defun buffer-to-bottom ()
   (interactive)
   (display-buffer-in-side-window (current-buffer) '((side . bottom))))
+
+(defun projector-enable ()
+  (interactive)
+  (set-face-attribute 'default nil :font "DejaVu Sans Mono-15")
+  (display-line-numbers-mode)
+  (load-theme 'tango))
