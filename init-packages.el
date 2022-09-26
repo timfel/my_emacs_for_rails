@@ -1,9 +1,3 @@
-(when (boundp 'package-pinned-packages)
-  (setq package-pinned-packages
-                '((treemacs . "melpa-stable")
-                  ;; "unstable" package
-                  (esup     . "melpa"))))
-
 (package-initialize)
 (require 'compile)
 (require 'cc-mode)
@@ -13,6 +7,7 @@
 (setq warning-minimum-level :error)
 
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
 
 (setq use-package-verbose t)
@@ -368,15 +363,9 @@
 (use-package quelpa
   :ensure t)
 
-(use-package quelpa-use-package
-  :ensure t)
-
 ;; LSP and especially Java
 (use-package treemacs
-  :quelpa (treemacs
-           :fetcher github
-           :repo "Alexander-Miller/treemacs"
-           :commit "2.9")
+  :pin melpa-stable
   :ensure t
   :demand t
   :config
