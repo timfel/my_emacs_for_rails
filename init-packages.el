@@ -365,7 +365,7 @@
 
 ;; LSP and especially Java
 (use-package treemacs
-  :pin melpa-stable
+  ;; :pin melpa-stable
   :ensure t
   :demand t
   :config
@@ -385,7 +385,7 @@
   :ensure t
   :demand t
   :config (progn
-            (setq lsp-print-io t
+            (setq lsp-print-io nil
                   lsp-lens-enable nil
                   lsp-completion-enable-additional-text-edit t
                   lsp-enable-snippet t
@@ -565,14 +565,33 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
   :config (if use-netbeans-instead-of-eclipse-for-java
               lsp-treemacs-sync-mode))
 
-(use-package lsp-python-ms
+(use-package lsp-pyright
   :ensure t
-  :after (lsp-mode)
+  :after (lsp-mode dap-mode)
   :defer t
-  :hook (python-mode . (lambda () (require 'lsp-python-ms)))
-  :config (setq
-           lsp-python-ms-python-executable-cmd "python3")
-  )
+  :hook (python-mode . (lambda ()
+                         (require 'lsp-pyright)
+                         (require 'dap-python)))
+  :config (progn
+            (setq dap-python-debugger 'debugpy)
+            (defun get-venv-executable (orig-fun command)
+              (let* ((root (lsp-workspace-root (buffer-file-name)))
+                     (cfg (f-join root "pyrightconfig.json")))
+                (if (f-exists? cfg) ; have a pyrightconfig.json, parse it
+                    (let* ((json (with-temp-buffer (insert-file-contents cfg) (json-parse-buffer)))
+                           (venvPathCfg (ht-get json "venvPath" lsp-pyright-venv-directory))
+                           (venvCfg (ht-get json "venv" ""))
+                           (exe (if (f-absolute? venvPathCfg)
+                                    (f-join venvPathCfg venvCfg "bin" command)
+                                  (f-join root venvPathCfg venvCfg "bin" command))))
+                      (if (f-executable? exe) ; venv from pyrightconfig.json has the desired executable
+                          exe
+                        (if lsp-pyright-venv-path ; venv is set via pyright setting
+                            (let ((exe (f-join lsp-pyright-venv-path "bin" command)))
+                              (if (f-executable? exe) ; venv from pyright settings has the desired executable
+                                  exe
+                                (funcall orig-fun command)))))))))
+            (advice-add 'dap-python--pyenv-executable-find :around #'get-venv-executable)))
 
 ;; Global Java settings
 (add-hook 'java-mode-hook
