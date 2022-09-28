@@ -910,9 +910,19 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
          :map java-mode-map
          ("C-c C-d" . my/dap-debug))
   :config (progn
+            ;; XXX: workaround for some weird behaviour only I am seeing  ¯\_(ツ)_/¯ 
+            (defun my/dap--debug-session-workspace (origfunc session)
+              (or (funcall origfunc session)
+                  (seq-some #'identity (lsp-workspaces))
+                  (lsp-find-workspace 'jdtls nil)))
+            (advice-add 'dap--debug-session-workspace :around #'my/dap--debug-session-workspace)
+
             (defun my/show-debug-windows (session)
               (save-excursion
                 (call-interactively #'dap-ui-repl)
+                (call-interactively #'dap-ui-breakpoints)
+                (call-interactively #'dap-ui-locals)
+                (call-interactively #'dap-ui-sessions)
                 (if (get-buffer-window "*dap-ui-repl*")
                     (delete-window (get-buffer-window "*dap-ui-repl*")))
                 (display-buffer-in-side-window (get-buffer "*dap-ui-repl*") `((side . bottom)
