@@ -1,7 +1,5 @@
-llvm-project
-session.*
-*.desktop
-lsp-netbeans
-lsp-graalvm
-.cache
-
+.dap-breakpoints
+.lsp-session-v1*
+.extension
+.cache/lsp
+.cache/treemacs*

@@ -365,7 +365,7 @@
 
 ;; LSP and especially Java
 (use-package treemacs
-  ;; :pin melpa-stable
+  :pin melpa-stable
   :ensure t
   :demand t
   :config
