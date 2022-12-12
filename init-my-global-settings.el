@@ -441,3 +441,11 @@
              :nick user
              :full-name "Tim Felgentreff"
              :password password)))
+
+;; add latest nvm node if we have it
+(if-let* ((nvm "~/.nvm/versions/node/")
+          (_ (f-exists? nvm)))
+    (and
+     (add-to-list 'exec-path (f-join nvm (car (sort (directory-files nvm) #'string-greaterp)) "bin"))
+     (setenv "PATH" (string-join exec-path path-separator))))
+
