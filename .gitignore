@@ -3,3 +3,5 @@
 .extension
 .cache/lsp
 .cache/treemacs*
+workspace
+eclipse.jdt.ls
