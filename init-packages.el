@@ -331,7 +331,6 @@
                   lsp-enable-indentation nil
                   lsp-before-save-edits t
                   lsp-enable-file-watchers nil)))
-(use-package hydra :ensure t :demand t)
 
 (use-package lsp-ui
   :ensure t
@@ -395,10 +394,6 @@
                   lsp-modeline-code-actions-enable nil
                   lsp-ui-sideline-code-actions-prefix "💡 "
                   lsp-ui-sideline-update-mode 'line)))
-
-(use-package helm-lsp
-  :ensure t
-  :commands helm-lsp-workspace-symbol)
 
 (use-package lsp-treemacs
   :ensure t
@@ -801,11 +796,17 @@
                  :program ""
                  :name "Node Attach 9229")))
 
-;; The spacemacs default colors
-;; (use-package spacemacs-theme)
+(use-package helm-lsp
+  :ensure t
+  :commands helm-lsp-workspace-symbol)
 
+;; The spacemacs default colors
 (let ((theme (if window-system 'spacemacs-light 'spacemacs-dark)))
-  (load-theme theme t))
+  (condition-case nil
+      (load-theme theme t)
+    (error
+      (package-install 'spacemacs-theme)
+      (load-theme theme t))))
 
 (use-package almost-mono-themes
   :ensure t)
