@@ -693,8 +693,8 @@
               (save-excursion
                 (call-interactively #'dap-ui-repl)
                 (call-interactively #'dap-ui-breakpoints)
-                (call-interactively #'dap-ui-locals)
-                (call-interactively #'dap-ui-sessions)
+                ;; (call-interactively #'dap-ui-locals)
+                ;; (call-interactively #'dap-ui-sessions)
                 (if (get-buffer-window "*dap-ui-repl*")
                     (delete-window (get-buffer-window "*dap-ui-repl*")))
                 (display-buffer-in-side-window (get-buffer "*dap-ui-repl*") `((side . bottom)
