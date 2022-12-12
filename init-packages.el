@@ -9,14 +9,26 @@
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
 (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
 
-(setq use-package-verbose t)
+;; setup use-package with straight.el
+(setq package-enable-at-startup nil)
+(setq straight-use-package-by-default t)
 
-(condition-case nil
-    (require 'use-package)
-  (file-error
-   (package-refresh-contents)
-   (package-install 'use-package)
-   (require 'use-package)))
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 6))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+
+(straight-use-package 'use-package)
+
+;; the packages themselves
 
 ;; additional modes I like
 (use-package yaml-mode :ensure t
