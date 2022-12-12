@@ -223,3 +223,56 @@ Non-interactive arguments are Begin End Regexp"
   (set-face-attribute 'default nil :font "DejaVu Sans Mono-15")
   (display-line-numbers-mode)
   (load-theme 'tango))
+
+(defun ales/fill-paragraph (&optional P)
+  "When called with prefix argument call `fill-paragraph'.
+Otherwise split the current paragraph into one sentence per line."
+  (interactive "P")
+  (if (not P)
+      (save-excursion 
+        (let ((fill-column 12345678)) ;; relies on dynamic binding
+          (fill-paragraph) ;; this will not work correctly if the paragraph is
+                           ;; longer than 12345678 characters (in which case the
+                           ;; file must be at least 12MB long. This is unlikely.)
+          (let ((end (save-excursion
+                       (forward-paragraph 1)
+                       (backward-sentence)
+                       (point-marker))))  ;; remember where to stop
+            (beginning-of-line)
+            (while (progn (forward-sentence)
+                          (<= (point) (marker-position end)))
+              (just-one-space) ;; leaves only one space, point is after it
+              (delete-char -1) ;; delete the space
+              (newline)        ;; and insert a newline
+              ))))
+    ;; otherwise do ordinary fill paragraph
+    (fill-paragraph P)))
+
+
+(defun ospl/fill-paragraph ()
+  "Fill the current paragraph until there is one sentence per line.
+This unfills the paragraph, and places hard line breaks after each sentence."
+  (interactive)
+  
+  (save-excursion
+    (fill-paragraph)
+    ;; "Unfill the paragraph at point.
+    ;; This repeatedly calls `join-line' until the whole paragraph does
+    ;; not contain hard line breaks any more."
+    (let ((fill-column 100000))
+      (fill-paragraph))
+    (beginning-of-line)
+
+    ;; insert line breaks again
+    (let ((end-of-paragraph (make-marker)))
+      (set-marker end-of-paragraph (line-end-position))
+      (forward-sentence)
+      (while (< (point) end-of-paragraph)
+        (just-one-space)
+        (delete-backward-char 1)
+        (newline)
+        (forward-sentence))
+      (set-marker end-of-paragraph nil))))
+(setq sentence-end-double-space nil)
+
+(global-set-key (kbd "C-M-q") #'ospl/fill-paragraph)
