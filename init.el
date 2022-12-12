@@ -11,8 +11,7 @@
    ["#d2ceda" "#f2241f" "#67b11d" "#b1951d" "#3a81c3" "#a31db1" "#21b8c7" "#655370"])
  '(column-number-mode t)
  '(custom-safe-themes
-   '("db152b961f7e6075f226a24bba7faf5b1ff016a0e614afe4e544df5ae2637b3c" "274fa62b00d732d093fc3f120aca1b31a6bb484492f31081c1814a858e25c72e" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" default))
- '(dap-stack-trace-limit 40)
+   '("cbd85ab34afb47003fa7f814a462c24affb1de81ebf172b78cb4e65186ba59d2" "d0fd069415ef23ccc21ccb0e54d93bdbb996a6cce48ffce7f810826bb243502c" "ffba0482d3548c9494e84c1324d527f73ea4e43fff8dfd0e48faa8fc6d5c2bc7" "8f5b54bf6a36fe1c138219960dd324aad8ab1f62f543bed73ef5ad60956e36ae" "171d1ae90e46978eb9c342be6658d937a83aaa45997b1d7af7657546cae5985b" "6c4c97a17fc7b6c8127df77252b2d694b74e917bab167e7d3b53c769a6abb6d6" "db152b961f7e6075f226a24bba7faf5b1ff016a0e614afe4e544df5ae2637b3c" "274fa62b00d732d093fc3f120aca1b31a6bb484492f31081c1814a858e25c72e" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" default))
  '(darkroom-mode-enable-fullscreen nil)
  '(doc-view-continuous t)
  '(frame-background-mode 'light)
@@ -33,25 +32,6 @@
      ("XXX" . "#dc752f")
      ("XXXX" . "#dc752f")
      ("???" . "#dc752f")))
- '(kickasm-c64debugger-command
-   "/home/tim/.emacs.d/c64debugger/c64debugger -autojmp -wait 4000")
- '(kickasm-vice-command "x64")
- '(lsp-graalvm-custom-server t)
- '(lsp-graalvm-languages '("python"))
- '(lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-22.0-b02/bin/java")
- '(lsp-netbeans-jdk "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-22.0-b02")
- '(lsp-tcp-connection-timeout 20)
- '(lsp-ui-doc-position 'top)
- '(markdown-command "cmark-gfm --extension table")
- '(org-agenda-files
-   '("/home/tim/OneDrive/todo.org" "/home/tim/OneDrive/notes.org"))
- '(org-file-apps
-   '((auto-mode . emacs)
-     ("\\.mm\\'" . default)
-     ("\\.x?html?\\'" . default)
-     ("\\.pdf\\'" . "evince %s")))
- '(package-selected-packages
-   '(dap-mode lsp-treemacs treemacs lsp-pyright termbright-theme quelpa quelpa-use-package visual-fill-column forge sx narrow-indirect which-key jsonnet-mode dumb-jump erefactor auth-source-xoauth2 csharp-mode org-caldav calfw calfw-org wl wanderlust posframe lsp-java-treemacs treemacs-icons company-box doom-modeline dracula-theme magit-popup thesaurus flycheck company-lsp fill-column-indicator textmate logito pcache fuzzy popup autopair switch-window cssh gh magithub magit-svn magit gist helm-etags-plus projectile xcscope org-mode ruby-electric lua-mode markdown-mode sass-mode rspec-mode haml-mode yaml-mode org-link-minor-mode helm-projectile helm markdown-preview-mode markdown-mode+ spacemacs-theme term-keys tree-mode oauth2))
  '(pdf-view-midnight-colors '("#655370" . "#fbf8ef"))
  '(proced-auto-update-interval 2)
  '(safe-local-variable-values
