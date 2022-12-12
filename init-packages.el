@@ -7,12 +7,9 @@
 (setq warning-minimum-level :error)
 
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
 
 (setq use-package-verbose t)
-
-(setq use-netbeans-instead-of-eclipse-for-java nil)
 
 (condition-case nil
     (require 'use-package)
@@ -40,6 +37,7 @@
 (use-package rspec-mode :ensure t :after ruby)
 (use-package sass-mode :ensure t :defer t)
 (use-package markdown-mode :ensure t
+  :config (setq markdown-command "cmark-gfm --extension table")
   :mode ("\\.md$"))
 (use-package lua-mode :ensure t
   :config (progn
@@ -70,11 +68,6 @@
             (add-hook 'ruby-mode-hook 'friendly-whitespace)
             (add-hook 'ruby-mode-hook '(lambda() (progn
                                                    (ruby-electric-mode t)
-                                                   ;; Don't want flymake mode for ruby regions in rhtml files, not on read only files, or remote files
-                                                   ;; (if (and (not (null buffer-file-name))
-                                                   ;; 		(file-writable-p buffer-file-name)
-                                                   ;; 		(not (file-remote-p buffer-file-name)))
-                                                   ;; 	   (flymake-mode))
                                                    ;; Indenting options
                                                    (set (make-local-variable 'indent-tabs-mode) 'nil)
                                                    (set (make-local-variable 'tab-width) 2)
@@ -105,6 +98,11 @@
             (let ((todos (expand-file-name "~/OneDrive/todo.org"))
                   (notes (expand-file-name "~/OneDrive/notes.org")))
               (setq
+               org-file-apps '((auto-mode . emacs)
+                              ("\\.mm\\'" . default)
+                              ("\\.x?html?\\'" . default)
+                              ("\\.pdf\\'" . "evince %s"))
+               org-replace-disputed-keys t
                org-default-notes-file notes
                org-agenda-files (list todos notes)
                ;; warn me of any deadlines in next 7 days
@@ -150,6 +148,7 @@
 (use-package projectile
   :ensure t
   :config (setq
+           projectile-sort-order 'access-time
            projectile-enable-caching nil))
 (use-package helm :ensure t)
 (use-package helm-etags-plus
@@ -172,54 +171,7 @@
   :config (progn
             (global-company-mode t)
             (global-set-key (kbd "M-?") 'company-complete)))
-;; (use-package company-box
-;;  :ensure t
-;;  :hook (company-mode . company-box-mode))
-;; (use-package flycheck
-;;   :ensure t
-;;   :init
-;;   (progn
-;;     (define-fringe-bitmap 'my-flycheck-fringe-indicator
-;;       (vector #b00000000
-;;               #b00000000
-;;               #b00000000
-;;               #b00000000
-;;               #b00000000
-;;               #b00000000
-;;               #b00000000
-;;               #b00011100
-;;               #b00111110
-;;               #b00111110
-;;               #b00111110
-;;               #b00011100
-;;               #b00000000
-;;               #b00000000
-;;               #b00000000
-;;               #b00000000
-;;               #b00000000))
-;; 
-;;     (flycheck-define-error-level 'error
-;;       :severity 2
-;;       :overlay-category 'flycheck-error-overlay
-;;       :fringe-bitmap 'my-flycheck-fringe-indicator
-;;       :fringe-face 'flycheck-fringe-error)
-;; 
-;;     (flycheck-define-error-level 'warning
-;;       :severity 1
-;;       :overlay-category 'flycheck-warning-overlay
-;;       :fringe-bitmap 'my-flycheck-fringe-indicator
-;;       :fringe-face 'flycheck-fringe-warning)
-;; 
-;;     (flycheck-define-error-level 'info
-;;       :severity 0
-;;       :overlay-category 'flycheck-info-overlay
-;;       :fringe-bitmap 'my-flycheck-fringe-indicator
-;;       :fringe-face 'flycheck-fringe-info)))
 
-
-;; Git(hub)
-;; (use-package gist :ensure t)
-;; (use-package magit-popup :ensure t)
 (use-package magit
   :bind ("C-x C-z" . magit-status)
   :ensure t
@@ -228,12 +180,6 @@
             ;; (setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
             (setq magit-auto-revert-tracked-only t)
             (magit-auto-revert-mode)))
-(use-package forge
-  :after magit
-  :ensure t)
-;; (use-package magit-svn :ensure t)
-;; (use-package gh :ensure t)
-
 
 ;; Tools
 (use-package ace-window
@@ -246,7 +192,6 @@
   :after request)
 (use-package cssh :ensure t)
 (use-package switch-window :ensure t)
-;; (use-package autopair :ensure t)
 (use-package popup :ensure t)
 (use-package fuzzy :ensure t)
 (use-package pcache :ensure t)
@@ -265,22 +210,19 @@
             ;; (define-globalized-minor-mode global-fci-mode fci-mode (lambda () (fci-mode 1)))
             ;; (global-fci-mode 1)
             ))
-(use-package term-keys
-  :ensure t
-  :unless window-system
-  :config
-  (progn
-    (term-keys-mode t)
-    (require 'term-keys-xterm)
-    ;; only initially
-    ;; (with-temp-buffer
-    ;;  (insert (term-keys/xterm-xresources))
-    ;;   (append-to-file (point-min) (point-max) "~/.Xresources"))
-    ))
 
 (use-package all-the-icons
   :demand t
   :ensure t)
+
+(use-package all-the-icons-completion
+  :after all-the-icons
+  :ensure t)
+
+(use-package all-the-icons-dired
+  :after all-the-icons
+  :ensure t)
+
 (use-package doom-modeline
   ;; remember to run (all-the-icons-install-fonts) manually some time
   :demand t
@@ -296,7 +238,7 @@
                 doom-modeline-buffer-file-name-style 'truncate-all))
 
 ;; LaTeX
-(use-package tex
+(use-package auctex
   :mode ("\\.tex$")
   :ensure auctex
   :if (executable-find "pdflatex")
@@ -360,12 +302,9 @@
 
             (setq reftex-default-bibliography (list (expand-file-name "~/Dropbox/Papers/library.bib")))))
 
-(use-package quelpa
-  :ensure t)
-
 ;; LSP and especially Java
 (use-package treemacs
-  :pin melpa-stable
+  ;; :pin melpa-stable
   :ensure t
   :demand t
   :config
@@ -392,101 +331,7 @@
                   lsp-enable-indentation nil
                   lsp-before-save-edits t
                   lsp-enable-file-watchers nil)))
-  ;; :config (progn
-  ;;           (add-hook 'lsp-workspace-folders-changed-hook                      
-  ;;                     (lambda (added-folders removed-folders)
-  ;;                       "If the LSP workspace changes, load the folders into the lsp project."
-  ;;                       (let (
-  ;;                             (project-name "lsp-project")
-  ;;                             (paths (lsp-session-folders (lsp-session)))
-  ;;                             (project (project-find "lsp-project"))
-  ;;                             )
-  ;;                         (if project
-  ;;                             (progn
-  ;;                               (project-search-paths-set project paths)
-  ;;                               (project-select project-name)
-  ;;                               (project-refresh))
-  ;;                           (progn
-  ;;                             (project-new project-name (car paths))
-  ;;                             (project-search-paths-set (project-find project-name) paths)
-  ;;                             (project-select project-name)
-  ;;                             (project-refresh))))))))
 (use-package hydra :ensure t :demand t)
-
-(if use-netbeans-instead-of-eclipse-for-java
-    (use-package lsp-netbeans
-      :after (lsp-treemacs hydra)
-      :load-path "lsp-netbeans"
-      :demand t
-      :config (progn
-                (defun lsp-if-netbeans-running ()
-                  (if (lsp-find-workspace 'netbeans nil) (lsp)))
-                (add-hook 'java-mode-hook #'lsp-if-netbeans-running)
-                (defhydra hydra-netbeans (:exit nil :hint nil)
-                  "
-^Actions^             ^Navigation^                    ^Views^               ^Config
-----------------------------------------------------------------------------------------------------
-_a_: Refactoring     _u_: Goto super implementation   _T_: Tests            _e_: Edit workspace
-_A_: Source          _r_: Find references             _S_: Symbols          _C-e_: Switch workspace
-_C-a_: Code Action   _d_: Find definitions            _E_: Errors           _N_: Nuke
-_C-p_: Debug process _s_: Goto symbol                 _C_: Call hierarchy
-_C-s_: Debug socket  ^ ^                              _H_: Type hierarchy
-_C-t_: Debug test    ^ ^                              _P_: Packages
-^ ^                  ^ ^                              _W_: Workspace
-"
-                  ("a" lsp-netbeans-refactor-action)
-                  ("A" lsp-netbeans-source-action)
-                  ("C-a" (if (fboundp #'helm-lsp-code-actions)
-                             (helm-lsp-code-actions)
-                           (lsp-execute-code-action nil)))
-	          ("C-p" (dap-debug (list :type "java8+" :request "Process")) :color blue)
-	          ("C-s" (dap-debug (list :type "java8+" :request "Socket")) :color blue)
-	          ("C-t" dap-netbeans-debug-test :color blue)
-
-                  ("u" lsp-netbeans-super-impl)
-                  ("r" lsp-treemacs-references)
-                  ("d" lsp-treemacs-implementations)
-                  ("s" (if (fboundp #'helm-lsp-workspace-symbol)
-                           (helm-lsp-workspace-symbol nil)
-                         (lsp-ido-workspace-symbol nil)))
-
-                  ("T" lsp-netbeans-project-tests)
-                  ("S" (if (fboundp #'lsp-ui-imenu)
-                           (lsp-ui-imenu)
-                         (lsp-treemacs-symbols)))
-                  ("E" (if (fboundp #'helm-lsp-diagnostics)
-                           (helm-lsp-diagnostics nil)
-                         (lsp-treemacs-errors-list)))
-                  ("C" lsp-treemacs-call-hierarchy)
-                  ("H" lsp-treemacs-type-hierarchy)
-                  ("P" lsp-netbeans-get-project-packages)
-                  ("W" treemacs)
-
-                  ("e" treemacs-edit-workspaces :color blue)
-                  ("C-e" (treemacs t) :color blue)
-                  ("N" (progn
-                         (condition-case nil
-                             (lsp-netbeans-clear-caches)
-                           (error nil))
-                         (->> (lsp-session)
-                              (lsp-session-folder->servers)
-                              (hash-table-values)
-                              (-flatten)
-                              (-uniq)
-                              (-map #'lsp-workspace-shutdown))
-                         (lsp-netbeans-kill-userdir))))
-                (bind-key "<f5>" #'hydra-netbeans/body))))
-
-(if use-netbeans-instead-of-eclipse-for-java
-    (use-package dap-netbeans
-      :after lsp-treemacs
-      :hook (java-mode . (lambda () (require 'dap-netbeans)))
-      :load-path "lsp-netbeans"))
-
-(use-package lsp-graalvm
-  :defer t
-  :commands lsp-graalvm-dry-run
-  :load-path "lsp-graalvm")
 
 (use-package lsp-ui
   :ensure t
@@ -545,6 +390,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                   lsp-ui-sideline-delay 5
                   lsp-eldoc-enable-hover nil
                   lsp-idle-delay 5.000
+                  lsp-tcp-connection-timeout 20
                   lsp-modeline-diagnostics-enable nil
                   lsp-modeline-code-actions-enable nil
                   lsp-ui-sideline-code-actions-prefix "💡 "
@@ -561,9 +407,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 (use-package lsp-treemacs
   :ensure t
   :demand t
-  :commands lsp-treemacs-errors-list
-  :config (if use-netbeans-instead-of-eclipse-for-java
-              lsp-treemacs-sync-mode))
+  :commands lsp-treemacs-errors-list)
 
 (use-package lsp-pyright
   :ensure t
@@ -573,7 +417,9 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                          (require 'lsp-pyright)
                          (require 'dap-python)))
   :config (progn
-            (setq dap-python-debugger 'debugpy)
+            (setq
+             dap-python-debugger 'debugpy)
+
             (defun get-venv-executable (orig-fun command)
               (let* ((root (lsp-workspace-root (buffer-file-name)))
                      (cfg (f-join root "pyrightconfig.json")))
@@ -612,7 +458,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                                         (eq (caadr c-syntactic-context) 'block-close)))
                                   0
                                 16))))))
-;; (define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
+(define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
 (add-hook 'java-mode-hook 'friendly-whitespace)
 ;; (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
 (add-hook 'java-mode-hook (lambda () (company-mode t)))
@@ -637,80 +483,70 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
   (interactive)
   (treemacs t))
 
-(if (not use-netbeans-instead-of-eclipse-for-java)
-    (use-package lsp-java
-      :ensure t
-      :demand t
-      :hook (java-mode . (lambda () (require 'lsp-java) (require 'dap-java)))
-      :bind ("<f5>" . treemacs-t)
-      :after (lsp-mode company lsp-treemacs)
-      :config (progn
-                (require 'lsp-ui-flycheck)
-                (require 'lsp-ui-sideline)
-                (setq lsp-java-completion-favorite-static-members (vconcat lsp-java-completion-favorite-static-members
-                                                                           '("com.oracle.graal.python.builtins.PythonBuiltinClassType"
-                                                                             "com.oracle.graal.python.nodes.BuiltinNames"
-                                                                             "com.oracle.graal.python.nodes.SpecialMethodNames"
-                                                                             "com.oracle.graal.python.nodes.SpecialAttributeNames"
-                                                                             "com.oracle.graal.python.nodes.ErrorMessages")))
-                (setq
-                 lsp-java-content-provider-preferred "fernflower"
-                 lsp-java-save-actions-organize-imports t
-                 lsp-java-format-on-type-enabled t
-                 lsp-java-format-comments-enabled t
-                 lsp-java-format-enabled t
-                 lsp-java-autobuild-enabled nil
-                 lsp-java-inhibit-message t
-                 lsp-java-completion-import-order ["java" "javax" "org" "com"]
-                 lsp-java-import-order ["java" "javax" "org" "com"])
+(use-package lsp-java
+  :ensure t
+  :demand t
+  :hook (java-mode . (lambda () (require 'lsp-java) (require 'dap-java)))
+  :bind ("<f5>" . treemacs-t)
+  :after (lsp-mode company lsp-treemacs)
+  :config (progn
+            (require 'lsp-ui-flycheck)
+            (require 'lsp-ui-sideline)
+            (setq lsp-java-completion-favorite-static-members (vconcat lsp-java-completion-favorite-static-members
+                                                                       '("com.oracle.graal.python.builtins.PythonBuiltinClassType"
+                                                                         "com.oracle.graal.python.nodes.BuiltinNames"
+                                                                         "com.oracle.graal.python.nodes.SpecialMethodNames"
+                                                                         "com.oracle.graal.python.nodes.SpecialAttributeNames"
+                                                                         "com.oracle.graal.python.nodes.ErrorMessages")))
+            (setq
+             lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-22.0-b02/bin/java"
+             lsp-java-content-provider-preferred "fernflower"
+             lsp-java-save-actions-organize-imports t
+             lsp-java-format-on-type-enabled nil
+             lsp-java-format-comments-enabled nil
+             lsp-java-format-enabled nil
+             lsp-java-autobuild-enabled nil
+             lsp-java-inhibit-message t
+             lsp-java-completion-import-order ["java" "javax" "org" "com"]
+             lsp-java-import-order ["java" "javax" "org" "com"])
 
-                (defun lsp-java--treemacs-sync ()
-                  (let* ((wsname (treemacs-workspace->name (treemacs-current-workspace)))
-                         (wsuserdir (f-join lsp-server-install-dir
-                                            (format "jdtls.workspace.%s" wsname))))
-                    (if (not (equal lsp-java-workspace-dir wsuserdir))
-                        (progn
-                          ;; shutdown servers
-                          (->> (lsp-session)
-                               (lsp-session-folder->servers)
-                               (hash-table-values)
-                               (-flatten)
-                               (-uniq)
-                               (-map #'lsp-workspace-shutdown))
-                          (setq lsp--session nil)
-                          (setq
-                           lsp-java-workspace-dir wsuserdir
-                           lsp-session-file (expand-file-name (locate-user-emacs-file (format ".lsp-session-v1-%s" wsname)))))))
-                  (message (format "Setting Eclipse workspace to %s, session to %s" lsp-java-workspace-dir lsp-session-file))
-                  (message (format "You may have to adapt %s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs to give the default VM the name that mx told you" lsp-java-workspace-dir))
-                  lsp-java-workspace-dir)
+	    (setq dap-java-default-debug-port 8000)
+            (with-eval-after-load 'lsp-treemacs
+              (dap-register-debug-template "Java Attach com.oracle.graal.python"
+                                           (list :type "java"
+                                                 :request "attach"
+                                                 :hostName "localhost"
+                                                 :projectName "com.oracle.graal.python"
+                                                 :port 8000)))
 
-                (with-eval-after-load 'lsp-treemacs
-                  (add-hook 'treemacs-switch-workspace-hook #'lsp-java--treemacs-sync)
-                  (lsp-java--treemacs-sync))
+            (defun lsp-java--treemacs-sync ()
+              (let* ((wsname (treemacs-workspace->name (treemacs-current-workspace)))
+                     (wsuserdir (f-join lsp-server-install-dir
+                                        (format "jdtls.workspace.%s" wsname))))
+                (if (not (equal lsp-java-workspace-dir wsuserdir))
+                    (progn
+                      ;; shutdown servers
+                      (->> (lsp-session)
+                           (lsp-session-folder->servers)
+                           (hash-table-values)
+                           (-flatten)
+                           (-uniq)
+                           (-map #'lsp-workspace-shutdown))
+                      (setq lsp--session nil)
+                      (setq
+                       lsp-java-workspace-dir wsuserdir
+                       lsp-session-file (expand-file-name (locate-user-emacs-file (format ".lsp-session-v1-%s" wsname)))))))
+              (message (format "Setting Eclipse workspace to %s, session to %s" lsp-java-workspace-dir lsp-session-file))
+              (message (format "You may have to adapt %s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs to give the default VM the name that mx told you" lsp-java-workspace-dir))
+              lsp-java-workspace-dir)
 
-                (defun lsp-if-jdtls-running ()
-                  (if (lsp-find-workspace 'jdtls nil) (lsp)))
-                (add-hook 'java-mode-hook #'lsp-if-jdtls-running)
+            (with-eval-after-load 'lsp-treemacs
+              (add-hook 'treemacs-switch-workspace-hook #'lsp-java--treemacs-sync)
+              (lsp-java--treemacs-sync))
 
-                ;; (puthash "language/progressReport" (lambda (workspace params)
-                ;;                                      (lsp-java--progress-report workspace params)
-                ;;                                      (-let [(&hash "status" "complete") params]
-                ;;                                        (when complete
-                ;;                                          (message "Build complete, running mx")
-                ;;                                          (let ((default-directory (file-name-directory (buffer-file-name (current-buffer)))))
-                ;;                                            (start-process
-                ;;                                             "mx-nativebuild"
-                ;;                                             "*mx output*"
-                ;;                                             "~/.graalenv/mx/mx"
-                ;;                                             "nativebuild")))))
-                ;;          (lsp--client-notification-handlers (gethash 'jdtls lsp-clients)))
-                ;; adjust open list indentation
-                ;; (add-hook 'java-mode-hook #'lsp)
-                ;; (add-hook 'java-mode-hook 'doom-modeline-mode)
-                ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-flycheck-enable t)))
-                ;; (add-hook 'java-mode-hook (lambda () (lsp-ui-sideline-mode t)))
-                )))
+            (defun lsp-if-jdtls-running ()
+              (if (lsp-find-workspace 'jdtls nil) (lsp)))
+            (add-hook 'java-mode-hook #'lsp-if-jdtls-running)))
 
 (defun my/lsp/find-eclipse-projects-recursively (directory)
   (let ((current-directory-list (directory-files directory)))
@@ -720,6 +556,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
        '())
       (seq-mapcat (lambda (elt) (my/lsp/find-eclipse-projects-recursively (concat (file-name-as-directory directory) elt)))
                   (seq-filter (lambda (elt) (and (file-directory-p (concat (file-name-as-directory directory) elt))
+                                                 (not (f-symlink-p (concat (file-name-as-directory directory) elt)))
                                                  (not (string-prefix-p "." elt))
                                                  (not (string-prefix-p "mxbuild" elt))
                                                  (not (string-prefix-p "mx." elt)))) current-directory-list)))))
@@ -762,63 +599,6 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
             (if (and (not (buffer-modified-p buffer))
                      (not (eq (current-buffer) buffer)))
                 (kill-buffer buffer)))))))
-
-(defun my/lsp/import-all-eclipse-projects ()
-  (interactive)
-  (let* ((base-dir (read-directory-name "Base directory to search projects in: "))
-         (base-dirs (completing-read-multiple "Base sub-directories to search projects in: " (directory-files base-dir) nil t))
-         (projects-found (seq-mapcat (lambda (elt) (my/lsp/find-eclipse-projects-recursively (concat (file-name-as-directory base-dir) elt))) base-dirs)))
-    ;; add projects to session
-    (seq-do (lambda (elt)
-              (let ((exp (expand-file-name elt)))
-                (if (not (seq-contains (lsp-session-folders (lsp-session)) exp))
-                    (progn
-                      (lsp-workspace-folders-add exp)
-                      (puthash 'jdtls
-                               (append (gethash 'jdtls
-                                        (lsp-session-server-id->folders (lsp-session)))
-                                       (list exp))
-                               (lsp-session-server-id->folders (lsp-session)))))))
-            projects-found)
-    (lsp--persist-session (lsp-session))
-    (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-found)))
-
-(defun my/lsp/run-mx-command (command)
-  (interactive (let ((default-value (condition-case nil (car mx-run-history) (error "mx python"))))
-                 (list (read-string (format "Command (%s): " default-value) nil 'mx-run-history default-value))))
-  (let* ((default-directory (magit-toplevel))
-         (current-win (get-buffer-window (current-buffer))))
-    (call-interactively 'shell)
-    (execute-kbd-macro [return])
-    (execute-kbd-macro (format "cd %s" default-directory))
-    (execute-kbd-macro [return])
-    (sit-for 1)
-    (delete-window (get-buffer-window (get-buffer "*shell*")))
-    (let ((win (display-buffer-in-side-window (get-buffer "*shell*") `((side . bottom)
-                                                                       (slot . -1)
-                                                                       (window-height . 10)))))
-      (select-window win)
-      (execute-kbd-macro command)
-      (execute-kbd-macro [return])
-      (when (string-match-p "mx -d " command)
-        (sit-for 1)
-        (select-window current-win)
-        (call-interactively 'dap-debug)))))
-
-(defun my/lsp/build-mx-project (command)
-  (interactive (let ((default-value (condition-case nil (car mx-build-history) (error "mx build"))))
-                 (list (read-string (format "Command (%s): " default-value) nil 'mx-build-history default-value))))
-  (let* ((default-directory (magit-toplevel))
-         (buff "*build-mx-project*"))
-    (start-process "build-mx-project" buff "bash" "-ic" command)
-    (let ((win (display-buffer-in-side-window (get-buffer buff) `((side . bottom)
-                                                                  (slot . 0)
-                                                                  (window-height . 10)))))
-      (select-window win)
-      (let ((map (make-sparse-keymap)))
-        (define-key map (kbd "q") 'delete-window)
-        (use-local-map map))
-      (call-interactively 'end-of-buffer))))
 
 (defun my/lsp/clear-workspace ()
   (interactive)
@@ -903,6 +683,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
   (my/lsp/reload-all-java-buffers)
   (lsp-send-notification
    (lsp-make-request "java/buildWorkspace" t)))
+
 (use-package dap-mode
   :ensure t
   :after lsp-mode
@@ -910,12 +691,12 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
          :map java-mode-map
          ("C-c C-d" . my/dap-debug))
   :config (progn
-            ;; XXX: workaround for some weird behaviour only I am seeing  ¯\_(ツ)_/¯ 
-            (defun my/dap--debug-session-workspace (origfunc session)
-              (or (funcall origfunc session)
-                  (seq-some #'identity (lsp-workspaces))
-                  (lsp-find-workspace 'jdtls nil)))
-            (advice-add 'dap--debug-session-workspace :around #'my/dap--debug-session-workspace)
+            ;; ;; XXX: workaround for some weird behaviour only I am seeing  ¯\_(ツ)_/¯ 
+            ;; (defun my/dap--debug-session-workspace (origfunc session)
+            ;;   (or (funcall origfunc session)
+            ;;       (seq-some #'identity (lsp-workspaces))
+            ;;       (lsp-find-workspace 'jdtls nil)))
+            ;; (advice-add 'dap--debug-session-workspace :around #'my/dap--debug-session-workspace)
 
             (defun my/show-debug-windows (session)
               (save-excursion
@@ -936,11 +717,12 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                       (delete-window (get-buffer-window "*dap-ui-repl*")))))
             (add-hook 'dap-terminated-hook 'my/close-debug-windows)
 
-            ;; (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
-            ;; (add-hook 'dap-terminated-hook (lambda (arg) (call-interactively #'dap-hydra/nil)))
+            (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
+            (add-hook 'dap-terminated-hook (lambda (arg) (call-interactively #'dap-hydra/nil)))
 
             ;; default settings
             (setq
+             dap-stack-trace-limit 40
              dap-auto-configure-features '(sessions locals controls tooltip)
              dap-auto-show-output t
              dap-print-io nil)
@@ -949,6 +731,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
             ))
 
 (use-package dap-lldb
+  
   :after dap-mode
   :defer t
   :hook ((c-mode c++-mode) . (lambda () (require 'dap-lldb)))
@@ -994,9 +777,11 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                                    :name "LLDB::Attach")))))))
 
 (use-package dap-hydra
+  
   :after dap-mode)
 
 (use-package dap-cpptools
+  
   :defer t
   :hook ((c-mode c++-mode) . (lambda () (require 'dap-cpptools)))
   :after dap-mode)
@@ -1006,6 +791,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
   :ensure t)
 
 (use-package dap-node
+  
   :after dap-mode
   :config (dap-register-debug-template
            "Node Attach 9229"
@@ -1019,34 +805,19 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                  :program ""
                  :name "Node Attach 9229")))
 
-(if (version<= "26" emacs-version)
-    (use-package posframe :ensure t))
-
-(if (not use-netbeans-instead-of-eclipse-for-java)
-    (use-package dap-java
-      :after (dap-mode lsp-java)
-      :config (progn
-                (setq dap-java-default-debug-port 8000)
-
-                ;; (define-key java-mode-map (kbd "C-c C-c") #'my/lsp/build-mx-project)
-                ;; (define-key java-mode-map (kbd "C-c m") #'my/lsp/run-mx-command)
-                ;; (define-key java-mode-map (kbd "C-c C-x t") #'dap-breakpoint-toggle)
-
-                (dap-register-debug-template "Java Attach com.oracle.graal.python"
-                                             (list :type "java"
-                                                   :request "attach"
-                                                   :hostName "localhost"
-                                                   :projectName "com.oracle.graal.python"
-                                                   :port 8000)))))
-
 ;; The spacemacs default colors
-(let ((theme (if window-system 'spacemacs-light 'spacemacs-dark)))
-  (condition-case nil
-      (load-theme theme t)
-    (error
-     (package-install 'spacemacs-theme)
-     (load-theme theme t))))
+(use-package spacemacs-theme
+  :ensure t)
 
+(let ((theme (if window-system 'spacemacs-light 'spacemacs-dark)))
+  (load-theme theme t))
+
+(use-package almost-mono-themes
+  :ensure t)
+(use-package atom-one-dark-theme
+  :ensure t)
+(use-package vscode-dark-plus-theme
+  :ensure t)
 
 ;; Flyspell options
 (use-package ispell :ensure t)
@@ -1089,267 +860,7 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 ;; Tramp
 (use-package tramp :ensure t)
 
-(use-package wl
-  :disabled
-  :ensure wanderlust
-  :commands (wl)
-  :bind (:map wl-summary-mode-map
-              ;;Swap a and A in summary mode, so citing original message is on a and no-cite on A.
-              ("A" . wl-summary-reply)
-              ("a" . wl-summary-reply-with-citation))
-  :defer t
-  :hook ((wl-mail-send-pre . djcb-wl-draft-subject-check)
-         (wl-mail-send-pre . djcb-wl-draft-attachment-check))
-  :config (progn
-            (print "Wanderlust configured")
-            
-            ;; Check messages for missing subject or abstract
-            (defun djcb-wl-draft-subject-check ()
-              "check whether the message has a subject before sending"
-              (if (and (< (length (std11-field-body "Subject")) 1)
-                       (null (y-or-n-p "No subject! Send current draft?")))
-                  (error "Abort.")))
-
-            (defun djcb-wl-draft-attachment-check ()
-              "if attachment is mention but none included, warn the the user"
-              (save-excursion
-                (goto-char 0)
-                (unless ;; don't we have an attachment?
-                    (re-search-forward "^Content-Disposition: attachment" nil t)
-                  (when ;; no attachment; did we mention an attachment?
-                      (or (re-search-forward "attach" nil t)
-                          (re-search-forward "anhang" nil t)
-                          (re-search-forward "anbei" nil t)
-                          (re-search-forward "adjunt" nil t))
-                    (unless (y-or-n-p "Possibly missing an attachment. Send current draft?")
-                      (error "Abort."))))))
-            
-            ;; tfel: I have a bug somewhere when creating drafts where a number is
-            ;; passed to elmo-date-get-datevec, which needs a timestamp string. we
-            ;; fall back to the current time in that case.
-            (define-advice wl-summary-reply (:around (orig-fun &rest args) set-msg-id)
-              (setq current-msg-number (random 100))
-              (apply orig-fun args))
-
-            (define-advice elmo-date-get-datevec (:around (orig-fun &rest args) convert-elmo-datevec-arg)
-              (if (stringp (car args))
-                  (apply orig-fun args)
-                (timezone-fix-time (current-time-string) (current-time-zone) nil)))
-
-            (define-advice wl-draft-config-info-filename (:around (orig-fun &rest args) ensure-draft-filename)
-              (if (not (numberp (car args)))
-                  (setcar args current-msg-number))
-              (apply orig-fun args))
-
-            (define-advice wl-draft-config-info-operation (:around (orig-fun &rest args) ensure-draft-filename)
-              (if (not (numberp (car args)))
-                  (setcar args current-msg-number))
-              (apply orig-fun args))
-
-            (if (boundp 'mail-user-agent)
-                (setq mail-user-agent 'wl-user-agent))
-            (if (fboundp 'define-mail-user-agent)
-                (define-mail-user-agent
-                  'wl-user-agent
-                  'wl-user-agent-compose
-                  'wl-draft-send
-                  'wl-draft-kill
-                  'mail-send-hook)))
-  :init (setq
-         wl-init-file (expand-file-name "~/.emacs.d/wanderlust/wl.el")
-         wl-address-file (expand-file-name "~/.emacs.d/wanderlust/addresses")
-         wl-folders-file (expand-file-name "~/.emacs.d/wanderlust/folders")
-         ;; SMTP server for mail posting.
-
-         ;; old: beehive
-         ;; wl-smtp-posting-server "stbeehive.oracle.com"
-         ;; wl-smtp-posting-port 465
-         ;; wl-smtp-connection-type 'ssl
-         ;; wl-smtp-authenticate-type "login"
-
-         ;; new: outlook
-         wl-smtp-posting-server "smtp.office365.com"
-         wl-smtp-posting-port 587
-         wl-smtp-connection-type 'starttls
-         wl-smtp-authenticate-type "plain"
-
-         wl-smtp-posting-user "2tim.felgentreff@oracle.com"
-         wl-from "tim.felgentreff@oracle.com"
-         smtp-local-domain "localhost"
-
-         ;; Do not cache passwords. The cache corrupts server
-         ;; secrets.
-         password-cache nil
-
-         elmo-imap4-default-user "tim.felgentreff@oracle.com"
-         ;; old: beehive
-         ;; elmo-imap4-default-server "stbeehive.oracle.com"
-         ;; elmo-imap4-default-port 993
-         ;; elmo-imap4-default-authenticate-type 'clear
-         ;; elmo-imap4-default-stream-type 'ssl
-
-         ;; new: outlook
-         elmo-imap4-default-server "outlook.office365.com"
-         elmo-imap4-default-port 993
-         elmo-imap4-default-authenticate-type 'clear
-         elmo-imap4-default-stream-type 'ssl
-
-         elmo-passwd-storage-type 'auth-source
-
-         ;; Location of archives
-         elmo-archive-folder-path "~/Mail"
-
-         ;; Location of MH and Maildir folders
-         elmo-localdir-folder-path "~/Mail/"
-         elmo-maildir-folder-path "~/Mail/"
-
-         wl-message-id-domain "tim.felgentreff@oracle.com"
-         wl-from "Tim Felgentreff <tim.felgentreff@oracle.com>"
-         ;; mime-edit-default-signature "~/OnlineFolder/Library/dot.signature"
-         wl-forward-subject-prefix "Fwd: "
-
-         wl-default-folder "%Inbox" ;; my main inbox
-         ;; wl-biff-check-folder-list '("%Inbox") ;; check every 180 seconds
-         ;; wl-biff-check-interval 180
-
-         wl-draft-folder "%Drafts"  ;; store drafts in 'postponed'
-         wl-trash-folder "%Trash"   ;; put trash in 'trash'
-
-         wl-stay-folder-window t
-         wl-folder-window-width 25
-         wl-folder-use-frame nil
-
-         wl-summary-always-sticky-folder-list t
-         wl-summary-line-format "%n%T%P %D/%M (%W) %h:%m %t%[%25(%c %f%) %] %s"
-         wl-summary-width nil
-
-         wl-message-ignored-field-list '("^.*")
-         wl-message-visible-field-list '("^From:" "^To:" "^Cc:" "^Date:" "^Subject:")
-         wl-message-sort-field-list wl-message-visible-field-list
-         wl-summary-default-sort-spec 'date
-         wl-message-window-size '(1 . 2)
-
-         ;; Always download emails without confirmation
-         wl-prefetch-threshold nil
-         wl-message-buffer-prefetch-threshold nil
-         elmo-message-fetch-threshold nil
-         elmo-folder-update-threshold nil
-         elmo-network-session-idle-timeout 120
-
-         ;; Rendering of messages using 'shr', Emacs' simple html
-         ;; renderer, but without fancy coloring that distorts the
-         ;; looks
-         mime-view-text/html-previewer 'shr
-         ;; shr-use-colors nil
-
-         ;; wl-draft-config-alist
-         ;; '(((string-match "1" "1")
-         ;;    (bottom . "\n--\n") (bottom-file . "~/OnlineFolder/Library/dot.signature"))
-         ;;   )
-
-         mime-edit-split-message nil
-         )
-  )
-
-;; (use-package bbdb
-;;   :ensure t
-;;   :after (wl)
-;;   :commands (bbdb-initialize)
-;;   :hook
-;;   ((mail-setup . bbdb-mail-aliases)
-;;    (message-setup . bbdb-mail-aliases)
-;;    (wl-mail-setup . jjgr-add-bbdb-tab-completion))
-
-;;   :init
-;;   (setq bbdb-file "~/.emacs.d/bbdb"
-;;         bbdb-mua-pop-up t
-;;         bbdb-mua-pop-up-window-size t)
-
-;;   :config
-;;   (progn
-;;     (bbdb-initialize 'wl)
-;;     (bbdb-mua-auto-update-init 'wl)
-
-;;     (setq
-;;      bbdb-offer-save 1                        ;; 1 means save-without-asking
-     
-;;      bbdb-use-pop-up t                        ;; allow popups for addresses
-;;      bbdb-electric-p t                        ;; be disposable with SPC
-;;      bbdb-popup-target-lines  1               ;; very small
-     
-;;      bbdb-dwim-net-address-allow-redundancy t ;; always use full name
-;;      bbdb-quiet-about-name-mismatches 2       ;; show name-mismatches 2 secs
-
-;;      bbdb-always-add-address t                ;; add new addresses to existing...
-;;      ;; ...contacts automatically
-;;      bbdb-canonicalize-redundant-nets-p t     ;; x@foo.bar.cx => x@bar.cx
-
-;;      bbdb-completion-type nil                 ;; complete on anything
-
-;;      bbdb-complete-name-allow-cycling t       ;; cycle through matches
-;;      ;; this only works partially
-
-;;      bbbd-message-caching-enabled t           ;; be fast
-;;      bbdb-use-alternate-names t               ;; use AKA
-
-
-;;      bbdb-elided-display t                    ;; single-line addresses
-
-;;      ;; auto-create addresses from mail
-;;      bbdb/mail-auto-create-p 'bbdb-ignore-some-messages-hook   
-;;      bbdb-ignore-some-messages-alist ;; don't ask about fake addresses
-;;      ;; NOTE: there can be only one entry per header (such as To, From)
-;;      ;; http://flex.ee.uec.ac.jp/texi/bbdb/bbdb_11.html
-
-;;      '(( "From" . "no.?reply\\|DAEMON\\|daemon\\|facebookmail\\|twitter")))
-
-;;     (defun my-bbdb-complete-mail ()
-;;       "If on a header field, calls `bbdb-complete-mail' to complete the name."
-;;       (interactive)
-;;       (when (< (point)
-;;                (save-excursion
-;;                  (goto-char (point-min))
-;;                  (search-forward (concat "\n" mail-header-separator "\n") nil 0)
-;;                  (point)))
-;;         (bbdb-complete-mail)))
-
-;;     (defun jjgr-add-bbdb-tab-completion ()
-;;       (define-key (current-local-map) (kbd "<tab>")
-;;         'my-bbdb-complete-mail))
-;;     )
-;;   )
-
-;; (use-package calfw
-;;   :ensure t
-;;   :init (progn
-;;           ; (require 'calfw-org)
-;;           (setq cfw:org-overwrite-default-keybinding t)))
-;; (use-package org-caldav
-;;   :ensure t
-;;   :config (progn
-;;             (let ((oracle-cal (expand-file-name "~/org/oracle-cal.org"))
-;;                   (graalvm-cal (expand-file-name "~/org/graalvm-cal.org")))
-;;               (setq
-;;                org-caldav-calendars
-;;                `((:url "https://stbeehive.oracle.com/caldav/st/home/tim.felgentreff%40oracle.com/calendars/"
-;;                        :calendar-id "MyCalendar"
-;;                        :inbox ,oracle-cal)
-;;                  (:url "https://stbeehive.oracle.com/caldav/st/home/GRAALVM-SHARED-CALENDAR_WW%40oracle.com/calendars/"
-;;                        :calendar-id "MyCalendar"
-;;                        :inbox ,graalvm-cal))
-;;                ;; org-caldav-url "https://stbeehive.oracle.com/caldav/st/home/tim.felgentreff%40oracle.com/calendars/"
-;;                ;; org-caldav-calendar-id "MyCalendar"
-;;                ;; org-caldav-inbox (expand-file-name "~/.emacs.d/caldav-calendar.org")
-;;                org-caldav-sync-direction 'cal->org ;; never push org to calendar, i use this readonly
-;;                org-icalendar-timezone "UTC"
-;;                org-caldav-delete-org-entries t
-;;                org-caldav-delete-calendar-entries nil)
-;;               (add-to-list 'org-agenda-files oracle-cal)
-;;               (add-to-list 'org-agenda-files graalvm-cal)
-;;               org-agenda-files
-;;             )))
-
-;; Interactively Do Things (highly recommended, but not strictly required)
+;; Interactively Do Things
 (use-package ido
   :ensure t
   :config (progn
@@ -1403,45 +914,12 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
                       (add-to-list 'symbol-names name)
                       (add-to-list 'name-and-pos (cons name position))))))))
 
-            ;; (defun ido-goto-symbol ()
-            ;;   "Will update the imenu index and then use ido to select a symbol to navigate to."
-            ;;   (interactive)
-            ;;   (imenu--make-index-alist)
-            ;;   (let ((name-and-pos '())
-            ;;         (symbol-names '()))
-            ;;     (cl-flet ((addsymbols (symbol-list)
-            ;;                        (when (listp symbol-list)
-            ;;                          (dolist (symbol symbol-list)
-            ;;                            (let ((name nil) (position nil))
-            ;;                              (cond
-            ;;                               ((and (listp symbol) (imenu--subalist-p symbol))
-            ;;                                (addsymbols symbol))
-
-            ;;                               ((listp symbol)
-            ;;                                (setq name (car symbol))
-            ;;                                (setq position (if (overlayp (cdr symbol))
-            ;;                                                   (overlay-start (cdr symbol))
-            ;;                                                 (cdr symbol))))
-
-            ;;                               ((stringp symbol)
-            ;;                                (setq name symbol)
-            ;;                                (setq position (get-text-property 1 'org-imenu-marker symbol))))
-
-            ;;                              (unless (or (null position) (null name))
-            ;;                                (add-to-list 'symbol-names name)
-            ;;                                (add-to-list 'name-and-pos (cons name position))))))))
-            ;;       (addsymbols imenu--index-alist))
-            ;;     (let* ((selected-symbol (ido-completing-read "Symbol? " symbol-names))
-            ;;            (position (cdr (assoc selected-symbol name-and-pos))))
-            ;;       (goto-char position))))
             (global-set-key [(control .)] 'ido-goto-symbol)))
 
 (use-package erefactor :ensure t)
 
 (use-package esup
-  :ensure t
-  ;; To use MELPA Stable use ":pin melpa-stable",
-  :pin melpa)
+  :ensure t)
 
 (use-package dumb-jump :ensure t
   :config (progn
@@ -1464,22 +942,6 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 ;; local lisp code
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
 
-(use-package pypytrace-mode
-  :defer t
-  :commands pypytrace-mode)
-
-(use-package kickasm-mode
-  :defer t
-  :commands kickasm-mode
-  :init (add-hook 'kickasm-mode-hook
-                  (lambda () (add-hook 'before-save-hook
-                                       (lambda ()
-                                         (whitespace-cleanup)
-                                         (indent-region (point-min) (point-max) nil)
-                                         (untabify (point-min) (point-max)))
-                                       nil
-                                       'local))))
-
 (use-package sudo-save)
 
 (use-package redo+
@@ -1487,8 +949,6 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 
 (use-package symon
   :defer t)
-
-(use-package javap-handler)
 
 (use-package sx
   :ensure t
@@ -1513,3 +973,31 @@ _C-t_: Debug test    ^ ^                              _P_: Packages
 
 (use-package cmake-mode
   :commands cmake-mode)
+
+(use-package deadgrep
+  :ensure t)
+
+(use-package pypytrace-mode
+  
+  :defer t
+  :commands pypytrace-mode)
+
+(use-package kickasm-mode
+  
+  :defer t
+  :commands kickasm-mode
+  :config (setq
+           kickasm-c64debugger-command (expand-file-name
+                                        "~/.emacs.d/c64debugger/c64debugger -autojmp -wait 4000")
+           kickasm-vice-command "x64")
+  :init (add-hook 'kickasm-mode-hook
+                  (lambda () (add-hook 'before-save-hook
+                                       (lambda ()
+                                         (whitespace-cleanup)
+                                         (indent-region (point-min) (point-max) nil)
+                                         (untabify (point-min) (point-max)))
+                                       nil
+                                       'local))))
+
+(use-package javap-handler
+  )
