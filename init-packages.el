@@ -394,11 +394,7 @@
                   lsp-modeline-diagnostics-enable nil
                   lsp-modeline-code-actions-enable nil
                   lsp-ui-sideline-code-actions-prefix "💡 "
-                  lsp-ui-sideline-update-mode 'line)
-            (if (equalp (getenv "WSL") "1")
-                (setq lsp-ui-flycheck-live-reporting nil
-                      lsp-response-timeout 5
-                      lsp-ui-sideline-enable nil))))
+                  lsp-ui-sideline-update-mode 'line)))
 
 (use-package helm-lsp
   :ensure t
@@ -806,8 +802,7 @@
                  :name "Node Attach 9229")))
 
 ;; The spacemacs default colors
-(use-package spacemacs-theme
-  :ensure t)
+;; (use-package spacemacs-theme)
 
 (let ((theme (if window-system 'spacemacs-light 'spacemacs-dark)))
   (load-theme theme t))
