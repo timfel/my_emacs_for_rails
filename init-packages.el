@@ -148,6 +148,7 @@
 (use-package projectile
   :ensure t
   :config (setq
+           projectile-indexing-method 'alien
            projectile-sort-order 'access-time
            projectile-enable-caching nil))
 (use-package helm :ensure t)
@@ -170,6 +171,9 @@
   :demand t
   :config (progn
             (global-company-mode t)
+            (setq
+             company-dabbrev-downcase 0
+             company-idle-delay (if (eq window-system 'w32) 10 0.2))
             (global-set-key (kbd "M-?") 'company-complete)))
 
 (use-package magit
@@ -320,7 +324,7 @@
             (which-key-setup-side-window-right-bottom)))
 (use-package lsp-mode
   :hook ((lsp-mode . lsp-enable-which-key-integration))
-  :preface (setq lsp-use-plists t)
+  :preface (setq lsp-use-plists (not (eq window-system 'w32)))
   :ensure t
   :demand t
   :config (progn
@@ -375,15 +379,15 @@
                   lsp-response-timeout 30
                   lsp-diagnostic-clean-after-change nil
                   lsp-eldoc-render-all nil
-                  lsp-ui-peek-always-show t
-                  lsp-ui-doc-enable t
+                  lsp-ui-peek-always-show (not (eq window-system 'w32))
+                  lsp-ui-doc-enable (not (eq window-system 'w32))
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
-                  lsp-ui-doc-use-webkit t
+                  lsp-ui-doc-use-webkit (not (eq window-system 'w32))
                   lsp-ui-doc-show-with-cursor nil
                   lsp-ui-sideline-enable nil
                   lsp-ui-sideline-show-symbol nil
-                  lsp-ui-sideline-show-hover t
+                  lsp-ui-sideline-show-hover (not (eq window-system 'w32))
                   lsp-ui-sideline-showcode-actions nil
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 5
@@ -490,7 +494,9 @@
                                                                          "com.oracle.graal.python.nodes.SpecialAttributeNames"
                                                                          "com.oracle.graal.python.nodes.ErrorMessages")))
             (setq
-             lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-22.0-b02/bin/java"
+             lsp-java-java-path (if (eq window-system 'w32)
+                                    "c:/x/labsjdk/bin/java.exe"
+                                  "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-22.0-b02/bin/java")
              lsp-java-content-provider-preferred "fernflower"
              lsp-java-save-actions-organize-imports t
              lsp-java-format-on-type-enabled nil
