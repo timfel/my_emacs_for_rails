@@ -33,6 +33,16 @@
     ;; (add-to-list 'default-frame-alist
     ;;     	 '(font . "-*-terminus-medium-*-*-*-16-*-*-*-*-*-*-*")))
 
+(if (eq window-system 'w32)
+    (set-face-attribute 'default nil :family "Consolas" :height 120))
+
+(when (eq system-type 'windows-nt)
+  (with-eval-after-load 'grep
+    ;; findstr can handle the basic find|grep use case
+    (grep-apply-setting 'grep-find-template
+                        "findstr /S /N /D:. /C:<R> <F>")
+    (setq find-name-arg nil)))
+
 (setq-default fill-column 80)
 (global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph)))
 
