@@ -25,16 +25,16 @@
 (push '(font-backend xft x) default-frame-alist)
 (setq font-lock-maximum-decoration t)
 
+(run-with-idle-timer 0 nil (lambda ()
+                        (if (memq window-system '(x pgtk))
+                            (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
+                        ;; (set-face-attribute 'default nil :family "Terminus (TTF)"  :height 100))
+                        ;; (set-face-attribute 'default nil :family "Noto Sans Mono" :height 110)
+                        ;; (add-to-list 'default-frame-alist
+                        ;;     	 '(font . "-*-terminus-medium-*-*-*-16-*-*-*-*-*-*-*")))
 
-(if (memq window-system '(x pgtk))
-    (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
-    ;; (set-face-attribute 'default nil :family "Terminus (TTF)"  :height 100))
-    ;; (set-face-attribute 'default nil :family "Noto Sans Mono" :height 110)
-    ;; (add-to-list 'default-frame-alist
-    ;;     	 '(font . "-*-terminus-medium-*-*-*-16-*-*-*-*-*-*-*")))
-
-(if (eq window-system 'w32)
-    (set-face-attribute 'default nil :family "Consolas" :height 120))
+                        (if (eq window-system 'w32)
+                            (set-face-attribute 'default nil :family "Consolas" :height 120))))
 
 (when (eq system-type 'windows-nt)
   (with-eval-after-load 'grep
