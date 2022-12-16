@@ -478,6 +478,9 @@
   (interactive)
   (treemacs t))
 
+(use-package iedit
+  :ensure t)
+
 (use-package lsp-java
   :ensure t
   :demand t
