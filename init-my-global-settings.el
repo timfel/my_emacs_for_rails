@@ -43,7 +43,7 @@
                         "findstr /S /N /D:. /C:<R> <F>")
     (setq find-name-arg nil)))
 
-(setq-default fill-column 80)
+(setq-default fill-column 79)
 (global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph)))
 
 (global-set-key [f11] 'toggle-fullscreen)
