@@ -151,10 +151,14 @@
 ;; (use-package xcscope :ensure t)
 (use-package projectile
   :ensure t
-  :config (setq
-           projectile-indexing-method 'alien
-           projectile-sort-order 'access-time
-           projectile-enable-caching nil))
+  :config (progn
+            (setq
+             projectile-indexing-method 'alien
+             projectile-sort-order 'access-time
+             projectile-enable-caching nil)
+            (add-to-list 'projectile-globally-ignored-directories "^mxbuild$")
+            (add-to-list 'projectile-globally-ignored-directories "^eln-cache$")
+            (add-to-list 'projectile-globally-ignored-directories "*site-packages")))
 (use-package helm :ensure t)
 (use-package helm-etags-plus
   :disabled
@@ -1007,6 +1011,17 @@
                                          (untabify (point-min) (point-max)))
                                        nil
                                        'local))))
+
+(use-package emms
+  :ensure t
+  :defer t
+  :if (not (eq system-type 'windows-nt))
+  :config (progn
+            (require 'emms-setup)
+            (emms-all)
+            (emms-default-players)
+            (add-to-list 'emms-info-functions 'emms-info-exiftool t)
+            (setq emms-source-file-default-directory "~/Music/")))
 
 (use-package javap-handler
   )
