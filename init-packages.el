@@ -198,7 +198,6 @@
 (use-package mw-thesaurus
   :ensure t
   :after request)
-(use-package cssh :ensure t)
 (use-package switch-window :ensure t)
 (use-package popup :ensure t)
 (use-package fuzzy :ensure t)
