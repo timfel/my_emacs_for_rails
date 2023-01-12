@@ -524,14 +524,16 @@
                                  (progn
                                    (cancel-timer timer)
                                    (progress-reporter-done progress-reporter)
-                                   (run-with-timer 2
-                                                   nil
-                                                   (lambda ()
-                                                     (message
-                                                      (with-current-buffer (get-buffer "*mxbuild*")
-                                                        (goto-char (point-max))
-                                                        (forward-line -5)
-                                                        (buffer-substring (point) (point-max))))))))))))
+                                   (if (= (process-exit-status proc) 0)
+                                       (run-with-timer 2
+                                                       nil
+                                                       (lambda ()
+                                                         (message
+                                                          (with-current-buffer (get-buffer "*mxbuild*")
+                                                            (goto-char (point-max))
+                                                            (forward-line -5)
+                                                            (buffer-substring (point) (point-max))))))
+                                     (goto-line 0 (get-buffer "*mxbuild*") t))))))))
             (require 'lsp-ui-flycheck)
             (require 'lsp-ui-sideline)
             (setq lsp-java-completion-favorite-static-members (vconcat lsp-java-completion-favorite-static-members
