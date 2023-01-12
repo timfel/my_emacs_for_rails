@@ -769,7 +769,7 @@
             ;; default settings
             (setq
              dap-stack-trace-limit 40
-             dap-auto-configure-features '(sessions locals controls tooltip)
+             dap-auto-configure-features '(sessions tooltip)
              dap-auto-show-output t
              dap-print-io nil)
             (dap-auto-configure-mode)
