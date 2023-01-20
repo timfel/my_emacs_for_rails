@@ -544,7 +544,7 @@
             (setq
              lsp-java-java-path (if (eq window-system 'w32)
                                     "c:/x/labsjdk/bin/java.exe"
-                                  "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-22.0-b02/bin/java")
+                                  "/home/tim/.mx/jdks/labsjdk-ce-20-jvmci-23.0-b05/bin/java")
              lsp-java-content-provider-preferred "fernflower"
              lsp-java-save-actions-organize-imports t
              lsp-java-format-on-type-enabled nil
