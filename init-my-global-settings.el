@@ -218,7 +218,7 @@
 (add-hook 'python-mode-hook 'turn-on-font-lock)
 (add-hook 'python-mode-hook 'friendly-whitespace)
 (add-hook 'python-mode-hook
-	  '(lambda() (progn
+	  #'(lambda() (progn
 		       ;; Auto completion
 		       (imenu-add-to-menubar "IMENU")
 		       (setq ac-sources
@@ -362,7 +362,7 @@
 
 ;; the below ensures we don't get conflicting emacs desktops for multiple instances
 (cond
- ((equalp (frame-parameter nil 'name) "evolution")
+ ((string-equal (frame-parameter nil 'name) "evolution")
   (setq desktop-base-file-name "evolution-emacs.desktop")
   (condition-case nil
       (org-caldav-sync)
@@ -370,7 +370,7 @@
   (save-some-buffers 'no-confirm)
   ;; (cfw:open-org-calendar)
   (wl))
- ((equalp (frame-parameter nil 'name) (concat invocation-name "@" system-name))
+ ((string-equal (frame-parameter nil 'name) (concat invocation-name "@" system-name))
   ;; the default emacs
   ;; Start the emacs server
   ;; (setq server-use-tcp t) ;; Use TCP mode, my socket is often unavailable
