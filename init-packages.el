@@ -855,7 +855,11 @@
   :commands helm-lsp-workspace-symbol)
 
 ;; The spacemacs default colors
-(let ((theme (if window-system 'spacemacs-light 'spacemacs-dark)))
+(let ((theme (if window-system
+                 (if (string-equal (getenv "GTK_THEME") "Adwaita:dark")
+                     'spacemacs-dark
+                   'spacemacs-light)
+               'spacemacs-dark)))
   (condition-case nil
       (load-theme theme t)
     (error
