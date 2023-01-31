@@ -339,7 +339,7 @@
   :demand t
   :config (progn
             (setq lsp-print-io nil
-                  lsp-lens-enable nil
+                  lsp-lens-enable (not (eq system-type 'windows-nt))
                   lsp-completion-enable-additional-text-edit t
                   lsp-enable-snippet t
                   lsp-enable-indentation nil
@@ -376,37 +376,38 @@
             ;; settings
             (setq lsp-ui-flycheck-live-reporting t
                   lsp-print-performance nil
-                  lsp-enable-symbol-highlighting nil ;; XXX: crashes me often!
-                  lsp-enable-links nil ;; XXX: crashes me often!
+                  lsp-enable-symbol-highlighting (not (eq system-type 'windows-nt)) ;; XXX: crashes me often!
+                  lsp-enable-links (not (eq system-type 'windows-nt)) ;; XXX: crashes me often!
                   lsp-report-if-no-buffer t
                   lsp-enable-snippet t
                   lsp-enable-xref t
                   lsp-completion-enable t
                   lsp-completion-filter-on-incomplete nil
-                  lsp-completion-show-detail nil
+                  lsp-completion-show-detail (not (eq system-type 'windows-nt))
                   lsp-completion-show-kind nil
                   lsp-completion-sort-initial-results nil
                   lsp-response-timeout 30
                   lsp-diagnostic-clean-after-change nil
-                  lsp-eldoc-render-all nil
+                  lsp-eldoc-render-all t
                   lsp-ui-peek-always-show (not (eq window-system 'w32))
                   lsp-ui-doc-enable (not (eq window-system 'w32))
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit (not (eq window-system 'w32))
                   lsp-ui-doc-show-with-cursor nil
-                  lsp-ui-sideline-enable nil
+                  lsp-ui-sideline-enable (not (eq system-type 'windows-nt))
                   lsp-ui-sideline-show-symbol nil
                   lsp-ui-sideline-show-hover (not (eq window-system 'w32))
-                  lsp-ui-sideline-showcode-actions nil
+                  lsp-ui-sideline-show-code-actions t
                   lsp-ui-sideline-ignore-duplicate t
-                  lsp-ui-sideline-delay 5
+                  lsp-ui-sideline-delay 2
                   lsp-eldoc-enable-hover nil
                   lsp-idle-delay 5.000
                   lsp-tcp-connection-timeout 20
                   lsp-modeline-diagnostics-enable nil
                   lsp-modeline-code-actions-enable nil
-                  lsp-ui-sideline-code-actions-prefix "💡 "
+                  lsp-ui-sideline-code-actions-prefix ""
+                  lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default
                   lsp-ui-sideline-update-mode 'line)))
 
 (use-package lsp-treemacs
