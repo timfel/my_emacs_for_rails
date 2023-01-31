@@ -142,6 +142,13 @@
                 (list "n" "note" 'entry (list 'file+datetree notes) "* %?\nEntered on %U\n")
                 (list "t" "todo" 'entry (list 'file+headline todos "Tasks") "* TODO [#A] %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n"))))))
 
+(use-package org-download
+  :ensure t
+  :config (setq
+           org-image-actual-width (list 900)
+           org-download-image-dir (expand-file-name "~/OneDrive/Screenshots/")
+           org-download-screenshot-method (expand-file-name "~/bin/wslscr.py %s")))
+
 ;; tags and navigation
 ;; (use-package ggtags :ensure t)
 ;; (use-package xcscope :ensure t)
