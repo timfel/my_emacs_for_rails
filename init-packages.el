@@ -146,6 +146,13 @@
                 (list "n" "note" 'entry (list 'file+datetree notes) "* %?\nEntered on %U\n")
                 (list "t" "todo" 'entry (list 'file+headline todos "Tasks") "* TODO [#A] %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n"))))))
 
+(use-package org-download
+  :ensure t
+  :config (setq
+           org-image-actual-width (list 900)
+           org-download-image-dir (expand-file-name "~/OneDrive/Screenshots/")
+           org-download-screenshot-method (expand-file-name "~/bin/wslscr.py %s")))
+
 ;; tags and navigation
 ;; (use-package ggtags :ensure t)
 ;; (use-package xcscope :ensure t)
@@ -202,7 +209,6 @@
 (use-package mw-thesaurus
   :ensure t
   :after request)
-(use-package cssh :ensure t)
 (use-package switch-window :ensure t)
 (use-package popup :ensure t)
 (use-package fuzzy :ensure t)
@@ -337,7 +343,7 @@
   :demand t
   :config (progn
             (setq lsp-print-io nil
-                  lsp-lens-enable nil
+                  lsp-lens-enable (not (eq system-type 'windows-nt))
                   lsp-completion-enable-additional-text-edit t
                   lsp-enable-snippet t
                   lsp-enable-indentation nil
@@ -374,37 +380,38 @@
             ;; settings
             (setq lsp-ui-flycheck-live-reporting t
                   lsp-print-performance nil
-                  lsp-enable-symbol-highlighting nil ;; XXX: crashes me often!
-                  lsp-enable-links nil ;; XXX: crashes me often!
+                  lsp-enable-symbol-highlighting (not (eq system-type 'windows-nt)) ;; XXX: crashes me often!
+                  lsp-enable-links (not (eq system-type 'windows-nt)) ;; XXX: crashes me often!
                   lsp-report-if-no-buffer t
                   lsp-enable-snippet t
                   lsp-enable-xref t
                   lsp-completion-enable t
                   lsp-completion-filter-on-incomplete nil
-                  lsp-completion-show-detail nil
+                  lsp-completion-show-detail (not (eq system-type 'windows-nt))
                   lsp-completion-show-kind nil
                   lsp-completion-sort-initial-results nil
                   lsp-response-timeout 30
                   lsp-diagnostic-clean-after-change nil
-                  lsp-eldoc-render-all nil
+                  lsp-eldoc-render-all t
                   lsp-ui-peek-always-show (not (eq window-system 'w32))
                   lsp-ui-doc-enable (not (eq window-system 'w32))
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit (not (eq window-system 'w32))
                   lsp-ui-doc-show-with-cursor nil
-                  lsp-ui-sideline-enable nil
+                  lsp-ui-sideline-enable (not (eq system-type 'windows-nt))
                   lsp-ui-sideline-show-symbol nil
                   lsp-ui-sideline-show-hover (not (eq window-system 'w32))
-                  lsp-ui-sideline-showcode-actions nil
+                  lsp-ui-sideline-show-code-actions t
                   lsp-ui-sideline-ignore-duplicate t
-                  lsp-ui-sideline-delay 5
+                  lsp-ui-sideline-delay 2
                   lsp-eldoc-enable-hover nil
                   lsp-idle-delay 5.000
                   lsp-tcp-connection-timeout 20
                   lsp-modeline-diagnostics-enable nil
                   lsp-modeline-code-actions-enable nil
-                  lsp-ui-sideline-code-actions-prefix "💡 "
+                  lsp-ui-sideline-code-actions-prefix ""
+                  lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default
                   lsp-ui-sideline-update-mode 'line)))
 
 (use-package lsp-treemacs
@@ -496,6 +503,49 @@
   :bind ("<f5>" . treemacs-t)
   :after (lsp-mode company lsp-treemacs)
   :config (progn
+            (defun mxclean ()
+              (interactive)
+              (make-process
+                   :name "mxclean"
+                   :sentinel (lambda (proc _)
+                               (if (not (process-live-p proc))
+                                   (message "mx clean done")))
+                   :command `("/bin/bash" "-l" "-i" "-c" ,(format "cd %s; mx clean" (vc-root-dir)))))
+            (defun mxbuild ()
+              (interactive)
+	      (require 'cl)
+              (lexical-let* ((progress-reporter
+                             (make-progress-reporter "Running mx build..."))
+                             (timer (run-with-timer
+                                     1
+                                     1
+                                     (lambda ()
+                                       (progress-reporter-update progress-reporter
+                                                                 (with-current-buffer (get-buffer "*mxbuild*")
+                                                                   (goto-char (point-max))
+                                                                   (forward-line -1)
+                                                                   (buffer-substring (point) (point-max))))))))
+                (if (get-buffer "*mxbuild*")
+                    (kill-buffer "*mxbuild*"))
+                (make-process
+                 :name "mxbuild"
+                 :buffer "*mxbuild*"
+                 :command `("/bin/bash" "-l" "-i" "-c" ,(format "cd %s; mx build" (vc-root-dir)))
+                 :sentinel (lambda (proc _)
+                             (if (not (process-live-p proc))
+                                 (progn
+                                   (cancel-timer timer)
+                                   (progress-reporter-done progress-reporter)
+                                   (if (= (process-exit-status proc) 0)
+                                       (run-with-timer 2
+                                                       nil
+                                                       (lambda ()
+                                                         (message
+                                                          (with-current-buffer (get-buffer "*mxbuild*")
+                                                            (goto-char (point-max))
+                                                            (forward-line -5)
+                                                            (buffer-substring (point) (point-max))))))
+                                     (goto-line 0 (get-buffer "*mxbuild*") t))))))))
             (require 'lsp-ui-flycheck)
             (require 'lsp-ui-sideline)
             (setq lsp-java-completion-favorite-static-members (vconcat lsp-java-completion-favorite-static-members
@@ -507,7 +557,7 @@
             (setq
              lsp-java-java-path (if (eq window-system 'w32)
                                     "c:/x/labsjdk/bin/java.exe"
-                                  "/home/tim/.mx/jdks/labsjdk-ee-17-jvmci-22.0-b02/bin/java")
+                                  "/home/tim/.mx/jdks/labsjdk-ce-20-jvmci-23.0-b05/bin/java")
              lsp-java-content-provider-preferred "fernflower"
              lsp-java-save-actions-organize-imports t
              lsp-java-format-on-type-enabled nil
@@ -731,7 +781,7 @@
             ;; default settings
             (setq
              dap-stack-trace-limit 40
-             dap-auto-configure-features '(sessions locals controls tooltip)
+             dap-auto-configure-features '(sessions tooltip)
              dap-auto-show-output t
              dap-print-io nil)
             (dap-auto-configure-mode)
@@ -818,7 +868,11 @@
   :commands helm-lsp-workspace-symbol)
 
 ;; The spacemacs default colors
-(let ((theme (if window-system 'spacemacs-light 'spacemacs-dark)))
+(let ((theme (if window-system
+                 (if (string-equal (getenv "GTK_THEME") "Adwaita:dark")
+                     'spacemacs-dark
+                   'spacemacs-light)
+               'spacemacs-dark)))
   (condition-case nil
       (load-theme theme t)
     (error
@@ -1025,3 +1079,16 @@
 
 (use-package javap-handler
   )
+
+(use-package filladapt
+  :ensure t
+  :config (add-hook 'c-mode-common-hook
+	            (lambda ()
+	              (when (featurep 'filladapt)
+	                (c-setup-filladapt)))))
+
+(use-package flymake
+  :defer t
+  :config (progn
+           (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
+           (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error)))
