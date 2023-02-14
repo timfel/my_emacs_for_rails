@@ -1,0 +1,3 @@
+[submodule "emacs-secondmate"]
+	path = emacs-secondmate
+	url = https://github.com/timfel/emacs-secondmate.git

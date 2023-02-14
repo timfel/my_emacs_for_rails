@@ -1096,3 +1096,6 @@
   :config (progn
            (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
            (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error)))
+
+(add-to-list 'load-path (locate-user-emacs-file "emacs-secondmate/emacs"))
+(use-package secondmate)
