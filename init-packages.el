@@ -509,6 +509,7 @@
                    :command `("/bin/bash" "-l" "-i" "-c" ,(format "cd %s; mx clean" (vc-root-dir)))))
             (defun mxbuild ()
               (interactive)
+	      (require 'cl)
               (lexical-let* ((progress-reporter
                              (make-progress-reporter "Running mx build..."))
                              (timer (run-with-timer
@@ -1074,3 +1075,16 @@
 
 (use-package javap-handler
   )
+
+(use-package filladapt
+  :ensure t
+  :config (add-hook 'c-mode-common-hook
+	            (lambda ()
+	              (when (featurep 'filladapt)
+	                (c-setup-filladapt)))))
+
+(use-package flymake
+  :defer t
+  :config (progn
+           (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
+           (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error)))
