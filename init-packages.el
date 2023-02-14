@@ -868,11 +868,13 @@
   :commands helm-lsp-workspace-symbol)
 
 ;; The spacemacs default colors
-(let ((theme (if window-system
-                 (if (string-equal (getenv "GTK_THEME") "Adwaita:dark")
-                     'spacemacs-dark
-                   'spacemacs-light)
-               'spacemacs-dark)))
+(let ((theme (cond ((eq window-system 'w32)
+                    'eclipse)
+                   ((eq window-system nil)
+                    'spacemacs-dark)
+                   ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
+                    'spacemacs-dark)
+                   (t 'spacemacs-light))))
   (condition-case nil
       (load-theme theme t)
     (error
@@ -884,6 +886,8 @@
 (use-package atom-one-dark-theme
   :ensure t)
 (use-package vscode-dark-plus-theme
+  :ensure t)
+(use-package eclipse-theme
   :ensure t)
 
 ;; Flyspell options
