@@ -873,7 +873,7 @@
                    ((eq window-system nil)
                     'spacemacs-dark)
                    ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
-                    'spacemacs-dark)
+                    'vscode-dark-plus)
                    (t 'spacemacs-light))))
   (condition-case nil
       (load-theme theme t)
@@ -1097,5 +1097,7 @@
            (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
            (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error)))
 
-(add-to-list 'load-path (locate-user-emacs-file "emacs-secondmate/emacs"))
-(use-package secondmate)
+(if (not (eq system-type 'windows-nt))
+    (progn
+      (add-to-list 'load-path (locate-user-emacs-file "emacs-secondmate/emacs"))
+      (use-package secondmate)))
