@@ -185,6 +185,8 @@ Non-interactive arguments are Begin End Regexp"
       (if (string-match "PROXY\s\\([^; \n\t]+\\)" wpad)
           (progn
             (setq wpad (match-string-no-properties 1 wpad))
+            (setenv "http_proxy" wpad)
+            (setenv "https_proxy" wpad)
             (if (string-match-p ":[0-9]+$" wpad)
                 (setq url-proxy-services
                       (list (cons "http" wpad)
@@ -195,6 +197,8 @@ Non-interactive arguments are Begin End Regexp"
               (message "Proxies set: %s" url-proxy-services)))
         (progn
           (setq url-proxy-services nil)
+          (setenv "http_proxy" nil)
+          (setenv "https_proxy" nil)
           (message "Proxies disabled"))))))
 
 
