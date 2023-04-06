@@ -180,6 +180,7 @@
 ;; Auto completion
 (use-package yasnippet
   :ensure t
+  :hook ((lsp-mode . yas-minor-mode))
   :config (yas-global-mode t))
 (use-package company
   :ensure t
@@ -788,6 +789,10 @@
             ;; (require 'dap-gdb-lldb)
             ))
 
+(use-package dap-gdb-lldb
+  :after dap-mode
+  :hook ((c-mode c++-mode) . (lambda () (require 'dap-gdb-lldb))))
+
 (use-package dap-lldb
   
   :after dap-mode
@@ -873,8 +878,8 @@
                    ((eq window-system nil)
                     'spacemacs-dark)
                    ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
-                    'vscode-dark-plus)
-                   (t 'spacemacs-light))))
+                    'modus-vivendi)
+                   (t 'modus-operandi))))
   (condition-case nil
       (load-theme theme t)
     (error
@@ -888,6 +893,8 @@
 (use-package vscode-dark-plus-theme
   :ensure t)
 (use-package eclipse-theme
+  :ensure t)
+(use-package modus-themes
   :ensure t)
 
 ;; Flyspell options
@@ -1101,3 +1108,19 @@
     (progn
       (add-to-list 'load-path (locate-user-emacs-file "emacs-secondmate/emacs"))
       (use-package secondmate)))
+
+(use-package exec-path-from-shell
+  :ensure t
+  :demand t
+  :if (memq window-system '(mac ns x pgtk))
+  :config (exec-path-from-shell-initialize))
+
+(use-package rustic
+  :ensure t
+  :defer t
+  :mode ("\\.rs$")
+  :config (progn
+            (add-to-list 'auto-mode-alist '("\\.rs$" . rustic-mode))
+            (setq rustic-lsp-client 'lsp-mode
+                  rustic-lsp-server
+                  lsp-rust-server)))
