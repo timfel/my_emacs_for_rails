@@ -1124,3 +1124,89 @@
             (setq rustic-lsp-client 'lsp-mode
                   rustic-lsp-server
                   lsp-rust-server)))
+
+(defun my/webkit-visit-alternate ()
+  (interactive)
+  (let ((old-val webkit-browse-url-force-new))
+    (setq webkit-browse-url-force-new nil)
+    (call-interactively 'webkit)
+    (setq webkit-browse-url-force-new old-val)))
+
+(defun my/webkit-reload-with-proxy ()
+  (interactive)
+  (if (and url-proxy-services
+           (local-variable-p 'my/webkit-proxy)
+           (buffer-local-value 'my/webkit-proxy (current-buffer)))
+      (progn
+        (webkit--proxy-set-default webkit--id)
+        (setq-local my/webkit-proxy nil))
+    (progn
+      (setq-local my/webkit-proxy (cdar url-proxy-services))
+      (webkit--proxy-set-uri webkit--id (format "http://%s" (cdar url-proxy-services)))))
+  (run-with-timer 2 nil (lambda (id) (webkit--reload id)) webkit--id))
+
+(defun webkit ()
+  (interactive)
+  (add-to-list 'load-path (locate-user-emacs-file "emacs-webkit"))
+
+  ;; If you don't care so much about privacy and want to give your data to google
+  (setq webkit-search-prefix "https://google.com/search?q=") 
+
+  ;; Specify a different set of characters use in the link hints
+  ;; For example the following are more convienent if you use dvorak
+  (setq webkit-ace-chars "1234567890")
+
+  ;; If you want history saved in a different place or
+  ;; Set to `nil' to if you don't want history saved to file (will stay in memory)
+  ;; (setq webkit-history-file "~/path/to/webkit-history") 
+
+  ;; If you want cookies saved in a different place or
+  ;; Set to `nil' to if you don't want cookies saved
+  ;; (setq webkit-cookie-file "~/path/to/cookies")
+
+  ;; See the above explination in the Background section
+  ;; This must be set before webkit.el is loaded so certain hooks aren't installed
+  ;; (setq webkit-own-window t) 
+
+  ;; Set webkit as the default browse-url browser
+  ;; (setq browse-url-browser-function 'webkit-browse-url)
+
+  ;; Force webkit to always open a new session instead of reusing a current one
+  (setq webkit-browse-url-force-new t)
+
+  ;; Globally disable javascript
+  ;; (add-hook 'webkit-new-hook #'webkit-enable-javascript)
+
+  ;; Override the "loading:" mode line indicator with an icon from `all-the-icons.el'
+  ;; You could also use a unicode icon like ↺
+  (defun webkit--display-progress (progress)
+    (setq webkit--progress-formatted
+          (if (equal progress 100.0)
+              ""
+            (format "%s%.0f%%  " (all-the-icons-faicon "spinner") progress)))
+    (force-mode-line-update))
+
+  ;; Set action to be taken on a download request. Predefined actions are
+  ;; `webkit-download-default', `webkit-download-save', and `webkit-download-open'
+  ;; where the save function saves to the download directory, the open function
+  ;; opens in a temp buffer and the default function interactively prompts.
+  (setq webkit-download-action-alist '(("\\.pdf\\'" . webkit-download-open)
+                                       ("\\.png\\'" . webkit-download-save)
+                                       (".*" . webkit-download-default)))
+
+  ;; Globally use a proxy
+  ;; (add-hook 'webkit-new-hook (lambda () (webkit-set-proxy "socks://localhost:8000")))
+
+  ;; Globally use the simple dark mode
+  ;; (setq webkit-dark-mode t)
+
+  (require 'org)
+  (require 'ol)
+  (require 'webkit)
+  (require 'webkit-ace) ;; If you want link hinting
+  ;; (require 'webkit-dark) ;; If you want to use the simple dark mode
+
+  (define-key webkit-mode-map (kbd "C-x C-v") #'my/webkit-visit-alternate)
+  (define-key webkit-mode-map (kbd "C-x r p") #'my/webkit-reload-with-proxy)
+
+  (call-interactively 'webkit))
