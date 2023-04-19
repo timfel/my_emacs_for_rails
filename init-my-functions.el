@@ -199,7 +199,8 @@ Non-interactive arguments are Begin End Regexp"
           (setq url-proxy-services nil)
           (setenv "http_proxy" nil)
           (setenv "https_proxy" nil)
-          (message "Proxies disabled"))))))
+          (message "Proxies disabled")))))
+  (cdar url-proxy-services))
 
 
 
