@@ -36,6 +36,7 @@
  '(proced-auto-update-interval 2)
  '(safe-local-variable-values
    '((smie-indent-basic . 4)
+     (smie-indent-basic . 4)
      (jsonnet-indent-level . 4)
      (flycheck-disabled-checkers emacs-lisp-checkdoc)
      (reftex-default-bibliography "fallback.bib")
@@ -54,6 +55,7 @@
      (encoding . us-ascii)
      (encoding . utf-8)))
  '(scroll-bar-mode nil)
+ '(secondmate-url "https://lively-kernel.org/swacopilot")
  '(show-paren-mode t)
  '(tool-bar-mode nil)
  '(warning-suppress-types '((comp))))
