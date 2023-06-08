@@ -187,14 +187,20 @@ Non-interactive arguments are Begin End Regexp"
             (setq wpad (match-string-no-properties 1 wpad))
             (setenv "http_proxy" wpad)
             (setenv "https_proxy" wpad)
-            (if (string-match-p ":[0-9]+$" wpad)
+            (if (string-match "\\([^:]+\\):\\([0-9]+\\)$" wpad)
+                (progn
+                  (setq url-proxy-services
+                        (list (cons "http" wpad)
+                              (cons "https" wpad)))
+                  (setq copilot-network-proxy
+                        `(:host ,(match-string-no-properties 1 wpad)
+                                :port ,(string-to-number (match-string-no-properties 2 wpad)))))
+              (progn
                 (setq url-proxy-services
-                      (list (cons "http" wpad)
-                            (cons "https" wpad)))
-              (setq url-proxy-services
-                    (list (cons "http" (concat wpad ":80"))
-                          (cons "https" (concat wpad ":443"))))
-              (message "Proxies set: %s" url-proxy-services)))
+                      (list (cons "http" (concat wpad ":80"))
+                            (cons "https" (concat wpad ":443"))))
+                (setq copilot-network-proxy `(:host ,wpad :port 443))))
+            (message "Proxies set: %s" url-proxy-services))
         (progn
           (setq url-proxy-services nil)
           (setenv "http_proxy" nil)

@@ -1,3 +1,4 @@
+
 (package-initialize)
 (require 'compile)
 (require 'cc-mode)
@@ -17,6 +18,10 @@
    (package-refresh-contents)
    (package-install 'use-package)
    (require 'use-package)))
+
+(use-package ht
+  :ensure t
+  :demand t)
 
 ;; additional modes I like
 (use-package yaml-mode :ensure t
@@ -191,7 +196,10 @@
              company-dabbrev-downcase 0
              company-idle-delay (if (eq window-system 'w32) 10 0.2))
             (global-set-key (kbd "M-?") 'company-complete)))
-
+(use-package company-box
+  :ensure t
+  :if (window-system)
+  :hook (company-mode . company-box-mode))
 (use-package magit
   :bind ("C-x C-z" . magit-status)
   :ensure t
@@ -1107,7 +1115,8 @@
 (if (not (eq system-type 'windows-nt))
     (progn
       (add-to-list 'load-path (locate-user-emacs-file "emacs-secondmate/emacs"))
-      (use-package secondmate)))
+      (use-package secondmate
+        :config (setq secondmate-url "https://lively-kernel.org/swacopilot"))))
 
 (use-package exec-path-from-shell
   :ensure t
@@ -1124,6 +1133,35 @@
             (setq rustic-lsp-client 'lsp-mode
                   rustic-lsp-server
                   lsp-rust-server)))
+
+
+(use-package quelpa
+  :ensure t
+  :defer t
+  :commands copilot-mode
+  :config (progn
+            (quelpa
+             '(copilot
+               :fetcher git
+               :url "https://github.com/zerolfx/copilot.el"
+               :branch "main"
+               :files ("dist" "*.el")))
+            (setq copilot-idle-delay 1
+                  copilot-log-max 100)
+            (require 'copilot)
+
+            ;; Based on function from https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
+            (defun copilot-complete-or-accept ()
+              "Command that either triggers a completion or accepts one if one is available."
+              (interactive)
+              (if (copilot--overlay-visible)
+                  (progn
+                    (copilot-accept-completion))
+                (copilot-complete)))
+            (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
+
+(add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
+(require 'jsonnet-language-server)
 
 (defun my/webkit-visit-alternate ()
   (interactive)
