@@ -459,3 +459,5 @@
      (add-to-list 'exec-path (f-join nvm (car (sort (directory-files nvm) #'string-greaterp)) "bin"))
      (setenv "PATH" (string-join exec-path path-separator))))
 
+(setq frame-title-format
+      '(multiple-frames "%b" ("" (:eval (or (treemacs-workspace->name (treemacs-current-workspace)) "%b")))))
