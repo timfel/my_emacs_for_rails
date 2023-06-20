@@ -153,10 +153,12 @@
 
 (use-package org-download
   :ensure t
-  :config (setq
-           org-image-actual-width (list 900)
-           org-download-image-dir (expand-file-name "~/OneDrive/Screenshots/")
-           org-download-screenshot-method (expand-file-name "~/bin/wslscr.py %s")))
+  :config (progn
+            (setq
+             org-image-actual-width (list 600)
+             org-download-image-org-width 200
+             org-download-screenshot-method (expand-file-name "~/bin/wslscr.py %s"))
+            (set-default 'org-download-image-dir (expand-file-name "~/OneDrive/Screenshots/"))))
 
 ;; tags and navigation
 ;; (use-package ggtags :ensure t)
