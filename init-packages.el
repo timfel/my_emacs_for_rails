@@ -172,6 +172,7 @@
              projectile-enable-caching nil)
             (add-to-list 'projectile-globally-ignored-directories "^mxbuild$")
             (add-to-list 'projectile-globally-ignored-directories "^eln-cache$")
+            (add-to-list 'projectile-globally-ignored-directories "^eevenv$")
             (add-to-list 'projectile-globally-ignored-directories "*site-packages")))
 (use-package helm :ensure t)
 (use-package helm-etags-plus
@@ -1136,6 +1137,9 @@
                   rustic-lsp-server
                   lsp-rust-server)))
 
+(use-package multiple-cursors
+  :ensure t
+  :defer t)
 
 (use-package quelpa
   :ensure t
