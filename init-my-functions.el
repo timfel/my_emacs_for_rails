@@ -185,8 +185,11 @@ Non-interactive arguments are Begin End Regexp"
       (if (string-match "PROXY\s\\([^; \n\t]+\\)" wpad)
           (progn
             (setq wpad (match-string-no-properties 1 wpad))
-            (setenv "http_proxy" wpad)
-            (setenv "https_proxy" wpad)
+            (let ((wpad_with_protocol (if (not (string-match "^https?://" wpad))
+                                          (concat "http://" wpad)
+                                        wpad)))
+              (setenv "http_proxy" wpad_with_protocol)
+              (setenv "https_proxy" wpad_with_protocol))
             (if (string-match "\\([^:]+\\):\\([0-9]+\\)$" wpad)
                 (progn
                   (setq url-proxy-services
