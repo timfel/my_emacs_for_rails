@@ -198,7 +198,26 @@
             ;; (add-hook 'magit-mode-hook 'magit-load-config-extensions)
             ;; (setq with-editor-emacsclient-executable "/usr/bin/emacsclient-snapshot")
             (setq magit-auto-revert-tracked-only t)
-            (magit-auto-revert-mode)))
+            (magit-auto-revert-mode)
+            (if (eq system-type 'windows-nt)
+                ;; These also help on older git, they are default these days on Windows
+                ;; git config --global core.preloadindex true
+                ;; git config --global core.fscache true
+                ;; git config --global gc.auto 256
+                (progn
+                  ;; reduce the number of things in the status buffer to reduce calls
+                  (mapcar (lambda (x) (delete x magit-status-sections-hook))
+                          (list 'magit-insert-am-sequence
+                                'magit-insert-sequencer-sequence
+                                'magit-insert-bisect-output
+                                'magit-insert-bisect-rest 
+                                'magit-insert-bisect-log
+                                'magit-insert-stashes
+                                'magit-insert-unpushed-to-pushremote
+                                'magit-insert-unpushed-to-upstream-or-recent
+                                'magit-insert-unpulled-from-pushremote
+                                'magit-insert-unpulled-from-upstream))
+                  )))))
 
 ;; Tools
 (use-package ace-window
