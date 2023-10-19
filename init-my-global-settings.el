@@ -49,7 +49,7 @@
 (global-set-key [f11] 'toggle-fullscreen)
 
 ;; if run in terminal, use the mouse
-(xterm-mouse-mode 1)
+(xterm-mouse-mode 0)
 
 ;; Don't even blink
 (blink-cursor-mode 0)
@@ -97,8 +97,10 @@
 (setq-default c-basic-offset 4)
 
 ;; some navigation keys
-(global-set-key (kbd "M-]") 'forward-list)
-(global-set-key (kbd "M-[") 'backward-list)
+(if (window-system)
+    (progn
+      (global-set-key (kbd "M-]") 'forward-list)
+      (global-set-key (kbd "M-[") 'backward-list)))
 
 (defun my/previous-position ()
   (interactive)
@@ -385,29 +387,34 @@
   (setq desktop-base-file-name "emacs.desktop")))
 
 ;; Sessions
-;; (desktop-save-mode 1)
-;; (setq
-;;  history-length 250
-;;  desktop-restore-eager 5
-;;  desktop-buffers-not-to-save
-;;  (concat "\\("
-;; 	 "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
-;; 	 "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
-;; 	 "\\)$"))
-;; (add-to-list 'desktop-globals-to-save 'file-name-history)
-;; (add-to-list 'desktop-modes-not-to-save 'dired-mode)
-;; (add-to-list 'desktop-modes-not-to-save 'Info-mode)
-;; (add-to-list 'desktop-modes-not-to-save 'info-lookup-mode)
-;; (add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
-;; (add-to-list 'desktop-modes-not-to-save 'grep-mode)
-;; (add-to-list 'desktop-modes-not-to-save 'magit-mode)
-;; (add-to-list 'desktop-modes-not-to-save 'treemacs-mode)
-;; (run-with-idle-timer
-;;  30 ; seconds
-;;  t  ; repeat
-;;  'desktop-save-in-desktop-dir)
+(desktop-save-mode 1)
+(setq
+ history-length 10
+ desktop-restore-eager 5
+ desktop-buffers-not-to-save
+ (concat "\\("
+	 "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
+	 "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
+	 "\\)$"))
+(add-to-list 'desktop-globals-to-save 'file-name-history)
+(add-to-list 'desktop-modes-not-to-save 'dired-mode)
+(add-to-list 'desktop-modes-not-to-save 'Info-mode)
+(add-to-list 'desktop-modes-not-to-save 'info-lookup-mode)
+(add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
+(add-to-list 'desktop-modes-not-to-save 'grep-mode)
+(add-to-list 'desktop-modes-not-to-save 'magit-mode)
+(add-to-list 'desktop-modes-not-to-save 'treemacs-mode)
+(add-to-list 'desktop-modes-not-to-save 'deadgrep-mode)
+(run-with-idle-timer
+ 30 ; seconds
+ t  ; repeat
+ 'desktop-save-in-desktop-dir)
 
-(if (eq window-system 'pgtk)
+(if (or
+     (eq window-system 'pgtk)
+     (and (eq window-system nil)
+          (eq system-type 'gnu/linux)
+          (getenv "WAYLAND_DISPLAY")))
     (progn
       (setq wl-copy-process nil)
       (defun wl-copy (text)
