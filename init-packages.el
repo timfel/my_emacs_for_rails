@@ -775,6 +775,7 @@
                 ;; (call-interactively #'dap-ui-locals)
                 ;; (call-interactively #'dap-ui-sessions)
                 (if (get-buffer-window "*dap-ui-repl*")
+                    (delete-other-windows)
                     (delete-window (get-buffer-window "*dap-ui-repl*")))
                 (display-buffer-in-side-window (get-buffer "*dap-ui-repl*") `((side . bottom)
                                                                               (slot . 1)
@@ -887,7 +888,7 @@
 (let ((theme (cond ((eq window-system 'w32)
                     'eclipse)
                    ((eq window-system nil)
-                    'spacemacs-dark)
+                    'eclipse)
                    ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
                     'modus-vivendi)
                    (t 'modus-operandi))))
@@ -1140,6 +1141,13 @@
 (use-package multiple-cursors
   :ensure t
   :defer t)
+
+(use-package emojify
+  :ensure t
+  :config (progn
+            (when (member "Segoe UI Emoji" (font-family-list))
+              (set-fontset-font
+               t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend))))
 
 (use-package quelpa
   :ensure t
