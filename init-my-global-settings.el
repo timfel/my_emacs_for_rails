@@ -22,7 +22,7 @@
 (setq inhibit-startup-screen t)
 (setq initial-scratch-message nil)
 ;; Get back font antialiasing
-(push '(font-backend xft x) default-frame-alist)
+;; (push '(font-backend xft x) default-frame-alist)
 (setq font-lock-maximum-decoration t)
 
 (run-with-idle-timer 0 nil (lambda ()
