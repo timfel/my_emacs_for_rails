@@ -1089,6 +1089,10 @@
                                        nil
                                        'local))))
 
+(use-package vterm
+  :if (not (eq system-type 'windows-nt))
+  :ensure t)
+
 (use-package emms
   :ensure t
   :defer t
@@ -1139,6 +1143,10 @@
                   lsp-rust-server)))
 
 (use-package multiple-cursors
+  :ensure t
+  :defer t)
+
+(use-package adaptive-wrap
   :ensure t
   :defer t)
 
