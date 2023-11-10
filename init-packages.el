@@ -206,6 +206,7 @@
                 ;; git config --global gc.auto 256
                 (progn
                   ;; reduce the number of things in the status buffer to reduce calls
+                  (setq magit-refresh-status-buffer nil)
                   (mapcar (lambda (x) (delete x magit-status-sections-hook))
                           (list 'magit-insert-am-sequence
                                 'magit-insert-sequencer-sequence
@@ -217,7 +218,7 @@
                                 'magit-insert-unpushed-to-upstream-or-recent
                                 'magit-insert-unpulled-from-pushremote
                                 'magit-insert-unpulled-from-upstream))
-                  )))))
+                  ))))
 
 ;; Tools
 (use-package ace-window
