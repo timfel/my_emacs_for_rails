@@ -535,49 +535,6 @@
   :bind ("<f5>" . treemacs-t)
   :after (lsp-mode company lsp-treemacs)
   :config (progn
-            (defun mxclean ()
-              (interactive)
-              (make-process
-                   :name "mxclean"
-                   :sentinel (lambda (proc _)
-                               (if (not (process-live-p proc))
-                                   (message "mx clean done")))
-                   :command `("/bin/bash" "-l" "-i" "-c" ,(format "cd %s; mx clean" (vc-root-dir)))))
-            (defun mxbuild ()
-              (interactive)
-	      (require 'cl)
-              (lexical-let* ((progress-reporter
-                             (make-progress-reporter "Running mx build..."))
-                             (timer (run-with-timer
-                                     1
-                                     1
-                                     (lambda ()
-                                       (progress-reporter-update progress-reporter
-                                                                 (with-current-buffer (get-buffer "*mxbuild*")
-                                                                   (goto-char (point-max))
-                                                                   (forward-line -1)
-                                                                   (buffer-substring (point) (point-max))))))))
-                (if (get-buffer "*mxbuild*")
-                    (kill-buffer "*mxbuild*"))
-                (make-process
-                 :name "mxbuild"
-                 :buffer "*mxbuild*"
-                 :command `("/bin/bash" "-l" "-i" "-c" ,(format "cd %s; mx build" (vc-root-dir)))
-                 :sentinel (lambda (proc _)
-                             (if (not (process-live-p proc))
-                                 (progn
-                                   (cancel-timer timer)
-                                   (progress-reporter-done progress-reporter)
-                                   (if (= (process-exit-status proc) 0)
-                                       (run-with-timer 2
-                                                       nil
-                                                       (lambda ()
-                                                         (message
-                                                          (with-current-buffer (get-buffer "*mxbuild*")
-                                                            (goto-char (point-max))
-                                                            (forward-line -5)
-                                                            (buffer-substring (point) (point-max))))))
-                                     (goto-line 0 (get-buffer "*mxbuild*") t))))))))
             (require 'lsp-ui-flycheck)
             (require 'lsp-ui-sideline)
             (setq lsp-java-completion-favorite-static-members (vconcat lsp-java-completion-favorite-static-members
@@ -586,10 +543,10 @@
                                                                          "com.oracle.graal.python.nodes.SpecialMethodNames"
                                                                          "com.oracle.graal.python.nodes.SpecialAttributeNames"
                                                                          "com.oracle.graal.python.nodes.ErrorMessages")))
+            (if (not (eq window-system 'w32))
+                (setq
+                 lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-21-jvmci-23.1-b15/bin/java"))
             (setq
-             lsp-java-java-path (if (eq window-system 'w32)
-                                    "c:/x/labsjdk/bin/java.exe"
-                                  "/home/tim/.mx/jdks/labsjdk-ce-20-jvmci-23.0-b05/bin/java")
              lsp-java-content-provider-preferred "fernflower"
              lsp-java-save-actions-organize-imports t
              lsp-java-format-on-type-enabled nil
