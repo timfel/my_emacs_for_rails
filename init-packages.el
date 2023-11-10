@@ -1,3 +1,4 @@
+
 (package-initialize)
 (require 'compile)
 (require 'cc-mode)
@@ -17,6 +18,10 @@
    (package-refresh-contents)
    (package-install 'use-package)
    (require 'use-package)))
+
+(use-package ht
+  :ensure t
+  :demand t)
 
 ;; additional modes I like
 (use-package yaml-mode :ensure t
@@ -148,10 +153,12 @@
 
 (use-package org-download
   :ensure t
-  :config (setq
-           org-image-actual-width (list 900)
-           org-download-image-dir (expand-file-name "~/OneDrive/Screenshots/")
-           org-download-screenshot-method (expand-file-name "~/bin/wslscr.py %s")))
+  :config (progn
+            (setq
+             org-image-actual-width (list 600)
+             org-download-image-org-width 200
+             org-download-screenshot-method (expand-file-name "~/bin/wslscr.py %s"))
+            (set-default 'org-download-image-dir (expand-file-name "~/OneDrive/Screenshots/"))))
 
 ;; tags and navigation
 ;; (use-package ggtags :ensure t)
@@ -165,6 +172,7 @@
              projectile-enable-caching nil)
             (add-to-list 'projectile-globally-ignored-directories "^mxbuild$")
             (add-to-list 'projectile-globally-ignored-directories "^eln-cache$")
+            (add-to-list 'projectile-globally-ignored-directories "^eevenv$")
             (add-to-list 'projectile-globally-ignored-directories "*site-packages")))
 (use-package helm :ensure t)
 (use-package helm-etags-plus
@@ -180,6 +188,7 @@
 ;; Auto completion
 (use-package yasnippet
   :ensure t
+  :hook ((lsp-mode . yas-minor-mode))
   :config (yas-global-mode t))
 (use-package company
   :ensure t
@@ -190,7 +199,10 @@
              company-dabbrev-downcase 0
              company-idle-delay (if (eq window-system 'w32) 10 0.2))
             (global-set-key (kbd "M-?") 'company-complete)))
-
+(use-package company-box
+  :ensure t
+  :if (window-system)
+  :hook (company-mode . company-box-mode))
 (use-package magit
   :bind ("C-x C-z" . magit-status)
   :ensure t
@@ -783,6 +795,7 @@
                 ;; (call-interactively #'dap-ui-locals)
                 ;; (call-interactively #'dap-ui-sessions)
                 (if (get-buffer-window "*dap-ui-repl*")
+                    (delete-other-windows)
                     (delete-window (get-buffer-window "*dap-ui-repl*")))
                 (display-buffer-in-side-window (get-buffer "*dap-ui-repl*") `((side . bottom)
                                                                               (slot . 1)
@@ -807,6 +820,10 @@
             (dap-auto-configure-mode)
             ;; (require 'dap-gdb-lldb)
             ))
+
+(use-package dap-gdb-lldb
+  :after dap-mode
+  :hook ((c-mode c++-mode) . (lambda () (require 'dap-gdb-lldb))))
 
 (use-package dap-lldb
   
@@ -891,10 +908,10 @@
 (let ((theme (cond ((eq window-system 'w32)
                     'eclipse)
                    ((eq window-system nil)
-                    'spacemacs-dark)
+                    'eclipse)
                    ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
-                    'vscode-dark-plus)
-                   (t 'spacemacs-light))))
+                    'modus-vivendi)
+                   (t 'modus-operandi))))
   (condition-case nil
       (load-theme theme t)
     (error
@@ -908,6 +925,8 @@
 (use-package vscode-dark-plus-theme
   :ensure t)
 (use-package eclipse-theme
+  :ensure t)
+(use-package modus-themes
   :ensure t)
 
 ;; Flyspell options
@@ -1090,6 +1109,10 @@
                                        nil
                                        'local))))
 
+(use-package vterm
+  :if (not (eq system-type 'windows-nt))
+  :ensure t)
+
 (use-package emms
   :ensure t
   :defer t
@@ -1120,4 +1143,150 @@
 (if (not (eq system-type 'windows-nt))
     (progn
       (add-to-list 'load-path (locate-user-emacs-file "emacs-secondmate/emacs"))
-      (use-package secondmate)))
+      (use-package secondmate
+        :config (setq secondmate-url "https://lively-kernel.org/swacopilot"))))
+
+(use-package exec-path-from-shell
+  :ensure t
+  :demand t
+  :if (memq window-system '(mac ns x pgtk))
+  :config (exec-path-from-shell-initialize))
+
+(use-package rustic
+  :ensure t
+  :defer t
+  :mode ("\\.rs$")
+  :config (progn
+            (add-to-list 'auto-mode-alist '("\\.rs$" . rustic-mode))
+            (setq rustic-lsp-client 'lsp-mode
+                  rustic-lsp-server
+                  lsp-rust-server)))
+
+(use-package multiple-cursors
+  :ensure t
+  :defer t)
+
+(use-package adaptive-wrap
+  :ensure t
+  :defer t)
+
+(use-package emojify
+  :ensure t
+  :config (progn
+            (when (member "Segoe UI Emoji" (font-family-list))
+              (set-fontset-font
+               t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend))))
+
+(use-package quelpa
+  :ensure t
+  :defer t
+  :commands copilot-mode
+  :config (progn
+            (quelpa
+             '(copilot
+               :fetcher git
+               :url "https://github.com/zerolfx/copilot.el"
+               :branch "main"
+               :files ("dist" "*.el")))
+            (setq copilot-idle-delay 1
+                  copilot-log-max 100)
+            (require 'copilot)
+
+            ;; Based on function from https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
+            (defun copilot-complete-or-accept ()
+              "Command that either triggers a completion or accepts one if one is available."
+              (interactive)
+              (if (copilot--overlay-visible)
+                  (progn
+                    (copilot-accept-completion))
+                (copilot-complete)))
+            (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
+
+(add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
+(require 'jsonnet-language-server)
+
+(defun my/webkit-visit-alternate ()
+  (interactive)
+  (let ((old-val webkit-browse-url-force-new))
+    (setq webkit-browse-url-force-new nil)
+    (call-interactively 'webkit)
+    (setq webkit-browse-url-force-new old-val)))
+
+(defun my/webkit-reload-with-proxy ()
+  (interactive)
+  (if (and url-proxy-services
+           (local-variable-p 'my/webkit-proxy)
+           (buffer-local-value 'my/webkit-proxy (current-buffer)))
+      (progn
+        (webkit--proxy-set-default webkit--id)
+        (setq-local my/webkit-proxy nil))
+    (progn
+      (setq-local my/webkit-proxy (cdar url-proxy-services))
+      (webkit--proxy-set-uri webkit--id (format "http://%s" (cdar url-proxy-services)))))
+  (run-with-timer 2 nil (lambda (id) (webkit--reload id)) webkit--id))
+
+(defun webkit ()
+  (interactive)
+  (add-to-list 'load-path (locate-user-emacs-file "emacs-webkit"))
+
+  ;; If you don't care so much about privacy and want to give your data to google
+  (setq webkit-search-prefix "https://google.com/search?q=") 
+
+  ;; Specify a different set of characters use in the link hints
+  ;; For example the following are more convienent if you use dvorak
+  (setq webkit-ace-chars "1234567890")
+
+  ;; If you want history saved in a different place or
+  ;; Set to `nil' to if you don't want history saved to file (will stay in memory)
+  ;; (setq webkit-history-file "~/path/to/webkit-history") 
+
+  ;; If you want cookies saved in a different place or
+  ;; Set to `nil' to if you don't want cookies saved
+  ;; (setq webkit-cookie-file "~/path/to/cookies")
+
+  ;; See the above explination in the Background section
+  ;; This must be set before webkit.el is loaded so certain hooks aren't installed
+  ;; (setq webkit-own-window t) 
+
+  ;; Set webkit as the default browse-url browser
+  ;; (setq browse-url-browser-function 'webkit-browse-url)
+
+  ;; Force webkit to always open a new session instead of reusing a current one
+  (setq webkit-browse-url-force-new t)
+
+  ;; Globally disable javascript
+  ;; (add-hook 'webkit-new-hook #'webkit-enable-javascript)
+
+  ;; Override the "loading:" mode line indicator with an icon from `all-the-icons.el'
+  ;; You could also use a unicode icon like ↺
+  (defun webkit--display-progress (progress)
+    (setq webkit--progress-formatted
+          (if (equal progress 100.0)
+              ""
+            (format "%s%.0f%%  " (all-the-icons-faicon "spinner") progress)))
+    (force-mode-line-update))
+
+  ;; Set action to be taken on a download request. Predefined actions are
+  ;; `webkit-download-default', `webkit-download-save', and `webkit-download-open'
+  ;; where the save function saves to the download directory, the open function
+  ;; opens in a temp buffer and the default function interactively prompts.
+  (setq webkit-download-action-alist '(("\\.pdf\\'" . webkit-download-open)
+                                       ("\\.png\\'" . webkit-download-save)
+                                       (".*" . webkit-download-default)))
+
+  ;; Globally use a proxy
+  ;; (add-hook 'webkit-new-hook (lambda () (webkit-set-proxy "socks://localhost:8000")))
+
+  ;; Globally use the simple dark mode
+  ;; (setq webkit-dark-mode t)
+
+  (require 'org)
+  (require 'ol)
+  (require 'webkit)
+  (require 'webkit-ace) ;; If you want link hinting
+  ;; (require 'webkit-dark) ;; If you want to use the simple dark mode
+
+  (define-key webkit-mode-map (kbd "C-x C-v") #'my/webkit-visit-alternate)
+  (define-key webkit-mode-map (kbd "C-x r p") #'my/webkit-reload-with-proxy)
+
+  (call-interactively 'webkit))
