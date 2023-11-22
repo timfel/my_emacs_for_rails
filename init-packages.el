@@ -1135,6 +1135,10 @@
               (set-fontset-font
                t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend))))
 
+(use-package github-explorer
+  :defer t
+  :ensure t)
+
 (use-package quelpa
   :ensure t
   :defer t
