@@ -219,17 +219,22 @@
                 (progn
                   ;; reduce the number of things in the status buffer to reduce calls
                   (setq magit-refresh-status-buffer nil)
-                  (mapcar (lambda (x) (delete x magit-status-sections-hook))
+                  (mapcar (lambda (x) (remove-hook 'magit-status-sections-hook x))
                           (list 'magit-insert-am-sequence
+                                'magit-insert-rebase-sequence
                                 'magit-insert-sequencer-sequence
                                 'magit-insert-bisect-output
-                                'magit-insert-bisect-rest 
+                                'magit-insert-bisect-rest
                                 'magit-insert-bisect-log
+                                'magit-insert-merge-log
                                 'magit-insert-stashes
+                                'magit-insert-status-headers
+                                'magit-insert-tags-header
                                 'magit-insert-unpushed-to-pushremote
                                 'magit-insert-unpushed-to-upstream-or-recent
                                 'magit-insert-unpulled-from-pushremote
-                                'magit-insert-unpulled-from-upstream))
+                                'magit-insert-unpulled-from-upstream
+                                ))
                   ))))
 
 ;; Tools
