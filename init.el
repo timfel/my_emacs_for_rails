@@ -1,3 +1,4 @@
+(setq gc-cons-threshold most-positive-fixnum)
 (load (expand-file-name (locate-user-emacs-file "init-packages.el")))
 (load (expand-file-name (locate-user-emacs-file "init-my-functions.el")))
 (load (expand-file-name (locate-user-emacs-file "init-my-global-settings.el")))
@@ -70,3 +71,5 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(lsp-ui-sideline-code-action ((t (:foreground "firebrick")))))
+
+(setq gc-cons-threshold (* 1024 1024 100)) ; 100 MiB
