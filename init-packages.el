@@ -89,15 +89,13 @@
 
 (use-package org
   :commands org-mode
-  :bind (("C-c a" . org-agend)
-         ("S-<right>" . org-shiftright)
-         ("S-<left>" . org-shiftleft)
+  :mode ("\\.org$")
+  :bind (("C-c a" . org-agenda)
          ("C-c c" . org-capture))
   :config (progn
-            ;; (add-hook 'org-mode-hook (lambda ()
-            ;;                            (progn
-            ;;                              (local-set-key (kbd "<return>") 'org-insert-heading)
-            ;;                              (local-set-key (kbd "M-<return>") 'org-insert-subheading)))
+            (define-key org-mode-map (kbd "C-c <right>") #'org-shiftright)
+            (define-key org-mode-map (kbd "C-c <left>") #'org-shiftleft)
+            (define-key org-mode-map (kbd "C-c M-RET") #'org-insert-subheading)
             (add-hook 'org-mode-hook (lambda () (run-at-time "1 sec" nil (lambda () (fci-mode 0)))))
             (require 'org-tempo)
             (let ((todos (if (eq system-type 'windows-nt)
@@ -153,6 +151,7 @@
 
 (use-package org-download
   :ensure t
+  :after org
   :config (progn
             (setq
              org-image-actual-width (list 600)
@@ -165,6 +164,7 @@
 ;; (use-package xcscope :ensure t)
 (use-package projectile
   :ensure t
+  :defer t
   :config (progn
             (setq
              projectile-indexing-method 'alien
@@ -174,35 +174,43 @@
             (add-to-list 'projectile-globally-ignored-directories "^eln-cache$")
             (add-to-list 'projectile-globally-ignored-directories "^eevenv$")
             (add-to-list 'projectile-globally-ignored-directories "*site-packages")))
-(use-package helm :ensure t)
+
+(use-package helm
+  :ensure t
+  :demand t)
+
 (use-package helm-etags-plus
   :disabled
   :ensure t
-  :config (progn
-            (global-set-key (kbd "M-.") 'helm-etags-plus-select)))
+  :bind (("M-." . helm-etags-plus-select)))
+
 (use-package helm-projectile
   :ensure t
-  :config (progn
-            (global-set-key (kbd "C-t") 'helm-projectile-find-file)))
+  :after (projectile helm)
+  :bind (("C-t" . helm-projectile-find-file)))
 
 ;; Auto completion
 (use-package yasnippet
   :ensure t
-  :hook ((lsp-mode . yas-minor-mode))
-  :config (yas-global-mode t))
+  :hook ((lsp-mode . yas-minor-mode)
+         (python-mode . yas-minor-mode)))
+
 (use-package company
   :ensure t
   :demand t
+  :bind (("M-?" . company-complete))
   :config (progn
             (global-company-mode t)
             (setq
              company-dabbrev-downcase 0
-             company-idle-delay (if (eq window-system 'w32) 10 0.2))
-            (global-set-key (kbd "M-?") 'company-complete)))
+             company-idle-delay (if (eq window-system 'w32) 10 0.2))))
+
 (use-package company-box
   :ensure t
+  :after company
   :if (window-system)
   :hook (company-mode . company-box-mode))
+
 (use-package magit
   :bind ("C-x C-z" . magit-status)
   :ensure t
@@ -236,30 +244,36 @@
 (use-package ace-window
   :ensure t
   :bind ("C-x o" . ace-window))
-(use-package fic-mode :ensure t)
-(use-package request :ensure t)
+
+(use-package fic-mode
+  :ensure t
+  :demand t)
+
+(use-package request
+  :ensure t
+  :defer t)
+
 (use-package mw-thesaurus
   :ensure t
+  :commands (mw-thesaurus-lookup mw-thesaurus-lookup-at-point mw-thesaurus-lookup-dwim)
   :after request)
-(use-package switch-window :ensure t)
+
+;; (use-package switch-window :ensure t)
+
 (use-package popup :ensure t)
+
 (use-package fuzzy :ensure t)
+
 (use-package pcache :ensure t)
+
 (use-package logito :ensure t)
+
 (use-package textmate
   :ensure t
+  :bind (("C-/" . comment-or-uncomment-region-or-line))
+  :demand t
   :config (progn
-            (textmate-mode 1)
-            ;; Commenting blocks
-            (global-set-key [(control /)] 'comment-or-uncomment-region-or-line)))
-(use-package fill-column-indicator
-  :ensure t
-  :config (progn
-            (setq fci-rule-column 81)
-            ;; (setq fci-always-use-textual-rule t)
-            ;; (define-globalized-minor-mode global-fci-mode fci-mode (lambda () (fci-mode 1)))
-            ;; (global-fci-mode 1)
-            ))
+            (textmate-mode 1)))
 
 (use-package all-the-icons
   :demand t
@@ -267,10 +281,12 @@
 
 (use-package all-the-icons-completion
   :after all-the-icons
+  :demand t
   :ensure t)
 
 (use-package all-the-icons-dired
   :after all-the-icons
+  :demand t
   :ensure t)
 
 (use-package doom-modeline
@@ -321,6 +337,7 @@
             (setq TeX-auto-save t)
             (setq TeX-save-query nil)
             (setq TeX-parse-self t)))
+
 (use-package reftex
   :after tex
   :ensure t
@@ -356,7 +373,6 @@
 (use-package treemacs
   ;; :pin melpa-stable
   :ensure t
-  :demand t
   :config
   (progn
     (setq treemacs-file-follow-delay 1.0
@@ -368,6 +384,7 @@
   :config (progn
             (which-key-mode)
             (which-key-setup-side-window-right-bottom)))
+
 (use-package lsp-mode
   :hook ((lsp-mode . lsp-enable-which-key-integration))
   :preface (setq lsp-use-plists (not (eq window-system 'w32)))
@@ -526,13 +543,13 @@
   (treemacs t))
 
 (use-package iedit
+  :demand t
   :ensure t)
 
 (use-package lsp-java
   :ensure t
-  :demand t
   :hook (java-mode . (lambda () (require 'lsp-java) (require 'dap-java)))
-  :bind ("<f5>" . treemacs-t)
+  :bind (("<f5>" . treemacs-t))
   :after (lsp-mode company lsp-treemacs)
   :config (progn
             (require 'lsp-ui-flycheck)
@@ -784,9 +801,7 @@
   :hook ((c-mode c++-mode) . (lambda () (require 'dap-gdb-lldb))))
 
 (use-package dap-lldb
-  
   :after dap-mode
-  :defer t
   :hook ((c-mode c++-mode) . (lambda () (require 'dap-lldb)))
   :config (progn
             (setq
@@ -830,11 +845,10 @@
                                    :name "LLDB::Attach")))))))
 
 (use-package dap-hydra
-  
+  :defer t
   :after dap-mode)
 
-(use-package dap-cpptools
-  
+(use-package dap-cpptools  
   :defer t
   :hook ((c-mode c++-mode) . (lambda () (require 'dap-cpptools)))
   :after dap-mode)
@@ -844,7 +858,6 @@
   :ensure t)
 
 (use-package dap-node
-  
   :after dap-mode
   :config (dap-register-debug-template
            "Node Attach 9229"
@@ -860,6 +873,7 @@
 
 (use-package helm-lsp
   :ensure t
+  :after (helm lsp-mode)
   :commands helm-lsp-workspace-symbol)
 
 ;; The spacemacs default colors
@@ -877,37 +891,47 @@
       (load-theme theme t))))
 
 (use-package almost-mono-themes
+  :defer t
   :ensure t)
 (use-package atom-one-dark-theme
+  :defer t
   :ensure t)
 (use-package vscode-dark-plus-theme
+  :defer t
   :ensure t)
 (use-package eclipse-theme
+  :defer t
   :ensure t)
 (use-package modus-themes
+  :defer t
   :ensure t)
 
 ;; Flyspell options
-(use-package ispell :ensure t)
-(use-package flyspell :ensure t)
-(add-to-list 'ispell-dictionary-alist
-             '("de"
-               "[a-zA-Z\304\326\334\344\366\337\374]"
-               "[^a-zA-Z\304\326\334\344\366\337\374]"
-               "[']" t ("-C" "-d" "de_DE") "~latin1" iso-8859-15))
-(setq ispell-program-name "aspell")
-(setq ispell-list-command "list")
-(setq ispell-extra-args '("--sug-mode=fast"))
-(setq flyspell-issue-message-flag nil)
-(defun fd-switch-dictionary()
-  (interactive)
-  (let* ((dic ispell-current-dictionary)
-         (change (if (string= dic "de") "english" "de")))
-    (ispell-change-dictionary change)
-    (message "Dictionary switched from %s to %s" dic change)
-    ))
-(global-set-key (kbd "<f8>") 'fd-switch-dictionary)
+(use-package ispell
+  :ensure t
+  :commands ispell
+  :bind (("<f8>" . fd-switch-dictionary))
+  :config (progn
+            (add-to-list 'ispell-dictionary-alist
+                         '("de"
+                           "[a-zA-Z\304\326\334\344\366\337\374]"
+                           "[^a-zA-Z\304\326\334\344\366\337\374]"
+                           "[']" t ("-C" "-d" "de_DE") "~latin1" iso-8859-15))
+            (defun fd-switch-dictionary()
+              (interactive)
+              (let* ((dic ispell-current-dictionary)
+                     (change (if (string= dic "de") "english" "de")))
+                (ispell-change-dictionary change)
+                (message "Dictionary switched from %s to %s" dic change)))
+            (setq ispell-program-name "aspell"
+                  ispell-list-command "list"
+                  ispell-extra-args '("--sug-mode=fast"))))
 
+(use-package flyspell
+  :after ispell
+  :commands flyspell-mode
+  :ensure t
+  :config (setq flyspell-issue-message-flag nil))
 
 ;; Term mode
 ;; enable cua and transient mark modes in term-line-mode
@@ -931,6 +955,7 @@
 ;; Interactively Do Things
 (use-package ido
   :ensure t
+  :bind (("C-." . ido-goto-symbol))
   :config (progn
             (ido-mode t)
 
@@ -980,16 +1005,18 @@
                     (unless (or (null position) (null name)
                                 (string= (car imenu--rescan-item) name))
                       (add-to-list 'symbol-names name)
-                      (add-to-list 'name-and-pos (cons name position))))))))
+                      (add-to-list 'name-and-pos (cons name position))))))))))
 
-            (global-set-key [(control .)] 'ido-goto-symbol)))
-
-(use-package erefactor :ensure t)
-
-(use-package esup
+(use-package erefactor
+  :defer t
   :ensure t)
 
-(use-package dumb-jump :ensure t
+(use-package esup
+  :commands esup
+  :ensure t)
+
+(use-package dumb-jump
+  :ensure t
   :config (progn
             (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
 
@@ -1013,9 +1040,11 @@
 (use-package sudo-save)
 
 (use-package redo+
-  :config (global-set-key [(control -)] 'redo))
+  :demand t
+  :bind (("C--" . redo)))
 
 (use-package symon
+  :commands symon-mode
   :defer t)
 
 (use-package sx
@@ -1031,27 +1060,30 @@
                      ("s" . sx-search)))
 
 (use-package narrow-indirect
-  :config (progn
-             (define-key ctl-x-4-map "nd" #'ni-narrow-to-defun-indirect-other-window)
-             (define-key ctl-x-4-map "nn" #'ni-narrow-to-region-indirect-other-window)
-             (define-key ctl-x-4-map "np" #'ni-narrow-to-page-indirect-other-window)))
+  :bind (:map ctl-x-4-map
+              ("nd" . ni-narrow-to-defun-indirect-other-window)
+              ("nn" . ni-narrow-to-region-indirect-other-window)
+              ("np" . ni-narrow-to-page-indirect-other-window)))
 
 (use-package visual-fill-column
   :ensure t)
 
 (use-package cmake-mode
+  :mode ("CMakeLists\\.txt$" "\\.cmake$")
   :commands cmake-mode)
 
 (use-package deadgrep
-  :ensure t)
+  :commands (rg deadgrep)
+  :ensure t
+  :config (defun rg ()
+            (interactive)
+            (call-interactively #'deadgrep)))
 
 (use-package pypytrace-mode
-  
   :defer t
   :commands pypytrace-mode)
 
 (use-package kickasm-mode
-  
   :defer t
   :commands kickasm-mode
   :config (setq
@@ -1067,10 +1099,6 @@
                                        nil
                                        'local))))
 
-(use-package vterm
-  :if (not (eq system-type 'windows-nt))
-  :ensure t)
-
 (use-package emms
   :ensure t
   :defer t
@@ -1082,8 +1110,7 @@
             (add-to-list 'emms-info-functions 'emms-info-exiftool t)
             (setq emms-source-file-default-directory "~/Music/")))
 
-(use-package javap-handler
-  )
+(use-package javap-handler)
 
 (use-package filladapt
   :ensure t
@@ -1094,6 +1121,7 @@
 
 (use-package flymake
   :defer t
+  :after lsp-mode
   :config (progn
            (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
            (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error)))
@@ -1102,6 +1130,9 @@
     (progn
       (add-to-list 'load-path (locate-user-emacs-file "emacs-secondmate/emacs"))
       (use-package secondmate
+        :defer t
+        :bind (("C-c M-/" . secondmate))
+        :commands secondmate
         :config (setq secondmate-url "https://lively-kernel.org/swacopilot"))))
 
 (use-package exec-path-from-shell
@@ -1130,6 +1161,7 @@
 
 (use-package emojify
   :ensure t
+  :commands emojify-insert-emoji
   :config (progn
             (when (member "Segoe UI Emoji" (font-family-list))
               (set-fontset-font
@@ -1164,8 +1196,8 @@
                 (copilot-complete)))
             (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
 
-(add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
-(require 'jsonnet-language-server)
+;; (add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
+;; (require 'jsonnet-language-server)
 
 (defun my/webkit-visit-alternate ()
   (interactive)
