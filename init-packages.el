@@ -152,7 +152,11 @@
 (use-package org-download
   :ensure t
   :after org
+  :commands org-screenshot
   :config (progn
+            (defun org-screenshot ()
+              (interactive)
+              (call-interactively #'org-download-screenshot))
             (setq
              org-image-actual-width (list 600)
              org-download-image-org-width 200
@@ -164,7 +168,6 @@
 ;; (use-package xcscope :ensure t)
 (use-package projectile
   :ensure t
-  :defer t
   :config (progn
             (setq
              projectile-indexing-method 'alien
