@@ -34,7 +34,7 @@
                         ;;     	 '(font . "-*-terminus-medium-*-*-*-16-*-*-*-*-*-*-*")))
 
                         (if (eq window-system 'w32)
-                            (set-face-attribute 'default nil :family "Consolas" :height 120))))
+                            (set-face-attribute 'default nil :family "Consolas" :height 105))))
 
 (when (eq system-type 'windows-nt)
   (with-eval-after-load 'grep
