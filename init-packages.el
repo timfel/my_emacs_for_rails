@@ -217,6 +217,9 @@
                 ;; git config --global core.fscache true
                 ;; git config --global gc.auto 256
                 (progn
+                  ;; do not show diff when committing
+                  (remove-hook 'server-switch-hook 'magit-commit-diff)
+                  (remove-hook 'with-editor-filter-visit-hook 'magit-commit-diff)
                   ;; reduce the number of things in the status buffer to reduce calls
                   (setq magit-refresh-status-buffer nil)
                   (mapcar (lambda (x) (remove-hook 'magit-status-sections-hook x))
