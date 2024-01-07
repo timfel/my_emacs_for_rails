@@ -365,7 +365,6 @@
 ;; the below ensures we don't get conflicting emacs desktops for multiple instances
 (cond
  ((string-equal (frame-parameter nil 'name) "evolution")
-  (setq desktop-base-file-name "evolution-emacs.desktop")
   (condition-case nil
       (org-caldav-sync)
     (error nil))
@@ -382,33 +381,7 @@
           (server-force-stop))
     (if (file-exists-p "~/.emacs.d/server/server")
         (delete-file "~/.emacs.d/server/server"))
-    (server-start)))
- (t
-  (setq desktop-base-file-name "emacs.desktop")))
-
-;; Sessions
-(desktop-save-mode 1)
-(setq
- history-length 10
- desktop-restore-eager 5
- desktop-buffers-not-to-save
- (concat "\\("
-	 "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
-	 "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
-	 "\\)$"))
-(add-to-list 'desktop-globals-to-save 'file-name-history)
-(add-to-list 'desktop-modes-not-to-save 'dired-mode)
-(add-to-list 'desktop-modes-not-to-save 'Info-mode)
-(add-to-list 'desktop-modes-not-to-save 'info-lookup-mode)
-(add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
-(add-to-list 'desktop-modes-not-to-save 'grep-mode)
-(add-to-list 'desktop-modes-not-to-save 'magit-mode)
-(add-to-list 'desktop-modes-not-to-save 'treemacs-mode)
-(add-to-list 'desktop-modes-not-to-save 'deadgrep-mode)
-(run-with-idle-timer
- 30 ; seconds
- t  ; repeat
- 'desktop-save-in-desktop-dir)
+    (server-start))))
 
 (if (or
      (eq window-system 'pgtk)

@@ -376,11 +376,51 @@
 (use-package treemacs
   ;; :pin melpa-stable
   :ensure t
-  :config
-  (progn
-    (setq treemacs-file-follow-delay 1.0
-          treemacs-width 45
-          treemacs-width-is-initially-locked t)))
+  :config (progn
+            (require 'desktop)
+
+            ;; Sessions
+            (defun my/treemacs-desktop-hook ()
+              (dolist (buffer (buffer-list))
+                (let ((name (buffer-name buffer)))
+                  (if (and (not (string-match-p "\\*" name))
+                           (not (buffer-modified-p buffer)))
+                      (kill-buffer buffer))))
+              (if desktop-save-mode
+                  (desktop-save))
+              (desktop-save-mode-off)
+              (setq
+               desktop-base-file-name
+               (concat (treemacs-workspace->name (treemacs-current-workspace))
+                       ".desktop")
+               desktop-base-lock-name
+               (concat (treemacs-workspace->name (treemacs-current-workspace))
+                       ".emacs.desktop.lock"))
+              (desktop-read)
+              (desktop-save-mode 1))
+            (add-hook 'treemacs-switch-workspace-hook #'my/treemacs-desktop-hook)
+
+            (setq
+             history-length 10
+             desktop-restore-eager 5
+             desktop-auto-save-timeout 15
+             desktop-buffers-not-to-save (concat "\\("
+	                                         "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
+	                                         "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
+	                                         "\\)$"))
+            (add-to-list 'desktop-globals-to-save 'file-name-history)
+            (add-to-list 'desktop-modes-not-to-save 'dired-mode)
+            (add-to-list 'desktop-modes-not-to-save 'Info-mode)
+            (add-to-list 'desktop-modes-not-to-save 'info-lookup-mode)
+            (add-to-list 'desktop-modes-not-to-save 'fundamental-mode)
+            (add-to-list 'desktop-modes-not-to-save 'grep-mode)
+            (add-to-list 'desktop-modes-not-to-save 'magit-mode)
+            (add-to-list 'desktop-modes-not-to-save 'treemacs-mode)
+            (add-to-list 'desktop-modes-not-to-save 'deadgrep-mode)
+
+            (setq treemacs-file-follow-delay 1.0
+                  treemacs-width 45
+                  treemacs-width-is-initially-locked t)))
 
 (use-package which-key
   :ensure t
