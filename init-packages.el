@@ -89,7 +89,8 @@
 
 (use-package org
   :commands org-mode
-  :mode ("\\.org$")
+  :mode (("\\.org$" . org-mode))
+  :ensure org
   :bind (("C-c a" . org-agenda)
          ("C-c c" . org-capture))
   :config (progn
