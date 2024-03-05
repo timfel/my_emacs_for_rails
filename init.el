@@ -1,3 +1,4 @@
+(setq gc-cons-threshold most-positive-fixnum)
 (load (expand-file-name (locate-user-emacs-file "init-packages.el")))
 (load (expand-file-name (locate-user-emacs-file "init-my-functions.el")))
 (load (expand-file-name (locate-user-emacs-file "init-my-global-settings.el")))
@@ -32,10 +33,13 @@
      ("XXX" . "#dc752f")
      ("XXXX" . "#dc752f")
      ("???" . "#dc752f")))
+ '(nxml-child-indent 4)
+ '(nxml-outline-child-indent 4)
  '(pdf-view-midnight-colors '("#655370" . "#fbf8ef"))
  '(proced-auto-update-interval 2)
  '(safe-local-variable-values
    '((smie-indent-basic . 4)
+     (smie-indent-basic . 4)
      (smie-indent-basic . 4)
      (jsonnet-indent-level . 4)
      (flycheck-disabled-checkers emacs-lisp-checkdoc)
@@ -56,6 +60,7 @@
      (encoding . utf-8)))
  '(scroll-bar-mode nil)
  '(secondmate-url "https://lively-kernel.org/swacopilot")
+ '(sgml-basic-offset 4)
  '(show-paren-mode t)
  '(tool-bar-mode nil)
  '(warning-suppress-types '((comp))))
@@ -66,3 +71,5 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(lsp-ui-sideline-code-action ((t (:foreground "firebrick")))))
+
+(setq gc-cons-threshold (* 1024 1024 100)) ; 100 MiB
