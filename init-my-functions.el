@@ -189,7 +189,9 @@ Non-interactive arguments are Begin End Regexp"
                                           (concat "http://" wpad)
                                         wpad)))
               (setenv "http_proxy" wpad_with_protocol)
-              (setenv "https_proxy" wpad_with_protocol))
+              (setenv "https_proxy" wpad_with_protocol)
+              (setenv "HTTP_PROXY" wpad_with_protocol)
+              (setenv "HTTPS_PROXY" wpad_with_protocol))
             (if (string-match "\\([^:]+\\):\\([0-9]+\\)$" wpad)
                 (progn
                   (setq url-proxy-services
@@ -208,6 +210,8 @@ Non-interactive arguments are Begin End Regexp"
           (setq url-proxy-services nil)
           (setenv "http_proxy" nil)
           (setenv "https_proxy" nil)
+          (setenv "HTTP_PROXY" nil)
+          (setenv "HTTPS_PROXY" nil)
           (message "Proxies disabled")))))
   (cdar url-proxy-services))
 
