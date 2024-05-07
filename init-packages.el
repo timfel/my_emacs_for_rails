@@ -1219,6 +1219,9 @@
               (set-fontset-font
                t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend))))
 
+(use-package re-builder
+  :config (setq reb-re-syntax 'string))
+
 (use-package github-explorer
   :defer t
   :ensure t)
