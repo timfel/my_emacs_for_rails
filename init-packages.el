@@ -1164,6 +1164,9 @@
 
 (use-package javap-handler)
 
+(use-package typescript-mode
+  :ensure t)
+
 (use-package filladapt
   :ensure t
   :config (add-hook 'c-mode-common-hook
