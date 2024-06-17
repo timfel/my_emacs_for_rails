@@ -150,6 +150,10 @@
                 (list "n" "note" 'entry (list 'file+datetree notes) "* %?\nEntered on %U\n")
                 (list "t" "todo" 'entry (list 'file+headline todos "Tasks") "* TODO [#A] %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n"))))))
 
+(use-package ox-gfm
+  :ensure t
+  :after org)
+
 (use-package org-download
   :ensure t
   :after org
@@ -594,6 +598,9 @@
   (interactive)
   (treemacs t))
 
+(use-package powershell
+  :ensure t)
+
 (use-package iedit
   :demand t
   :ensure t)
@@ -616,6 +623,8 @@
             (if (not (eq window-system 'w32))
                 (setq
                  lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-latest-23+18-jvmci-b01/bin/java"))
+              (setq
+               lsp-java-java-path (expand-file-name "~/../../.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")))
             (setq
              lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true")
              lsp-java-content-provider-preferred "fernflower"
@@ -931,6 +940,10 @@
   :commands helm-lsp-workspace-symbol)
 
 ;; The spacemacs default colors
+
+(use-package eclipse-theme
+  :ensure t)
+
 (let ((theme (cond ((eq window-system 'w32)
                     'eclipse)
                    ((eq window-system nil)
@@ -1197,6 +1210,12 @@
   :demand t
   :if (memq window-system '(mac ns x pgtk))
   :config (exec-path-from-shell-initialize))
+
+(if (eq window-system 'w32)
+    (let ((path (shell-command-to-string "powershell.exe -Command \"echo $Env:PATH\"")))
+      (setenv "PATH" path)
+      (setq exec-path (append (parse-colon-path path) (list exec-directory)))
+      (setq-default eshell-path-env path)))
 
 (use-package rustic
   :ensure t
