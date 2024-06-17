@@ -600,6 +600,7 @@
 
 (use-package lsp-java
   :ensure t
+  :demand t
   :hook (java-mode . (lambda () (require 'lsp-java) (require 'dap-java)))
   :bind (("<f5>" . treemacs-t))
   :after (lsp-mode company lsp-treemacs)
@@ -614,7 +615,7 @@
                                                                          "com.oracle.graal.python.nodes.ErrorMessages")))
             (if (not (eq window-system 'w32))
                 (setq
-                 lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-21-jvmci-23.1-b22/bin/java"))
+                 lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-latest-23+18-jvmci-b01/bin/java"))
             (setq
              lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true")
              lsp-java-content-provider-preferred "fernflower"
@@ -655,6 +656,7 @@
                        lsp-session-file (expand-file-name (locate-user-emacs-file (format ".lsp-session-v1-%s" wsname)))))))
               (message (format "Setting Eclipse workspace to %s, session to %s" lsp-java-workspace-dir lsp-session-file))
               (message (format "You may have to adapt %s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs to give the default VM the name that mx told you" lsp-java-workspace-dir))
+              (find-file-noselect (format "%s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs" lsp-java-workspace-dir))
               lsp-java-workspace-dir)
 
             (with-eval-after-load 'lsp-treemacs
