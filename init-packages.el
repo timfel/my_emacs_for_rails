@@ -622,7 +622,7 @@
                                                                          "com.oracle.graal.python.nodes.ErrorMessages")))
             (if (not (eq window-system 'w32))
                 (setq
-                 lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-latest-23+18-jvmci-b01/bin/java"))
+                 lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-latest-23+18-jvmci-b01/bin/java")
               (setq
                lsp-java-java-path (expand-file-name "~/../../.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")))
             (setq
