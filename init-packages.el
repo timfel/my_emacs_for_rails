@@ -94,6 +94,9 @@
   :bind (("C-c a" . org-agenda)
          ("C-c c" . org-capture))
   :config (progn
+            (org-babel-do-load-languages
+             'org-babel-load-languages '((C . t) (shell . t) (python t) (ruby . t) (js . t)))
+            (setq org-log-done 'time)
             (define-key org-mode-map (kbd "C-c <right>") #'org-shiftright)
             (define-key org-mode-map (kbd "C-c <left>") #'org-shiftleft)
             (define-key org-mode-map (kbd "C-c M-RET") #'org-insert-subheading)
@@ -288,8 +291,7 @@
   :ensure t
   :bind (("C-/" . comment-or-uncomment-region-or-line))
   :demand t
-  :config (progn
-            (textmate-mode 1)))
+  :config (textmate-define-comment-line))
 
 (use-package all-the-icons
   :demand t
