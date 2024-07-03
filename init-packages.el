@@ -100,7 +100,6 @@
             (define-key org-mode-map (kbd "C-c <right>") #'org-shiftright)
             (define-key org-mode-map (kbd "C-c <left>") #'org-shiftleft)
             (define-key org-mode-map (kbd "C-c M-RET") #'org-insert-subheading)
-            (add-hook 'org-mode-hook (lambda () (run-at-time "1 sec" nil (lambda () (fci-mode 0)))))
             (require 'org-tempo)
             (let ((todos (if (eq system-type 'windows-nt)
                              (expand-file-name "~/../../OneDrive/todo.org")
