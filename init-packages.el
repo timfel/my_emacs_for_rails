@@ -579,6 +579,21 @@
 ;; (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
 (add-hook 'java-mode-hook (lambda () (company-mode t)))
 
+(use-package mmm-mode
+  :ensure t
+  :demand t
+  :config (progn
+            (require 'mmm-auto)
+            (setq mmm-global-mode 'maybe)
+            (mmm-add-classes
+             '((java-text-block
+                :submode fundamental-mode
+                :front ".+\"\"\"$"
+                :back ".*\"\"\".*"
+                :face mmm-code-submode-face
+                )))
+            (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)))
+
 ;; bind C-c C-d dynamically
 (fset 'my/dap-debug 'dap-debug)
 
@@ -1022,6 +1037,7 @@
 
 ;; Interactively Do Things
 (use-package ido
+  :demand t
   :ensure t
   :bind (("C-." . ido-goto-symbol))
   :config (progn
@@ -1240,9 +1256,37 @@
   :ensure t
   :commands emojify-insert-emoji
   :config (progn
-            (when (member "Segoe UI Emoji" (font-family-list))
-              (set-fontset-font
-               t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend))))
+            (set-fontset-font
+             t
+             'emoji
+             (cond
+              ((member "Apple Color Emoji" (font-family-list)) "Apple Color Emoji")
+              ((member "Noto Color Emoji" (font-family-list)) "Noto Color Emoji")
+              ((member "Noto Emoji" (font-family-list)) "Noto Emoji")
+              ((member "Segoe UI Emoji" (font-family-list)) "Segoe UI Emoji")  ; 🧗
+              ((member "Symbola" (font-family-list)) "Symbola")))
+
+            (set-fontset-font
+             t
+             'symbol
+             (cond
+              ((member "Segoe UI Symbol" (font-family-list)) "Segoe UI Symbol")
+              ((member "Apple Symbols" (font-family-list)) "Apple Symbols")
+              ((member "Symbola" (font-family-list)) "Symbola")))
+
+            ;; nice on windows...
+            (cond
+             ((eq system-type 'windows-nt)
+              (set-fontset-font t '(#x1F300 . #x1F5FF) "Segoe UI Symbol")))  ; 🔁, Miscellaneous Symbols and Pictographs
+
+            (add-hook 'java-mode-hook
+                      (lambda ()
+                        (setq prettify-symbols-alist
+                              '(("@SuppressWarnings(\"unused\")" . ?🤷)))
+                        (prettify-symbols-mode 1)))
+
+            (setq emojify-display-style 'unicode)
+            (setq emojify-emoji-styles '(unicode))))
 
 (use-package re-builder
   :config (setq reb-re-syntax 'string))
