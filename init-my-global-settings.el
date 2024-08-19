@@ -46,7 +46,11 @@
 (setq-default fill-column 79)
 (global-set-key (kbd "M-q") (lambda () (interactive) (fill-paragraph)))
 
-(global-set-key [f11] 'toggle-fullscreen)
+(global-set-key
+ [f11]
+ (lambda ()
+   (interactive)
+   (toggle-frame-fullscreen)))
 
 ;; if run in terminal, use the mouse
 (xterm-mouse-mode 0)
