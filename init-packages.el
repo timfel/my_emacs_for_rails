@@ -623,7 +623,7 @@
                                                                          "com.oracle.graal.python.nodes.ErrorMessages")))
             (if (not (eq window-system 'w32))
                 (setq
-                 lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-latest-23+18-jvmci-b01/bin/java")
+                 lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")
               (setq
                lsp-java-java-path (expand-file-name "~/../../.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")))
             (setq
@@ -637,6 +637,9 @@
              lsp-java-inhibit-message t
              lsp-java-completion-import-order ["java" "javax" "org" "com"]
              lsp-java-import-order ["java" "javax" "org" "com"])
+
+            (setq lsp-java-imports-gradle-wrapper-checksums
+                  [(:sha256 "504b38a11c466aecb2f5c0b0d8ce0ed7ffa810bf70b9b7a599c570051be8fb4e" :allowed t)])
 
 	    (setq dap-java-default-debug-port 8000)
             (with-eval-after-load 'lsp-treemacs
@@ -1022,6 +1025,7 @@
 
 ;; Interactively Do Things
 (use-package ido
+  :demand t
   :ensure t
   :bind (("C-." . ido-goto-symbol))
   :config (progn
