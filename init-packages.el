@@ -1,4 +1,3 @@
-
 (package-initialize)
 (require 'compile)
 (require 'cc-mode)
@@ -68,7 +67,7 @@
                     (end (or end (point-max))))
                 (while (and (setq state (apply 'ruby-parse-partial end state))
                             (nth 2 state) (>= (nth 2 state) 0) (< (point) end)))))
-            
+
             (add-hook 'ruby-mode-hook 'turn-on-font-lock)
             (add-hook 'ruby-mode-hook 'friendly-whitespace)
             (add-hook 'ruby-mode-hook '(lambda() (progn
@@ -96,6 +95,7 @@
   :config (progn
             (org-babel-do-load-languages
              'org-babel-load-languages '((C . t) (shell . t) (python t) (ruby . t) (js . t)))
+
             (setq org-log-done 'time)
             (define-key org-mode-map (kbd "C-c <right>") #'org-shiftright)
             (define-key org-mode-map (kbd "C-c <left>") #'org-shiftleft)
@@ -108,6 +108,7 @@
                              (expand-file-name "~/../../OneDrive/notes.org")
                            (expand-file-name "~/OneDrive/notes.org"))))
               (setq
+               org-return-follows-link t
                org-file-apps '((auto-mode . emacs)
                               ("\\.mm\\'" . default)
                               ("\\.x?html?\\'" . default)
@@ -167,8 +168,124 @@
             (setq
              org-image-actual-width (list 600)
              org-download-image-org-width 200
-             org-download-screenshot-method (expand-file-name "~/bin/wslscr.py %s"))
-            (set-default 'org-download-image-dir (expand-file-name "~/OneDrive/Screenshots/"))))
+             org-download-screenshot-method (if (eq system-type 'windows-nt)
+                                                (expand-file-name "~/dotfiles/bin/wslscr.py %s")
+                                              (expand-file-name "~/bin/wslscr.py %s")))
+            (set-default 'org-download-image-dir
+                         (if (eq system-type 'windows-nt)
+                             (expand-file-name "~/../../OneDrive/Screenshots/")
+                           (expand-file-name "~/OneDrive/Screenshots/")))))
+
+(use-package hide-mode-line
+  :ensure t
+  :after org-present)
+
+(use-package org-present
+  :ensure t
+  :after (org visual-fill-column)
+  :bind (:map org-mode-map
+              ("<f12>" . (lambda ()
+                           (interactive)
+                           (delete-other-windows)
+                           (toggle-frame-fullscreen)
+                           (if org-present-mode
+                               (org-present-quit)
+                             (org-present))))) 
+  :config (progn
+            ;; Load org-faces to make sure we can set appropriate faces
+            (require 'org-faces)
+
+            ;; Resize Org headings
+            (dolist (face '((org-level-1 . 1.2)
+                            (org-level-2 . 1.1)
+                            (org-level-3 . 1.05)
+                            (org-level-4 . 1.0)
+                            (org-level-5 . 1.1)
+                            (org-level-6 . 1.1)
+                            (org-level-7 . 1.1)
+                            (org-level-8 . 1.1)))
+              (set-face-attribute (car face) nil :weight 'medium :height (cdr face)))
+
+            ;; Make the document title a bit bigger
+            (set-face-attribute 'org-document-title nil :weight 'bold :height 1.3)
+
+            ;; Make sure certain org faces use the fixed-pitch face when variable-pitch-mode is on
+            ;; This can be globally set
+            (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+            (set-face-attribute 'org-table nil :inherit 'fixed-pitch)
+            (set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
+            (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+            (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+            (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+            (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+            (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+
+            (setq org-present-startup-folded nil
+                  org-present-text-scale 2
+                  org-present-cursor-cache nil))
+  :hook ((org-present-mode . (lambda ()
+                               ;; Hide emphasis markers on formatted text
+                               (setq org-hide-emphasis-markers t)
+                               ;; Set a blank header line string to create blank space at the top
+                               (setq header-line-format " ")
+                               ;; bit more space between lines
+                               (setq line-spacing 0.5)
+                               ;; Load theme
+                               (load-theme 'spacemacs-dark t)
+                               ;; non-transparent emacs
+                               (set-frame-parameter (selected-frame) 'alpha '(96 . 100))
+                               ;; Tweak font sizes
+                               (setq-local face-remapping-alist '((default (:height 3.0) variable-pitch)
+                                     (header-line (:height 8.0) variable-pitch)
+                                     (org-document-title (:height 3.5) org-document-title)
+                                     (org-code (:height 3.1) fixed-pitch)
+                                     (org-verbatim (:height 3.1) org-verbatim)
+                                     (org-block (:height 2.5) org-block)
+                                     (org-block-begin-line (:height 1.4) org-block)))
+                               ;; remove menubar
+                               (menu-bar-mode 0)
+                               (hide-mode-line-mode 1)
+                               (org-present-big)
+                               (org-display-inline-images)
+                               (internal-show-cursor (selected-window) nil)
+                               (setq buffer-read-only t)
+                               ;; variable sized fonts
+                               (variable-pitch-mode 1)
+                               ;; center document
+                               (setq fill-column 57
+                                     visual-fill-column-width 40
+                                     visual-fill-column-adjust-for-text-scale t
+                                     visual-fill-column-center-text t)
+                               (visual-fill-column-mode 1)
+                               (visual-line-mode 1)))
+         (org-present-mode-quit . (lambda ()
+                                    ;; Hide emphasis markers on formatted text
+                                    (setq org-hide-emphasis-markers nil)
+                                    ;; reset header
+                                    (setq header-line-format nil)
+                                    ;; reset line spacing
+                                    (setq line-spacing nil)
+                                    ;; reset theme
+                                    (my/load-default-theme)
+                                    ;; non-transparent emacs
+                                    (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+                                    ;; reset font sizes
+                                    (setq-local face-remapping-alist nil)
+                                    ;; re-add menu
+                                    (menu-bar-mode 1)
+                                    (hide-mode-line-mode 0)
+                                    (org-present-small)
+                                    (internal-show-cursor (selected-window) t)
+                                    (setq buffer-read-only nil)
+                                    ;; code sized fonts
+                                    (variable-pitch-mode 0)
+                                    ;; stop centering document
+                                    (setq visual-fill-column-width 110
+                                          visual-fill-column-adjust-for-text-scale t
+                                          visual-fill-column-center-text nil)
+                                    (visual-fill-column-mode 0)
+                                    (setq visual-fill-column-center-text nil)
+                                    (visual-line-mode 0)))))
 
 ;; tags and navigation
 ;; (use-package ggtags :ensure t)
@@ -419,9 +536,9 @@
              desktop-restore-eager 5
              desktop-auto-save-timeout 15
              desktop-buffers-not-to-save (concat "\\("
-	                                         "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
-	                                         "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
-	                                         "\\)$"))
+                                                 "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
+                                                 "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
+                                                 "\\)$"))
             (add-to-list 'desktop-globals-to-save 'file-name-history)
             (add-to-list 'desktop-modes-not-to-save 'dired-mode)
             (add-to-list 'desktop-modes-not-to-save 'Info-mode)
@@ -475,8 +592,8 @@
             ;; (define-key lsp-mode-map (kbd "M-.") #'lsp-find-definition)
             ;; (define-key lsp-mode-map (kbd "C-M-.") #'lsp-find-references)
             ;; performance tips from readme
-	    (defun my-minibuffer-setup-hook ()
-	       (setq gc-cons-threshold most-positive-fixnum))
+            (defun my-minibuffer-setup-hook ()
+               (setq gc-cons-threshold most-positive-fixnum))
             (defun my-minibuffer-exit-hook ()
               (setq gc-cons-threshold 10000000))
             (add-hook 'minibuffer-setup-hook #'my-minibuffer-setup-hook)
@@ -578,6 +695,21 @@
 (add-hook 'java-mode-hook 'friendly-whitespace)
 ;; (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
 (add-hook 'java-mode-hook (lambda () (company-mode t)))
+
+(use-package mmm-mode
+  :ensure t
+  :demand t
+  :config (progn
+            (require 'mmm-auto)
+            (setq mmm-global-mode 'maybe)
+            (mmm-add-classes
+             '((java-text-block
+                :submode fundamental-mode
+                :front ".+\"\"\"$"
+                :back ".*\"\"\".*"
+                :face mmm-code-submode-face
+                )))
+            (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)))
 
 ;; bind C-c C-d dynamically
 (fset 'my/dap-debug 'dap-debug)
@@ -690,8 +822,7 @@
                   (seq-filter (lambda (elt) (and (file-directory-p (concat (file-name-as-directory directory) elt))
                                                  (not (f-symlink-p (concat (file-name-as-directory directory) elt)))
                                                  (not (string-prefix-p "." elt))
-                                                 (not (string-prefix-p "mxbuild" elt))
-                                                 (not (string-prefix-p "mx." elt)))) current-directory-list)))))
+                                                 (not (string-prefix-p "mxbuild" elt)))) current-directory-list)))))
 
 (defun my/lsp/reload-all-java-buffers ()
   (interactive)
@@ -715,7 +846,7 @@
       (let ((name (buffer-name buffer))
             (mode (with-current-buffer buffer major-mode)))
         (if (eq mode 'java-mode)
-            (progn 
+            (progn
               (setq recent-cnt (+ 1 recent-cnt))
               (if (and (not (buffer-modified-p buffer))
                        (> recent-cnt 5))
@@ -769,7 +900,7 @@
                      (add-to-list 'additional-required-projects (car (xml-node-children elt))))
                    (xml-get-children
                     (car
-                     (xml-get-children 
+                     (xml-get-children
                       (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
                       'projects))
                     'project))
@@ -786,7 +917,7 @@
 
       ;; resolve dependencies
       (seq-do (lambda (elt)
-                (let ((name (car (xml-node-children (car (xml-get-children 
+                (let ((name (car (xml-node-children (car (xml-get-children
                                                           (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
                                                           'name))))))
                   (if (seq-contains-p additional-required-projects name)
@@ -823,7 +954,7 @@
          :map java-mode-map
          ("C-c C-d" . my/dap-debug))
   :config (progn
-            ;; ;; XXX: workaround for some weird behaviour only I am seeing  ¯\_(ツ)_/¯ 
+            ;; ;; XXX: workaround for some weird behaviour only I am seeing  ¯\_(ツ)_/¯
             ;; (defun my/dap--debug-session-workspace (origfunc session)
             ;;   (or (funcall origfunc session)
             ;;       (seq-some #'identity (lsp-workspaces))
@@ -915,7 +1046,7 @@
   :defer t
   :after dap-mode)
 
-(use-package dap-cpptools  
+(use-package dap-cpptools
   :defer t
   :hook ((c-mode c++-mode) . (lambda () (require 'dap-cpptools)))
   :after dap-mode)
@@ -948,18 +1079,21 @@
 (use-package eclipse-theme
   :ensure t)
 
-(let ((theme (cond ((eq window-system 'w32)
-                    'eclipse)
-                   ((eq window-system nil)
-                    'eclipse)
-                   ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
-                    'modus-vivendi)
-                   (t 'modus-operandi))))
-  (condition-case nil
-      (load-theme theme t)
-    (error
-      (package-install 'spacemacs-theme)
-      (load-theme theme t))))
+(use-package spacemacs-theme
+  :ensure t)
+
+(defun my/load-default-theme ()
+  (let ((theme (cond ((eq window-system 'w32)
+                      'eclipse)
+                     ((eq window-system nil)
+                      'eclipse)
+                     ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
+                      'modus-vivendi)
+                     (t 'modus-operandi))))
+    (load-theme theme t)))
+(my/load-default-theme)
+(defadvice load-theme (before theme-dont-propagate activate)
+  (mapcar #'disable-theme custom-enabled-themes))
 
 (use-package almost-mono-themes
   :defer t
@@ -1190,9 +1324,9 @@
 (use-package filladapt
   :ensure t
   :config (add-hook 'c-mode-common-hook
-	            (lambda ()
-	              (when (featurep 'filladapt)
-	                (c-setup-filladapt)))))
+                    (lambda ()
+                      (when (featurep 'filladapt)
+                        (c-setup-filladapt)))))
 
 (use-package flymake
   :defer t
@@ -1242,11 +1376,40 @@
 
 (use-package emojify
   :ensure t
+  :demand t
   :commands emojify-insert-emoji
   :config (progn
-            (when (member "Segoe UI Emoji" (font-family-list))
-              (set-fontset-font
-               t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend))))
+            (set-fontset-font
+             t
+             'emoji
+             (cond
+              ((member "Apple Color Emoji" (font-family-list)) "Apple Color Emoji")
+              ((member "Noto Color Emoji" (font-family-list)) "Noto Color Emoji")
+              ((member "Noto Emoji" (font-family-list)) "Noto Emoji")
+              ((member "Segoe UI Emoji" (font-family-list)) "Segoe UI Emoji")  ; 🧗
+              ((member "Symbola" (font-family-list)) "Symbola")))
+
+            (set-fontset-font
+             t
+             'symbol
+             (cond
+              ((member "Segoe UI Symbol" (font-family-list)) "Segoe UI Symbol")
+              ((member "Apple Symbols" (font-family-list)) "Apple Symbols")
+              ((member "Symbola" (font-family-list)) "Symbola")))
+
+            ;; nice on windows...
+            (cond
+             ((eq system-type 'windows-nt)
+              (set-fontset-font t '(#x1F300 . #x1F5FF) "Segoe UI Symbol")))  ; 🔁, Miscellaneous Symbols and Pictographs
+
+            (add-hook 'java-mode-hook
+                      (lambda ()
+                        (setq prettify-symbols-alist
+                              '(("@SuppressWarnings(\"unused\")" . ?🤷)))
+                        (prettify-symbols-mode 1)))
+
+            (setq emojify-display-style 'unicode)
+            (setq emojify-emoji-styles '(unicode))))
 
 (use-package re-builder
   :config (setq reb-re-syntax 'string))
@@ -1279,6 +1442,9 @@
                     (copilot-accept-completion))
                 (copilot-complete)))
             (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
+
+(use-package impatient-mode
+  :ensure t)
 
 ;; (add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
 ;; (require 'jsonnet-language-server)
@@ -1325,7 +1491,7 @@
   (add-to-list 'load-path (locate-user-emacs-file "emacs-webkit"))
 
   ;; If you don't care so much about privacy and want to give your data to google
-  (setq webkit-search-prefix "https://google.com/search?q=") 
+  (setq webkit-search-prefix "https://google.com/search?q=")
 
   ;; Specify a different set of characters use in the link hints
   ;; For example the following are more convienent if you use dvorak
@@ -1333,7 +1499,7 @@
 
   ;; If you want history saved in a different place or
   ;; Set to `nil' to if you don't want history saved to file (will stay in memory)
-  ;; (setq webkit-history-file "~/path/to/webkit-history") 
+  ;; (setq webkit-history-file "~/path/to/webkit-history")
 
   ;; If you want cookies saved in a different place or
   ;; Set to `nil' to if you don't want cookies saved
@@ -1341,7 +1507,7 @@
 
   ;; See the above explination in the Background section
   ;; This must be set before webkit.el is loaded so certain hooks aren't installed
-  ;; (setq webkit-own-window t) 
+  ;; (setq webkit-own-window t)
 
   ;; Set webkit as the default browse-url browser
   ;; (setq browse-url-browser-function 'webkit-browse-url)
