@@ -729,22 +729,6 @@
                 )))
             (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)))
 
-;; bind C-c C-d dynamically
-(fset 'my/dap-debug 'dap-debug)
-
-(defun my/toggle-dap-hydra ()
-  (interactive)
-  (if hydra-curr-map
-      (dap-hydra/nil)
-    (dap-hydra/body)))
-
-(add-hook 'dap-session-created-hook
-          (lambda (arg) (fset 'my/dap-debug 'my/toggle-dap-hydra)))
-(add-hook 'dap-terminated-hook
-          (lambda (arg)
-            (dap-hydra/nil)
-            (fset 'my/dap-debug 'dap-debug)))
-
 (defun treemacs-t ()
   (interactive)
   (treemacs t))
@@ -973,9 +957,11 @@
 (use-package dap-mode
   :ensure t
   :after lsp-mode
-  :bind (("C-c C-d" . my/dap-debug)
-         :map java-mode-map
-         ("C-c C-d" . my/dap-debug))
+  ;; :bind (("C-c C-d" . my/dap-debug)
+  ;;        :map java-mode-map
+  ;;        ("C-c C-d" . my/dap-debug))
+  ;; :hooks ((dap-session-created . dap-ui-repl)
+  ;;         (dap-session-created . dap-ui-breakpoints))
   :config (progn
             ;; ;; XXX: workaround for some weird behaviour only I am seeing  ¯\_(ツ)_/¯
             ;; (defun my/dap--debug-session-workspace (origfunc session)
@@ -984,25 +970,25 @@
             ;;       (lsp-find-workspace 'jdtls nil)))
             ;; (advice-add 'dap--debug-session-workspace :around #'my/dap--debug-session-workspace)
 
-            (defun my/show-debug-windows (session)
-              (save-excursion
-                (call-interactively #'dap-ui-repl)
-                (call-interactively #'dap-ui-breakpoints)
-                ;; (call-interactively #'dap-ui-locals)
-                ;; (call-interactively #'dap-ui-sessions)
-                (if (get-buffer-window "*dap-ui-repl*")
-                    (delete-other-windows)
-                    (delete-window (get-buffer-window "*dap-ui-repl*")))
-                (display-buffer-in-side-window (get-buffer "*dap-ui-repl*") `((side . bottom)
-                                                                              (slot . 1)
-                                                                              (window-height . 10)))))
-            (add-hook 'dap-session-created-hook 'my/show-debug-windows)
+            ;; (defun my/show-debug-windows (session)
+            ;;   (save-excursion
+            ;;     (call-interactively #'dap-ui-repl)
+            ;;     (call-interactively #'dap-ui-breakpoints)
+            ;;     ;; (call-interactively #'dap-ui-locals)
+            ;;     ;; (call-interactively #'dap-ui-sessions)
+            ;;     (if (get-buffer-window "*dap-ui-repl*")
+            ;;         (delete-other-windows)
+            ;;         (delete-window (get-buffer-window "*dap-ui-repl*")))
+            ;;     (display-buffer-in-side-window (get-buffer "*dap-ui-repl*") `((side . bottom)
+            ;;                                                                   (slot . 1)
+            ;;                                                                   (window-height . 10)))))
+            ;; (add-hook 'dap-session-created-hook 'my/show-debug-windows)
 
-            (defun my/close-debug-windows (session)
-              (condition-case nil
-                  (if (get-buffer-window "*dap-ui-repl*")
-                      (delete-window (get-buffer-window "*dap-ui-repl*")))))
-            (add-hook 'dap-terminated-hook 'my/close-debug-windows)
+            ;; (defun my/close-debug-windows (session)
+            ;;   (condition-case nil
+            ;;       (if (get-buffer-window "*dap-ui-repl*")
+            ;;           (delete-window (get-buffer-window "*dap-ui-repl*")))))
+            ;; (add-hook 'dap-terminated-hook 'my/close-debug-windows)
 
             (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
             (add-hook 'dap-terminated-hook (lambda (arg) (call-interactively #'dap-hydra/nil)))
@@ -1010,9 +996,10 @@
             ;; default settings
             (setq
              dap-stack-trace-limit 40
-             dap-auto-configure-features '(sessions tooltip)
-             dap-auto-show-output t
-             dap-print-io nil)
+             ;; dap-auto-configure-features '(sessions locals tooltip)
+             dap-print-io nil
+             ;; dap-auto-show-output t
+             )
             (dap-auto-configure-mode)
             ;; (require 'dap-gdb-lldb)
             ))
