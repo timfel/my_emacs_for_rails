@@ -133,7 +133,7 @@
 
 (defun lsp-graalvm--install-server (client callback error-callback update?)
   (unless (and (not update?)
-               (f-exists? lsp-graalvm-install-dir))
+               (file-exists-p lsp-graalvm-install-dir))
     (lexical-let* ((temp-file (f-join (f-dirname lsp-graalvm-install-dir) "graalvm.tar.gz"))
                    (error-cb error-callback)
                    (cb callback)
