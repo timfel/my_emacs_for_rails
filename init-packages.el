@@ -769,6 +769,10 @@
              lsp-java-inhibit-message t
              lsp-java-completion-import-order ["java" "javax" "org" "com"]
              lsp-java-import-order ["java" "javax" "org" "com"])
+            (if (not (eq window-system 'w32))
+                (setq lsp-java-configuration-runtimes '[(:name "JavaSE-21"
+						               :path (expand-file-name "~/.sdkman/candidates/java/21.0.1-oracle")
+						               :default t)]))
 
             (setq lsp-java-imports-gradle-wrapper-checksums
                   [(:sha256 "504b38a11c466aecb2f5c0b0d8ce0ed7ffa810bf70b9b7a599c570051be8fb4e" :allowed t)])
@@ -1402,11 +1406,11 @@
              ((eq system-type 'windows-nt)
               (set-fontset-font t '(#x1F300 . #x1F5FF) "Segoe UI Symbol")))  ; 🔁, Miscellaneous Symbols and Pictographs
 
-            (add-hook 'java-mode-hook
-                      (lambda ()
-                        (setq prettify-symbols-alist
-                              '(("@SuppressWarnings(\"unused\")" . ?🤷)))
-                        (prettify-symbols-mode 1)))
+            ;; (add-hook 'java-mode-hook
+            ;;           (lambda ()
+            ;;             (setq prettify-symbols-alist
+            ;;                   '(("@SuppressWarnings(\"unused\")" . ?🤷)))
+            ;;             (prettify-symbols-mode 1)))
 
             (setq emojify-display-style 'unicode)
             (setq emojify-emoji-styles '(unicode))))
