@@ -23,7 +23,6 @@
 (setq initial-scratch-message nil)
 ;; Get back font antialiasing
 ;; (push '(font-backend xft x) default-frame-alist)
-(setq font-lock-maximum-decoration t)
 
 (run-with-idle-timer 0 nil (lambda ()
                         (if (memq window-system '(x pgtk))
@@ -190,39 +189,38 @@
 (define-key isearch-mode-map [backspace] 'isearch-edit-string)
 
 
-(defun my-get-top-vcs-dir (previous &optional current)
-  (interactive)
-  (let* ((last (if current previous (file-truename previous)))
-	 (dir (if current current (expand-file-name ".." last))))
-    (if (or (file-directory-p (concat (file-name-as-directory dir) ".git"))
-	    (file-directory-p (concat (file-name-as-directory dir) ".bzr"))
-	    (file-directory-p (concat (file-name-as-directory dir) ".hg")))
-	dir
-      (my-get-top-vcs-dir dir (expand-file-name ".." dir)))))
+;; (defun my-get-top-vcs-dir (previous &optional current)
+;;   (interactive)
+;;   (let* ((last (if current previous (file-truename previous)))
+;; 	 (dir (if current current (expand-file-name ".." last))))
+;;     (if (or (file-directory-p (concat (file-name-as-directory dir) ".git"))
+;; 	    (file-directory-p (concat (file-name-as-directory dir) ".bzr"))
+;; 	    (file-directory-p (concat (file-name-as-directory dir) ".hg")))
+;; 	dir
+;;       (my-get-top-vcs-dir dir (expand-file-name ".." dir)))))
 
-(defun ensure-tags-file ()
-  (interactive)
-  (if (or (not tags-file-name) (equal this-command 'my-ensure-tags-file))
-      (let* ((topdir (or (my-get-top-vcs-dir buffer-file-truename)
-			 default-directory))
-	     (tagsdir (file-name-as-directory
-		       (or (my-get-top-vcs-dir buffer-file-truename)
-			   (expand-file-name ".." buffer-file-truename))))
-	     (tag-file (concat tagsdir "TAGS")))
-	(shell-command (format "cd \"%s\"; find . -name \"*.%s\" -print | xargs %s -o %s"
-			       topdir
-			       (file-name-extension buffer-file-truename)
-			       (expand-file-name "../etags" el-get-emacs)
-			       tag-file))
-	(visit-tags-table tag-file))))
+;; (defun ensure-tags-file ()
+;;   (interactive)
+;;   (if (or (not tags-file-name) (equal this-command 'my-ensure-tags-file))
+;;       (let* ((topdir (or (my-get-top-vcs-dir buffer-file-truename)
+;; 			 default-directory))
+;; 	     (tagsdir (file-name-as-directory
+;; 		       (or (my-get-top-vcs-dir buffer-file-truename)
+;; 			   (expand-file-name ".." buffer-file-truename))))
+;; 	     (tag-file (concat tagsdir "TAGS")))
+;; 	(shell-command (format "cd \"%s\"; find . -name \"*.%s\" -print | xargs %s -o %s"
+;; 			       topdir
+;; 			       (file-name-extension buffer-file-truename)
+;; 			       (expand-file-name "../etags" el-get-emacs)
+;; 			       tag-file))
+;; 	(visit-tags-table tag-file))))
 
-;; Taggs....
-(defadvice find-tag (before c-tag-file activate)
-  (ensure-tags-file))
+;; ;; Taggs....
+;; (defadvice find-tag (before c-tag-file activate)
+;;   (ensure-tags-file))
 
 ;; Python hooks
 (add-hook 'python-mode-hook 'turn-on-font-lock)
-(add-hook 'python-mode-hook 'friendly-whitespace)
 (add-hook 'python-mode-hook
 	  #'(lambda() (progn
 		       ;; Auto completion
@@ -233,10 +231,6 @@
 			       ac-source-words-in-same-mode-buffers
 			       ac-source-yasnippet
 			       ac-source-abbrev)))))
-
-;; Javascript/JSON
-(add-hook 'javascript-mode-hook 'friendly-whitespace)
-(add-hook 'js-mode-hook 'friendly-whitespace)
 
 
 ;; (defun fresh-frame()
@@ -362,10 +356,6 @@
 ;;         (".c" (display-buffer-same-window) ())
 ;;         (".h" (display-buffer-same-window) ())))
 
-;; always infer indentation style for c++
-(add-hook 'c++-mode-hook 'infer-indentation-style)
-
-
 ;; the below ensures we don't get conflicting emacs desktops for multiple instances
 (cond
  ((string-equal (frame-parameter nil 'name) "evolution")
@@ -438,10 +428,21 @@
 
 ;; add latest nvm node if we have it
 (if-let* ((nvm "~/.nvm/versions/node/")
-          (_ (f-exists? nvm)))
+          (_ (file-exists-p nvm)))
     (and
      (add-to-list 'exec-path (f-join nvm (car (sort (directory-files nvm) #'string-greaterp)) "bin"))
      (setenv "PATH" (string-join exec-path path-separator))))
 
 (setq frame-title-format
-      '(multiple-frames "%b" ("" (:eval (or (treemacs-workspace->name (treemacs-current-workspace)) "%b")))))
+      '(multiple-frames "%b" ("" (:eval (if (functionp 'treemacs-current-workspace) (or (treemacs-workspace->name (treemacs-current-workspace)) "%b") "No workspace %b")))))
+
+(if window-system
+    (progn
+      (global-set-key (kbd "M-<up>") 'move-line-up)
+      (global-set-key (kbd "M-<down>") 'move-line-down))
+  (global-set-key (kbd "ESC <up>") 'move-line-up)
+  (global-set-key (kbd "ESC <down>") 'move-line-down))
+
+(setq sentence-end-double-space nil)
+
+(global-set-key (kbd "C-M-q") #'ospl/fill-paragraph)

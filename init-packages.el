@@ -25,24 +25,29 @@
 ;; additional modes I like
 (use-package yaml-mode :ensure t
   :mode ("\\.yml$" "\\.yaml$" "Gemfile.lock$"))
+
 (use-package coffee-mode :ensure t
   :mode ("\\.coffee$")
-  :config (progn (add-hook 'coffee-mode-hook
-                           '(lambda() (progn
-                                        ;; Enable compile-on-save if there is already a *.coffee & *.js file
-                                        (if (and (file-exists-p (buffer-file-name))
-                                                 (file-exists-p (coffee-compiled-file-name)))
-                                            (coffee-cos-mode t))
-                                        (setq coffee-args-compile '("-c" "--bare"))
-                                        (set (make-local-variable 'tab-width) 2)
-                                        (define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer))))))
+  :hook (coffee-mode-hook
+         . (lambda() (progn
+                       ;; Enable compile-on-save if there is already a *.coffee & *.js file
+                       (if (and (file-exists-p (buffer-file-name))
+                                (file-exists-p (coffee-compiled-file-name)))
+                           (coffee-cos-mode t))
+                       (setq coffee-args-compile '("-c" "--bare"))
+                       (set (make-local-variable 'tab-width) 2)
+                       (define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer)))))
+
 (use-package haml-mode :ensure t
   :mode ("\\.haml$"))
-(use-package rspec-mode :ensure t :after ruby)
-(use-package sass-mode :ensure t :defer t)
+
+(use-package sass-mode :ensure t
+  :mode ("\\.sass$"))
+
 (use-package markdown-mode :ensure t
   :config (setq markdown-command "cmark-gfm --extension table")
   :mode ("\\.md$"))
+
 (use-package lua-mode :ensure t
   :config (progn
             (require 'lsp)
@@ -54,11 +59,22 @@
                    "https://github.com/EmmyLua/EmmyLua-LanguageServer/releases/download/0.3.6/EmmyLua-LS-all.jar"
                    lsp-clients-emmy-lua-jar-path))))
   :mode ("\\.lua$"))
+
 (use-package json-mode :ensure t
   :mode ("\\.json$"))
-(use-package ruby-electric :ensure t :after ruby)
+
+(use-package ruby-electric :ensure t
+  :defer t
+  :after ruby)
+
 (use-package ruby-mode :ensure t
-  :mode ("\\.rb$")
+  :mode ("\\.rb$" "\\.rjs$" "\\.rake$" "Rakefile$" "Gemfile$" "Vagrantfile$")
+  :hook ((ruby-mode . turn-on-font-lock)
+         (ruby-mode . friendly-whitespace)
+         (ruby-mode . ruby-electric-mode)
+         (ruby-mode . (lambda() (progn
+                                  (set (make-local-variable 'indent-tabs-mode) 'nil)
+                                  (set (make-local-variable 'tab-width) 2)))))
   :config (progn
             ;; Patch ruby-mode
             (defun ruby-accurate-end-of-block (&optional end)
@@ -66,40 +82,23 @@
               (let (state
                     (end (or end (point-max))))
                 (while (and (setq state (apply 'ruby-parse-partial end state))
-                            (nth 2 state) (>= (nth 2 state) 0) (< (point) end)))))
-
-            (add-hook 'ruby-mode-hook 'turn-on-font-lock)
-            (add-hook 'ruby-mode-hook 'friendly-whitespace)
-            (add-hook 'ruby-mode-hook '(lambda() (progn
-                                                   (ruby-electric-mode t)
-                                                   ;; Indenting options
-                                                   (set (make-local-variable 'indent-tabs-mode) 'nil)
-                                                   (set (make-local-variable 'tab-width) 2)
-                                                   (local-set-key (kbd "<return>") 'newline-and-indent)
-                                                   ;; Auto completion
-                                                   (imenu-add-to-menubar "IMENU")
-                                                   (local-set-key "\M-\C-i" 'ri-ruby-complete-symbol)
-                                                   (define-key ruby-mode-map "\M-\C-o" 'rct-complete-symbol))))
-            (add-to-list 'auto-mode-alist '("\\.rjs$" . ruby-mode))
-            (add-to-list 'auto-mode-alist '("\\.rake$" . ruby-mode))
-            (add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
-            (add-to-list 'auto-mode-alist '("Rakefile$" . ruby-mode))
-            (add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode))))
+                            (nth 2 state) (>= (nth 2 state) 0) (< (point) end)))))))
 
 (use-package org
   :commands org-mode
   :mode (("\\.org$" . org-mode))
   :ensure org
   :bind (("C-c a" . org-agenda)
-         ("C-c c" . org-capture))
+         ("C-c c" . org-capture)
+         :map org-mode-map
+         ("C-c <right>" . org-shiftright)
+         ("C-c <left>" . org-shiftleft)
+         ("C-c M-RET" . org-insert-subheading))
   :config (progn
             (org-babel-do-load-languages
              'org-babel-load-languages '((C . t) (shell . t) (python t) (ruby . t) (js . t)))
 
             (setq org-log-done 'time)
-            (define-key org-mode-map (kbd "C-c <right>") #'org-shiftright)
-            (define-key org-mode-map (kbd "C-c <left>") #'org-shiftleft)
-            (define-key org-mode-map (kbd "C-c M-RET") #'org-insert-subheading)
             (require 'org-tempo)
             (let ((todos (if (eq system-type 'windows-nt)
                              (expand-file-name "~/../../OneDrive/todo.org")
@@ -292,6 +291,7 @@
 ;; (use-package xcscope :ensure t)
 (use-package projectile
   :ensure t
+  :defer t
   :config (progn
             (setq
              projectile-indexing-method 'alien
@@ -304,7 +304,7 @@
 
 (use-package helm
   :ensure t
-  :demand t)
+  :bind (("C-." . helm-semantic-or-imenu)))
 
 (use-package helm-etags-plus
   :disabled
@@ -313,7 +313,6 @@
 
 (use-package helm-projectile
   :ensure t
-  :after (projectile helm)
   :bind (("C-t" . helm-projectile-find-file)))
 
 ;; Auto completion
@@ -324,7 +323,6 @@
 
 (use-package company
   :ensure t
-  :demand t
   :bind (("M-?" . company-complete))
   :config (progn
             (global-company-mode t)
@@ -403,11 +401,22 @@
 
 (use-package logito :ensure t)
 
-(use-package textmate
-  :ensure t
-  :bind (("C-/" . comment-or-uncomment-region-or-line))
-  :demand t
-  :config (textmate-define-comment-line))
+;; (use-package textmate
+;;   :ensure t
+;;   :bind (("C-/" . comment-or-uncomment-region-or-line))
+;;   :demand t
+;;   :config (textmate-define-comment-line))
+
+(defun comment-or-uncomment-region-or-line ()
+  (interactive)
+  (if mark-active
+      (call-interactively #'comment-or-uncomment-region)
+    (save-excursion
+      (beginning-of-line)
+      (set-mark (point))
+      (end-of-line)
+      (call-interactively #'comment-or-uncomment-region))))
+(global-set-key (kbd "C-/") #'comment-or-uncomment-region-or-line)
 
 (use-package all-the-icons
   :demand t
@@ -426,6 +435,7 @@
 (use-package doom-modeline
   ;; remember to run (all-the-icons-install-fonts) manually some time
   :demand t
+  :if (not (eq system-type 'windows-nt))
   :after all-the-icons
   :ensure t
   :hook (after-init . doom-modeline-mode)
@@ -507,6 +517,7 @@
 (use-package treemacs
   ;; :pin melpa-stable
   :ensure t
+  :bind (("<f5>" . treemacs-t))
   :config (progn
             (require 'desktop)
 
@@ -563,7 +574,6 @@
   :hook ((lsp-mode . lsp-enable-which-key-integration))
   :preface (setq lsp-use-plists (not (eq window-system 'w32)))
   :ensure t
-  :demand t
   :config (progn
             (setq lsp-print-io nil
                   lsp-lens-enable (not (eq system-type 'windows-nt))
@@ -639,8 +649,17 @@
 
 (use-package lsp-treemacs
   :ensure t
-  :demand t
+  :after (lsp-mode treemacs)
   :commands lsp-treemacs-errors-list)
+
+(use-package python
+  :hook friendly-whitespace)
+
+(use-package js
+  :hook friendly-whitespace)
+
+(use-package cc-mode
+  :hook infer-indentation-style)
 
 (use-package lsp-pyright
   :ensure t
@@ -656,7 +675,7 @@
             (defun get-venv-executable (orig-fun command)
               (let* ((root (lsp-workspace-root (buffer-file-name)))
                      (cfg (f-join root "pyrightconfig.json")))
-                (if (f-exists? cfg) ; have a pyrightconfig.json, parse it
+                (if (file-exists-p cfg) ; have a pyrightconfig.json, parse it
                     (let* ((json (with-temp-buffer (insert-file-contents cfg) (json-parse-buffer)))
                            (venvPathCfg (ht-get json "venvPath" lsp-pyright-venv-directory))
                            (venvCfg (ht-get json "venv" ""))
@@ -698,7 +717,6 @@
 
 (use-package mmm-mode
   :ensure t
-  :demand t
   :config (progn
             (require 'mmm-auto)
             (setq mmm-global-mode 'maybe)
@@ -732,15 +750,16 @@
   (treemacs t))
 
 (use-package powershell
+  :if (eq system-type 'windows-nt)
+  :mode "\\.ps1\\'"
   :ensure t)
 
 (use-package iedit
-  :demand t
+  :bind ("C-;" . iedit-mode) 
   :ensure t)
 
 (use-package lsp-java
   :ensure t
-  :demand t
   :hook (java-mode . (lambda () (require 'lsp-java) (require 'dap-java)))
   :bind (("<f5>" . treemacs-t))
   :after (lsp-mode company lsp-treemacs)
@@ -1159,63 +1178,15 @@
 
 
 ;; Tramp
-(use-package tramp :ensure t)
+(use-package tramp
+  :defer 30
+  :ensure t)
 
 ;; Interactively Do Things
 (use-package ido
   :demand t
   :ensure t
-  :bind (("C-." . ido-goto-symbol))
-  :config (progn
-            (ido-mode t)
-
-            (defun ido-goto-symbol (&optional symbol-list)
-              "Refresh imenu and jump to a place in the buffer using Ido."
-              (interactive)
-              (unless (featurep 'imenu)
-                (require 'imenu nil t))
-              (cond
-               ((not symbol-list)
-                (let ((ido-mode ido-mode)
-                      (ido-enable-flex-matching
-                       (if (boundp 'ido-enable-flex-matching)
-                           ido-enable-flex-matching t))
-                      name-and-pos symbol-names position)
-                  (unless ido-mode
-                    (ido-mode 1)
-                    (setq ido-enable-flex-matching t))
-                  (while (progn
-                           (imenu--cleanup)
-                           (setq imenu--index-alist nil)
-                           (ido-goto-symbol (imenu--make-index-alist))
-                           (setq selected-symbol
-                                 (ido-completing-read "Symbol? " symbol-names))
-                           (string= (car imenu--rescan-item) selected-symbol)))
-                  (unless (and (boundp 'mark-active) mark-active)
-                    (push-mark nil t nil))
-                  (setq position (cdr (assoc selected-symbol name-and-pos)))
-                  (cond
-                   ((overlayp position)
-                    (goto-char (overlay-start position)))
-                   (t
-                    (goto-char position)))))
-               ((listp symbol-list)
-                (dolist (symbol symbol-list)
-                  (let (name position)
-                    (cond
-                     ((and (listp symbol) (imenu--subalist-p symbol))
-                      (ido-goto-symbol symbol))
-                     ((listp symbol)
-                      (setq name (car symbol))
-                      (setq position (cdr symbol)))
-                     ((stringp symbol)
-                      (setq name symbol)
-                      (setq position
-                            (get-text-property 1 'org-imenu-marker symbol))))
-                    (unless (or (null position) (null name)
-                                (string= (car imenu--rescan-item) name))
-                      (add-to-list 'symbol-names name)
-                      (add-to-list 'name-and-pos (cons name position))))))))))
+  :config (ido-mode t))
 
 (use-package erefactor
   :defer t
@@ -1247,7 +1218,8 @@
 ;; local lisp code
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
 
-(use-package sudo-save)
+(use-package sudo-save
+  :if (not (eq system-type 'windows-nt)))
 
 (use-package redo+
   :demand t
@@ -1259,15 +1231,15 @@
 
 (use-package sx
   :ensure t
-  :config (bind-keys :prefix "C-c s"
-                     :prefix-map my-sx-map
-                     :prefix-docstring "Global keymap for SX."
-                     ("q" . sx-tab-all-questions)
-                     ("i" . sx-inbox)
-                     ("o" . sx-open-link)
-                     ("u" . sx-tab-unanswered-my-tags)
-                     ("a" . sx-ask)
-                     ("s" . sx-search)))
+  :bind (:prefix "C-c s"
+                 :prefix-map my-sx-map
+                 :prefix-docstring "Global keymap for SX."
+                 ("q" . sx-tab-all-questions)
+                 ("i" . sx-inbox)
+                 ("o" . sx-open-link)
+                 ("u" . sx-tab-unanswered-my-tags)
+                 ("a" . sx-ask)
+                 ("s" . sx-search)))
 
 (use-package narrow-indirect
   :bind (:map ctl-x-4-map
@@ -1276,6 +1248,7 @@
               ("np" . ni-narrow-to-page-indirect-other-window)))
 
 (use-package visual-fill-column
+  :commands visual-fill-column-mode
   :ensure t)
 
 (use-package cmake-mode
@@ -1323,6 +1296,7 @@
 (use-package javap-handler)
 
 (use-package typescript-mode
+  :mode "\\.ts\\'"
   :ensure t)
 
 (use-package filladapt
@@ -1448,6 +1422,7 @@
             (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
 
 (use-package impatient-mode
+  :commands impatient-mode
   :ensure t)
 
 ;; (add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
