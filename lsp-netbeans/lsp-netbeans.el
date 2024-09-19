@@ -131,13 +131,13 @@
 (defun lsp-netbeans--install-server (_client callback error-callback update?)
   (let* ((backup-dir (concat lsp-netbeans-install-dir "-backup-" (format-time-string "%d-%m-%Y"))))
     (if (or update?
-            (and (f-exists? lsp-netbeans-install-dir)
-                 (not (f-exists? backup-dir)))
-            (not (f-exists? lsp-netbeans-install-dir)))
+            (and (file-exists-p lsp-netbeans-install-dir)
+                 (not (file-exists-p backup-dir)))
+            (not (file-exists-p lsp-netbeans-install-dir)))
         (progn
-          (if (f-exists? lsp-netbeans-install-dir)
+          (if (file-exists-p lsp-netbeans-install-dir)
               (progn
-                (if (f-exists? backup-dir)
+                (if (file-exists-p backup-dir)
                     (delete-directory backup-dir t))
                 (f-move lsp-netbeans-install-dir backup-dir)))
           (delete-directory lsp-netbeans-install-dir t)
