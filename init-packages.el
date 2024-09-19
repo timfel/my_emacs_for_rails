@@ -529,7 +529,7 @@
                            (not (buffer-modified-p buffer)))
                       (kill-buffer buffer))))
               (if desktop-save-mode
-                  (desktop-save))
+                  (desktop-save desktop-dirname))
               (desktop-save-mode-off)
               (setq
                desktop-base-file-name
