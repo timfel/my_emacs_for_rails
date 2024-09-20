@@ -722,7 +722,13 @@
             (setq mmm-global-mode 'maybe)
             (mmm-add-classes
              '((java-text-block
-                :submode fundamental-mode
+                :match-submode (lambda (front)
+                                 (if (string-match ".+\"\\([^\"]+\\)\", \"\"\"" front)
+                                     (let ((sym (intern-soft (concat (match-string-no-properties 1 front) "-mode"))))
+                                       (if (fboundp sym)
+                                           sym
+                                         'text-mode))
+                                   'text-mode))
                 :front ".+\"\"\"$"
                 :back ".*\"\"\".*"
                 :face mmm-code-submode-face
@@ -1293,12 +1299,11 @@
                       (when (featurep 'filladapt)
                         (c-setup-filladapt)))))
 
-(use-package flymake
-  :defer t
-  :after lsp-mode
-  :config (progn
-           (define-key flymake-mode-map (kbd "M-n") 'flymake-goto-next-error)
-           (define-key flymake-mode-map (kbd "M-p") 'flymake-goto-prev-error)))
+(use-package flycheck
+  :ensure t
+  :bind (:map flycheck-mode-map
+              ("M-n" . flycheck-next-error)
+              ("M-p" . flycheck-prev-error)))
 
 (if (not (eq system-type 'windows-nt))
     (progn
