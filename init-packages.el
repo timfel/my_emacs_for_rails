@@ -576,6 +576,19 @@
   :preface (setq lsp-use-plists (not (eq window-system 'w32)))
   :ensure t
   :config (progn
+
+            (defun my/advice-vscode-workspace-load ()
+              (dolist (folder (lsp-session-folders (lsp-session)))
+                (let ((folders (gethash 'jdtls (lsp-session-server-id->folders (lsp-session)))))
+                  (if (not (seq-contains-p folders folder))
+                      (puthash 'jdtls
+                               (append (gethash 'jdtls
+                                                (lsp-session-server-id->folders (lsp-session)))
+                                       (list folder))
+                               (lsp-session-server-id->folders (lsp-session)))))))
+
+            (advice-add 'lsp-load-vscode-workspace :after #'my/advice-vscode-workspace-load)
+
             (setq lsp-print-io nil
                   lsp-lens-enable (not (eq system-type 'windows-nt))
                   lsp-completion-enable-additional-text-edit t
