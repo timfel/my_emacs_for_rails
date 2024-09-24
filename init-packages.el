@@ -601,20 +601,17 @@
   :ensure t
   :hook (lsp-mode . lsp-ui-mode)
   :commands lsp-ui-mode
+  :bind (:map lsp-mode-map
+         ("C-." . helm-semantic-or-imenu)
+         ("C-S-t" . helm-lsp-workspace-symbol)
+         ("C-," . lsp-execute-code-action)
+         ("C-c f" . flycheck-list-errors)
+         :map lsp-ui-mode-map
+         ("C-c e" . lsp-treemacs-errors-list)
+         ("M-," . xref-pop-marker-stack)
+         ("M-." . lsp-ui-peek-find-definitions)
+         ("C-M-." . lsp-ui-peek-find-references))
   :config (progn
-            (define-key lsp-mode-map (kbd "C-.") #'helm-imenu)
-            ;; (define-key lsp-mode-map (kbd "C-S-t") #'lsp-ui-find-workspace-symbol)
-            (define-key lsp-mode-map (kbd "C-S-t") #'helm-lsp-workspace-symbol)
-            (define-key lsp-mode-map (kbd "C-c f") (lambda () (interactive) (list-flycheck-errors)))
-            (define-key lsp-ui-mode-map (kbd "C-c e") #'lsp-treemacs-errors-list)
-            (define-key lsp-mode-map (kbd "C-,") #'lsp-execute-code-action)
-            ;; (lsp-ui-peek-jump-backward)
-            ;; (lsp-ui-peek-jump-forward)
-            (define-key lsp-ui-mode-map (kbd "M-,") #'xref-pop-marker-stack)
-            (define-key lsp-ui-mode-map (kbd "M-.") #'lsp-ui-peek-find-definitions)
-            (define-key lsp-ui-mode-map (kbd "C-M-.") #'lsp-ui-peek-find-references)
-            ;; (define-key lsp-mode-map (kbd "M-.") #'lsp-find-definition)
-            ;; (define-key lsp-mode-map (kbd "C-M-.") #'lsp-find-references)
             ;; performance tips from readme
             (defun my-minibuffer-setup-hook ()
                (setq gc-cons-threshold most-positive-fixnum))
@@ -782,6 +779,7 @@
               (setq
                lsp-java-java-path (expand-file-name "~/../../.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")))
             (setq
+             lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.39.0/jdt-language-server-1.39.0-202408291433.tar.gz"
              lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true")
              lsp-java-content-provider-preferred "fernflower"
              lsp-java-save-actions-organize-imports t
