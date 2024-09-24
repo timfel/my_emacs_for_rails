@@ -304,6 +304,7 @@
 
 (use-package helm
   :ensure t
+  :config (setq helm-buffers-maybe-switch-to-tab nil)
   :bind (("C-." . helm-semantic-or-imenu)))
 
 (use-package helm-etags-plus
