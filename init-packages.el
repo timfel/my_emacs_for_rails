@@ -577,6 +577,14 @@
   :ensure t
   :config (progn
 
+            (defun my/lsp-notify-changed-file ()
+              (interactive)
+              (if-let ((workspace (car (gethash (lsp-workspace-root) (lsp-session-folder->servers (lsp-session))))))
+                  (with-lsp-workspace workspace
+                    (lsp-notify "workspace/didChangeWatchedFiles"
+                                `((changes . [((type . ,(alist-get 'changed lsp--file-change-type))
+                                               (uri . ,(lsp--path-to-uri buffer-file-name)))]))))))
+
             (defun my/advice-vscode-workspace-load ()
               (dolist (folder (lsp-session-folders (lsp-session)))
                 (let ((folders (gethash 'jdtls (lsp-session-server-id->folders (lsp-session)))))
@@ -779,7 +787,7 @@
               (setq
                lsp-java-java-path (expand-file-name "~/../../.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")))
             (setq
-             lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.39.0/jdt-language-server-1.39.0-202408291433.tar.gz"
+             lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/snapshots/jdt-language-server-latest.tar.gz"
              lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true")
              lsp-java-content-provider-preferred "fernflower"
              lsp-java-save-actions-organize-imports t
@@ -1009,7 +1017,7 @@
             ;; (add-hook 'dap-terminated-hook 'my/close-debug-windows)
 
             (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
-            (add-hook 'dap-terminated-hook (lambda (arg) (call-interactively #'dap-hydra/nil)))
+            (add-hook 'dap-terminated-hook (lambda (arg) (if (fboundp #'dap-hydra/nil) (call-interactively #'dap-hydra/nil))))
 
             ;; default settings
             (setq
