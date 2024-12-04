@@ -573,7 +573,7 @@
 
 (use-package lsp-mode
   :hook ((lsp-mode . lsp-enable-which-key-integration))
-  :preface (setq lsp-use-plists (not (eq window-system 'w32)))
+  :preface (setq lsp-use-plists t)
   :ensure t
   :config (progn
 
@@ -651,7 +651,7 @@
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
                   lsp-eldoc-enable-hover nil
-                  lsp-idle-delay 5.000
+                  lsp-idle-delay 1.000
                   lsp-tcp-connection-timeout 20
                   lsp-modeline-diagnostics-enable nil
                   lsp-modeline-code-actions-enable nil
