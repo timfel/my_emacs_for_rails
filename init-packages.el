@@ -189,7 +189,7 @@
                            (toggle-frame-fullscreen)
                            (if org-present-mode
                                (org-present-quit)
-                             (org-present))))) 
+                             (org-present)))))
   :config (progn
             ;; Load org-faces to make sure we can set appropriate faces
             (require 'org-faces)
@@ -577,6 +577,39 @@
   :ensure t
   :config (progn
 
+            (if (executable-find "emacs-lsp-booster")
+                (progn
+                  (defun lsp-booster--advice-json-parse (old-fn &rest args)
+                    "Try to parse bytecode instead of json."
+                    (or
+                     (when (equal (following-char) ?#)
+                       (let ((bytecode (read (current-buffer))))
+                         (when (byte-code-function-p bytecode)
+                           (funcall bytecode))))
+                     (apply old-fn args)))
+                  (advice-add (if (progn (require 'json)
+                                         (fboundp 'json-parse-buffer))
+                                  'json-parse-buffer
+                                'json-read)
+                              :around
+                              #'lsp-booster--advice-json-parse)
+
+                  (defun lsp-booster--advice-final-command (old-fn cmd &optional test?)
+                    "Prepend emacs-lsp-booster command to lsp CMD."
+                    (let ((orig-result (funcall old-fn cmd test?)))
+                      (if (and (not test?)                             ;; for check lsp-server-present?
+                               (not (file-remote-p default-directory)) ;; see lsp-resolve-final-command, it would add extra shell wrapper
+                               lsp-use-plists
+                               (not (functionp 'json-rpc-connection))  ;; native json-rpc
+                               (executable-find "emacs-lsp-booster"))
+                          (progn
+                            (when-let ((command-from-exec-path (executable-find (car orig-result))))  ;; resolve command from exec-path (in case not found in $PATH)
+                              (setcar orig-result command-from-exec-path))
+                            (message "Using emacs-lsp-booster for %s!" orig-result)
+                            (cons "emacs-lsp-booster" orig-result))
+                        orig-result)))
+                  (advice-add 'lsp-resolve-final-command :around #'lsp-booster--advice-final-command)))
+
             (defun my/advice-vscode-workspace-load (&rest args)
               (interactive)
               (dolist (folder (lsp-session-folders (lsp-session)))
@@ -757,7 +790,7 @@
   :ensure t)
 
 (use-package iedit
-  :bind ("C-;" . iedit-mode) 
+  :bind ("C-;" . iedit-mode)
   :ensure t)
 
 (use-package lsp-java
@@ -793,13 +826,13 @@
              lsp-java-import-order ["java" "javax" "org" "com"])
             (if (not (eq window-system 'w32))
                 (setq lsp-java-configuration-runtimes '[(:name "JavaSE-21"
-						               :path (expand-file-name "~/.sdkman/candidates/java/21.0.1-oracle")
-						               :default t)]))
+                                                               :path (expand-file-name "~/.sdkman/candidates/java/21.0.1-oracle")
+                                                               :default t)]))
 
             (setq lsp-java-imports-gradle-wrapper-checksums
                   [(:sha256 "504b38a11c466aecb2f5c0b0d8ce0ed7ffa810bf70b9b7a599c570051be8fb4e" :allowed t)])
 
-	    (setq dap-java-default-debug-port 8000)
+            (setq dap-java-default-debug-port 8000)
             (with-eval-after-load 'lsp-treemacs
               (dap-register-debug-template "Java Attach com.oracle.graal.python"
                                            (list :type "java"
