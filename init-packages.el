@@ -577,7 +577,8 @@
   :ensure t
   :config (progn
 
-            (defun my/advice-vscode-workspace-load ()
+            (defun my/advice-vscode-workspace-load (&rest args)
+              (interactive)
               (dolist (folder (lsp-session-folders (lsp-session)))
                 (let ((folders (gethash 'jdtls (lsp-session-server-id->folders (lsp-session)))))
                   (if (not (seq-contains-p folders folder))
