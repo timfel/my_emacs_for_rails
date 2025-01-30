@@ -1229,7 +1229,17 @@
 ;; Tramp
 (use-package tramp
   :defer 30
-  :ensure t)
+  :ensure t
+  :config (progn
+            (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+            (when (eq system-type 'windows-nt)
+              (require 'cl-lib)
+              ;; (assoc 'tramp-login-args (assoc "ssh" tramp-methods))
+              (setq tramp-use-ssh-controlmaster-options nil)
+              (cl-pushnew '("-tt")
+                          (car (alist-get 'tramp-login-args
+                                          (cdr (assoc "ssh" tramp-methods))))
+                          :test #'equal))))
 
 ;; Interactively Do Things
 (use-package ido
