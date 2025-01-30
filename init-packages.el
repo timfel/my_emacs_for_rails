@@ -621,7 +621,7 @@
                                        (list folder))
                                (lsp-session-server-id->folders (lsp-session)))))))
 
-            (advice-add 'lsp-load-vscode-workspace :after #'my/advice-vscode-workspace-load)
+            (advice-remove 'lsp-load-vscode-workspace #'my/advice-vscode-workspace-load)
 
             (defun my/lsp-notify-changed-file ()
               (interactive)
@@ -830,6 +830,7 @@
              lsp-java-format-enabled nil
              lsp-java-autobuild-enabled nil
              lsp-java-inhibit-message t
+             lsp-java-import-gradle-enabled nil
              lsp-java-completion-import-order ["java" "javax" "org" "com"]
              lsp-java-import-order ["java" "javax" "org" "com"])
             (if (not (eq window-system 'w32))
@@ -865,6 +866,7 @@
                       (setq lsp--session nil)
                       (setq
                        lsp-java-workspace-dir wsuserdir
+                       lsp-java-workspace-cache-dir (f-join lsp-java-workspace-dir "cache/")
                        lsp-session-file (expand-file-name (locate-user-emacs-file (format ".lsp-session-v1-%s" wsname)))))))
               (message (format "Setting Eclipse workspace to %s, session to %s" lsp-java-workspace-dir lsp-session-file))
               (message (format "You may have to adapt %s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs to give the default VM the name that mx told you" lsp-java-workspace-dir))
