@@ -1325,6 +1325,20 @@
   :defer t
   :commands pypytrace-mode)
 
+(use-package presentation
+  :defer t
+  :commands presentation-mode
+  :config (progn
+
+            (defun my/presentation-on-hook ()
+              (menu-bar-mode 0))
+
+            (defun my/presentation-off-hook ()
+              (menu-bar-mode 1))
+
+            (add-hook 'presentation-on-hook #'my/presentation-on-hook)
+            (add-hook 'presentation-on-hook #'my/presentation-off-hook)))
+
 (use-package kickasm-mode
   :defer t
   :commands kickasm-mode
