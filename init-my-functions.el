@@ -38,10 +38,10 @@ LIST defaults to all existing live buffers."
   (dolist (buffer list)
     (let ((name (buffer-name buffer)))
       (if (and (not (string-equal (buffer-name) name)) ;; Don't kill the active buffer
-               (notany
+               (not (seq-some
                 (lambda (x) (string-match-p x name))
                 '("^$" "\\*Messages\\*" "\\*Buffer List\\*" "\\*buffer-selection\\*"
-                  "\\*Shell Command Output\\*" "\\*scratch\\*" "ECB" "magit"))
+                  "\\*Shell Command Output\\*" "\\*scratch\\*" "ECB" "magit")))
                (/= (aref name 0) ? ))
           (if (buffer-modified-p buffer)
               (if (yes-or-no-p
