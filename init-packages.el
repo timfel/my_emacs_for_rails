@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 (package-initialize)
 (require 'compile)
 (require 'cc-mode)
@@ -1385,14 +1386,14 @@
               ("M-n" . flycheck-next-error)
               ("M-p" . flycheck-prev-error)))
 
-(if (not (eq system-type 'windows-nt))
-    (progn
-      (add-to-list 'load-path (locate-user-emacs-file "emacs-secondmate/emacs"))
-      (use-package secondmate
-        :defer t
-        :bind (("C-c M-/" . secondmate))
-        :commands secondmate
-        :config (setq secondmate-url "https://lively-kernel.org/swacopilot"))))
+;; (if (not (eq system-type 'windows-nt))
+;;     (progn
+;;       (add-to-list 'load-path (locate-user-emacs-file "emacs-secondmate/emacs"))
+;;       (use-package secondmate
+;;         :defer t
+;;         :bind (("C-c M-/" . secondmate))
+;;         :commands secondmate
+;;         :config (setq secondmate-url "https://lively-kernel.org/swacopilot"))))
 
 (use-package exec-path-from-shell
   :ensure t
@@ -1468,30 +1469,120 @@
   :defer t
   :ensure t)
 
-(use-package quelpa
-  :ensure t
-  :defer t
-  :commands copilot-mode
-  :config (progn
-            (quelpa
-             '(copilot
-               :fetcher git
-               :url "https://github.com/zerolfx/copilot.el"
-               :branch "main"
-               :files ("dist" "*.el")))
-            (setq copilot-idle-delay 1
-                  copilot-log-max 100)
-            (require 'copilot)
+;; (use-package quelpa
+;;   :ensure t
+;;   :defer t
+;;   :commands copilot-mode
+;;   :config (progn
+;;             (quelpa
+;;              '(copilot
+;;                :fetcher git
+;;                :url "https://github.com/zerolfx/copilot.el"
+;;                :branch "main"
+;;                :files ("dist" "*.el")))
+;;             (setq copilot-idle-delay 1
+;;                   copilot-log-max 100)
+;;             (require 'copilot)
 
-            ;; Based on function from https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
-            (defun copilot-complete-or-accept ()
-              "Command that either triggers a completion or accepts one if one is available."
-              (interactive)
-              (if (copilot--overlay-visible)
-                  (progn
-                    (copilot-accept-completion))
-                (copilot-complete)))
-            (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
+;;             ;; Based on function from https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
+;;             (defun copilot-complete-or-accept ()
+;;               "Command that either triggers a completion or accepts one if one is available."
+;;               (interactive)
+;;               (if (copilot--overlay-visible)
+;;                   (progn
+;;                     (copilot-accept-completion))
+;;                 (copilot-complete)))
+;;             (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
+
+(use-package llm
+  :pin gnu
+  :ensure t)
+
+(use-package ellama
+  :ensure t
+  :pin gnu
+  :after llm
+  :init
+  (setopt ellama-language "English")
+  (require 'llm-ollama))
+
+(defun ellama-code-agent (prompt)
+  (interactive "sWhat coding task can I help with? \n")
+  (let* ((origin (vc-responsible-backend buffer-file-name t))
+         (context (list buffer-file-name))
+         (project-directory
+          (if origin (vc-call-backend origin 'root buffer-file-name) default-directory))
+         (strip-response (lambda (r) ; strip response a bit, just hardcoded for common models
+                           (if (string-match "<think>\\(.*\\|\n\\)*</think>" r)
+                               (setq r (replace-match "" t t r)))
+                           r))
+         (add-file-to-context (lambda (filename root)
+                                (let ((full-path (if (file-name-absolute-p filename)
+                                                     filename
+                                                   (file-name-concat (or root project-directory) filename))))
+                                  (if (and (file-exists-p full-path) ; file must exist
+                                           (not (file-directory-p full-path)) ; directories are not context
+                                           (not (string-match-p (regexp-quote "/.") full-path))) ; hidden files or files in any hidden directory should be ignored
+                                      (ellama-context-element-add (ellama-context-element-file :name full-path))))))
+         (add-current-context (lambda (c)
+                                (dolist (filename c) (funcall add-file-to-context filename project-directory)))))
+    (ellama-chain
+     prompt
+     `((:chat t
+              :transform ,(lambda (_ _)
+		            (format "You are a software developer pair programmer.
+The mode of the file we are in is \"%s\", so that should give you a hint as to the programming language we are using.
+Which kinds of source or configuration files would a developer typically edit in a project using this language? Don't overthink it, just quickly answer 1 file ending per line, beginning with a '.' (dot)." major-mode)))
+       (:chat t
+              :transform ,(lambda (_ acc)
+                            (funcall add-current-context context)
+
+                            (let* ((default-directory project-directory)
+                                   (project-files nil)
+                                   (file-endings
+                                    (seq-remove (lambda (s) (not (string-prefix-p "." s)))
+                                                (seq-mapcat (lambda (s) (split-string s "[\*: `~\+\-]"))
+                                                            (seq-remove (lambda (s) (not (string-match-p "^[\*: `~\+\-]*\." s)))
+                                                                        (seq-map (lambda (s) (string-trim s)) (split-string (funcall strip-response (car acc)) "\n")))))))
+                              (dolist (file-ending file-endings)
+                                      (setq project-files (seq-uniq (seq-concatenate 'list
+                                                                                     project-files
+                                                                                     (string-split (shell-command-to-string (format "git ls-tree -r --name-only HEAD | grep '%s$'" file-ending)) "\n")))))
+
+                              (format "You are a software developer pair programmer.
+The mode of the file we are in is \"%s\", so that should give you a hint as to the programming language we are using.
+Your task is:
+
+%s
+
+The project has the following files which may be relevant.
+
+%s
+
+Before solving the task, we need to read the contents of a subset of project files that might help.
+Answer up to 6 grep shell commands you would use to find files relevant to the task. Use the -r -i -l flags to make grep recursive, match case-insensitive, and print only filenames." major-mode prompt (string-join project-files "\n")))))
+       (:chat t
+              :transform ,(lambda (_ acc)
+                            ;; Ask if we should run the grep command and add any returned
+                            ;; files to the context.
+                            (let ((default-directory project-directory)
+                                  (grep-commands (seq-remove (lambda (s) (not (string-prefix-p "grep " s)))
+                                                             (seq-map (lambda (s) (string-trim s)) (split-string (funcall strip-response (car acc)) "[:\n`~]")))))
+                              (dolist (grep-command grep-commands)
+                                (if (yes-or-no-p (format "Ok to run `%s` in `%s`?" grep-command default-directory))
+                                    (let ((filenames (seq-uniq (split-string (shell-command-to-string grep-command) "[\n:]"))))
+                                      (dolist (filename filenames)
+                                        (funcall add-file-to-context filename project-directory))))))
+
+                            (funcall add-current-context context)
+
+                            (format "You are a software developer pair programmer.
+The mode of the file we are in is \"%s\", so that should give you a hint as to the programming language we are using.
+Your task is:
+
+%s
+
+You should have all the context you need now. Please finish on the task." major-mode prompt)))))))
 
 (use-package impatient-mode
   :commands impatient-mode
