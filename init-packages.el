@@ -340,12 +340,18 @@
 (use-package vc
   :if (eq system-type 'windows-nt)
   :bind (("C-x C-z" . project-vc-dir)
+         :map diff-mode-map
+         ("c" . vc-next-action)
          :map vc-dir-mode-map 
          ("F" . vc-pull)
          ("P" . vc-push)
          ("k" . vc-revert)
          ("TAB" . vc-diff)
          ("c" . vc-next-action)
+         ("U" . (lambda ()
+                  (interactive)
+                  (dolist (file (vc-dir-marked-files))
+                    (vc-dir-mark-by-regexp (regexp-quote (file-relative-name file (vc-root-dir))) t))))
          ("s" . (lambda ()
                   (interactive)
                   (let* ((backend (vc-deduce-backend))
