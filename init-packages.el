@@ -605,9 +605,11 @@
                   treemacs-width-is-initially-locked t)))
 
 (use-package which-key
+  ;; shows bindings for current prefix in side window
   :ensure t
   :config (progn
             (which-key-mode)
+            (setq which-key-idle-delay 0.1)
             (which-key-setup-side-window-right-bottom)))
 
 (use-package lsp-mode
