@@ -817,7 +817,7 @@
   (interactive)
   (treemacs t))
 
-(use-package powershell
+(use-package koopa-mode
   :if (eq system-type 'windows-nt)
   :mode "\\.ps1\\'"
   :ensure t)
