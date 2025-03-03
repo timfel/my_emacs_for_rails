@@ -340,6 +340,8 @@
 (use-package vc
   :if (eq system-type 'windows-nt)
   :bind (("C-x C-z" . project-vc-dir)
+         :map vc-git-log-edit-mode-map
+         ("C-c C-a" . vc-git-log-edit-toggle-amend)
          :map diff-mode-map
          ("c" . vc-next-action)
          :map vc-dir-mode-map 
@@ -348,6 +350,12 @@
          ("k" . vc-revert)
          ("TAB" . vc-diff)
          ("c" . vc-next-action)
+         ("i" . vc-dir-ignore)
+         ("g" . (lambda ()
+                  (interactive)
+                  (vc-dir-hide-up-to-date)
+                  (revert-buffer)
+                  (run-with-idle-timer 4 nil #'vc-dir-hide-up-to-date)))
          ("U" . (lambda ()
                   (interactive)
                   (dolist (file (vc-dir-marked-files))
