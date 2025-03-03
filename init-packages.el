@@ -337,7 +337,32 @@
   :if (window-system)
   :hook (company-mode . company-box-mode))
 
+(use-package vc
+  :if (eq system-type 'windows-nt)
+  :bind (("C-x C-z" . project-vc-dir)
+         :map vc-dir-mode-map 
+         ("F" . vc-pull)
+         ("P" . vc-push)
+         ("k" . vc-revert)
+         ("TAB" . vc-diff)
+         ("c" . vc-next-action)
+         ("s" . (lambda ()
+                  (interactive)
+                  (let* ((backend (vc-deduce-backend))
+                         (file (vc-dir-current-file))
+                         (fileset (list backend (list file) nil nil nil)))
+                    (condition-case nil (vc-register fileset) (error nil))
+                    (vc-dir-mark-by-regexp (regexp-quote (file-relative-name file (vc-root-dir))) nil))))
+         ("u" . (lambda ()
+                  (interactive)
+                  (let* ((backend (vc-deduce-backend))
+                         (file (vc-dir-current-file))
+                         (fileset (list backend (list file) nil nil nil)))
+                    (if (eq (vc-state file) 'added) (vc-revert-file file))
+                    (vc-dir-mark-by-regexp (regexp-quote (file-relative-name file (vc-root-dir))) t))))))
+
 (use-package magit
+  :if (not (eq system-type 'windows-nt))
   :bind ("C-x C-z" . magit-status)
   :ensure t
   :config (progn
