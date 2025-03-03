@@ -344,7 +344,8 @@
          ("C-c C-a" . vc-git-log-edit-toggle-amend)
          :map diff-mode-map
          ("c" . vc-next-action)
-         :map vc-dir-mode-map 
+         :map vc-dir-mode-map
+         ("!" . eshell)
          ("F" . vc-pull)
          ("P" . vc-push)
          ("k" . vc-revert)
