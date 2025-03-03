@@ -578,6 +578,14 @@
   :ensure t
   :config (progn
 
+            (defun my/c-clear-string-fences (orig-fun)
+              (condition-case nil
+                  (funcall orig-fun)
+                (error
+                 nil)))
+            (advice-add #'c-clear-string-fences :around #'my/c-clear-string-fences)
+            (advice-add #'c-restore-string-fences :around #'my/c-clear-string-fences)
+
             (if (executable-find "emacs-lsp-booster")
                 (progn
                   (defun lsp-booster--advice-json-parse (old-fn &rest args)
@@ -1419,7 +1427,8 @@
 
 (use-package multiple-cursors
   :ensure t
-  :defer t)
+  :defer t
+  :bind (("C-S-d" . mc/mark-more-like-this-extended)))
 
 (use-package adaptive-wrap
   :ensure t
