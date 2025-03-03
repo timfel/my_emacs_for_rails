@@ -338,7 +338,47 @@
   :if (window-system)
   :hook (company-mode . company-box-mode))
 
+(use-package vc
+  :if (eq system-type 'windows-nt)
+  :bind (("C-x C-z" . project-vc-dir)
+         :map vc-git-log-edit-mode-map
+         ("C-c C-a" . vc-git-log-edit-toggle-amend)
+         :map diff-mode-map
+         ("c" . vc-next-action)
+         :map vc-dir-mode-map
+         ("!" . eshell)
+         ("F" . vc-pull)
+         ("P" . vc-push)
+         ("k" . vc-revert)
+         ("TAB" . vc-diff)
+         ("c" . vc-next-action)
+         ("i" . vc-dir-ignore)
+         ("g" . (lambda ()
+                  (interactive)
+                  (vc-dir-hide-up-to-date)
+                  (revert-buffer)
+                  (run-with-idle-timer 4 nil #'vc-dir-hide-up-to-date)))
+         ("U" . (lambda ()
+                  (interactive)
+                  (dolist (file (vc-dir-marked-files))
+                    (vc-dir-mark-by-regexp (regexp-quote (file-relative-name file (vc-root-dir))) t))))
+         ("s" . (lambda ()
+                  (interactive)
+                  (let* ((backend (vc-deduce-backend))
+                         (file (vc-dir-current-file))
+                         (fileset (list backend (list file) nil nil nil)))
+                    (condition-case nil (vc-register fileset) (error nil))
+                    (vc-dir-mark-by-regexp (regexp-quote (file-relative-name file (vc-root-dir))) nil))))
+         ("u" . (lambda ()
+                  (interactive)
+                  (let* ((backend (vc-deduce-backend))
+                         (file (vc-dir-current-file))
+                         (fileset (list backend (list file) nil nil nil)))
+                    (if (eq (vc-state file) 'added) (vc-revert-file file))
+                    (vc-dir-mark-by-regexp (regexp-quote (file-relative-name file (vc-root-dir))) t))))))
+
 (use-package magit
+  :if (not (eq system-type 'windows-nt))
   :bind ("C-x C-z" . magit-status)
   :ensure t
   :config (progn
@@ -567,9 +607,11 @@
                   treemacs-width-is-initially-locked t)))
 
 (use-package which-key
+  ;; shows bindings for current prefix in side window
   :ensure t
   :config (progn
             (which-key-mode)
+            (setq which-key-idle-delay 0.1)
             (which-key-setup-side-window-right-bottom)))
 
 (use-package lsp-mode
@@ -639,7 +681,9 @@
                     (lsp-notify "workspace/didChangeWatchedFiles"
                                 `((changes . [((type . ,(alist-get 'changed lsp--file-change-type))
                                                (uri . ,(lsp--path-to-uri buffer-file-name)))]))))))
-
+            (if (eq window-system 'w32)
+                (defun lsp-headerline--arrow-icon ()
+                  ">"))
             (setq lsp-print-io nil
                   lsp-lens-enable (not (eq system-type 'windows-nt))
                   lsp-completion-enable-additional-text-edit t
@@ -801,7 +845,7 @@
   (interactive)
   (treemacs t))
 
-(use-package powershell
+(use-package koopa-mode
   :if (eq system-type 'windows-nt)
   :mode "\\.ps1\\'"
   :ensure t)
@@ -828,7 +872,7 @@
                 (setq
                  lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")
               (setq
-               lsp-java-java-path (expand-file-name "~/../../.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")))
+               lsp-java-java-path (expand-file-name "~/../../.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java.exe")))
             (setq
              lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/snapshots/jdt-language-server-latest.tar.gz"
              lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true")
