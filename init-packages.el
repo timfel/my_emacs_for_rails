@@ -672,7 +672,9 @@
                     (lsp-notify "workspace/didChangeWatchedFiles"
                                 `((changes . [((type . ,(alist-get 'changed lsp--file-change-type))
                                                (uri . ,(lsp--path-to-uri buffer-file-name)))]))))))
-
+            (if (eq window-system 'w32)
+                (defun lsp-headerline--arrow-icon ()
+                  ">"))
             (setq lsp-print-io nil
                   lsp-lens-enable (not (eq system-type 'windows-nt))
                   lsp-completion-enable-additional-text-edit t
@@ -861,7 +863,7 @@
                 (setq
                  lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")
               (setq
-               lsp-java-java-path (expand-file-name "~/../../.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")))
+               lsp-java-java-path (expand-file-name "~/../../.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java.exe")))
             (setq
              lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/snapshots/jdt-language-server-latest.tar.gz"
              lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true")
