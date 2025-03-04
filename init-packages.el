@@ -357,7 +357,11 @@
          :map vc-dir-mode-map
          ("!" . eshell)
          ("F" . vc-pull)
-         ("P" . vc-push)
+         ("P" . (lambda ()
+                  (interactive)
+                  (if (eq 'Git (vc-deduce-backend))
+                      (vc-git-push t)
+                    vc-push)))
          ("k" . vc-revert)
          ("TAB" . (lambda ()
                     (interactive)
@@ -622,7 +626,7 @@
   :ensure t
   :config (progn
             (which-key-mode)
-            (setq which-key-idle-delay 0.1)
+            (setq which-key-idle-delay 1.0)
             (which-key-setup-side-window-right-bottom)))
 
 (use-package lsp-mode
