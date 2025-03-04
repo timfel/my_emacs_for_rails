@@ -361,7 +361,7 @@
                   (interactive)
                   (if (eq 'Git (vc-deduce-backend))
                       (vc-git-push t)
-                    vc-push)))
+                    (vc-push))))
          ("k" . vc-revert)
          ("TAB" . (lambda ()
                     (interactive)
