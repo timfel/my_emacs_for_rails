@@ -343,6 +343,15 @@
   :bind (("C-x C-z" . project-vc-dir)
          :map vc-git-log-edit-mode-map
          ("C-c C-a" . vc-git-log-edit-toggle-amend)
+         ("C-c C-l" . vc-print-log)
+         :map vc-git-log-view-mode-map
+         ("r" . (lambda ()
+                  (interactive)
+                  (let* ((rev (log-view-current-entry))
+                         (default-directory (vc-root-dir))
+                         (cmd (format "%s rebase --autostash --autosquash %s" vc-git-program (cadr rev))))
+                    (if (yes-or-no-p (concat "Run `" cmd "`?"))
+                        (shell-command cmd)))))
          :map diff-mode-map
          ("c" . vc-next-action)
          :map vc-dir-mode-map
