@@ -330,7 +330,7 @@
             (global-company-mode t)
             (setq
              company-dabbrev-downcase 0
-             company-idle-delay (if (eq window-system 'w32) 10 0.2))))
+             company-idle-delay (if (eq system-type 'windows-nt) 10 0.2))))
 
 (use-package company-box
   :ensure t
@@ -350,7 +350,9 @@
          ("F" . vc-pull)
          ("P" . vc-push)
          ("k" . vc-revert)
-         ("TAB" . vc-diff)
+         ("TAB" . (lambda ()
+                    (interactive)
+                    (vc-diff nil nil (list (vc-deduce-backend) (list (vc-dir-current-file)) nil nil))))
          ("c" . vc-next-action)
          ("i" . vc-dir-ignore)
          ("g" . (lambda ()
@@ -681,11 +683,11 @@
                     (lsp-notify "workspace/didChangeWatchedFiles"
                                 `((changes . [((type . ,(alist-get 'changed lsp--file-change-type))
                                                (uri . ,(lsp--path-to-uri buffer-file-name)))]))))))
-            (if (eq window-system 'w32)
+            (if (eq system-type 'windows-nt)
                 (defun lsp-headerline--arrow-icon ()
                   ">"))
             (setq lsp-print-io nil
-                  lsp-lens-enable (not (eq system-type 'windows-nt))
+                  lsp-lens-enable t
                   lsp-completion-enable-additional-text-edit t
                   lsp-enable-snippet t
                   lsp-enable-indentation nil
@@ -726,21 +728,21 @@
                   lsp-enable-xref t
                   lsp-completion-enable t
                   lsp-completion-filter-on-incomplete nil
-                  lsp-completion-show-detail (not (eq system-type 'windows-nt))
+                  lsp-completion-show-detail t
                   lsp-completion-show-kind nil
                   lsp-completion-sort-initial-results nil
                   lsp-response-timeout 30
                   lsp-diagnostic-clean-after-change nil
                   lsp-eldoc-render-all t
-                  lsp-ui-peek-always-show (not (eq window-system 'w32))
-                  lsp-ui-doc-enable (not (eq window-system 'w32))
+                  lsp-ui-peek-always-show t
+                  lsp-ui-doc-enable t
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
-                  lsp-ui-doc-use-webkit (not (eq window-system 'w32))
+                  lsp-ui-doc-use-webkit (not (eq system-type 'windows-nt))
                   lsp-ui-doc-show-with-cursor nil
                   lsp-ui-sideline-enable (not (eq system-type 'windows-nt))
                   lsp-ui-sideline-show-symbol nil
-                  lsp-ui-sideline-show-hover (not (eq window-system 'w32))
+                  lsp-ui-sideline-show-hover (not (eq system-type 'windows-nt))
                   lsp-ui-sideline-show-code-actions t
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
@@ -868,7 +870,7 @@
                                                                          "com.oracle.graal.python.nodes.SpecialMethodNames"
                                                                          "com.oracle.graal.python.nodes.SpecialAttributeNames"
                                                                          "com.oracle.graal.python.nodes.ErrorMessages")))
-            (if (not (eq window-system 'w32))
+            (if (not (eq system-type 'windows-nt))
                 (setq
                  lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")
               (setq
@@ -886,7 +888,7 @@
              lsp-java-import-gradle-enabled nil
              lsp-java-completion-import-order ["java" "javax" "org" "com"]
              lsp-java-import-order ["java" "javax" "org" "com"])
-            (if (not (eq window-system 'w32))
+            (if (not (eq system-type 'windows-nt))
                 (setq lsp-java-configuration-runtimes '[(:name "JavaSE-21"
                                                                :path (expand-file-name "~/.sdkman/candidates/java/21.0.1-oracle")
                                                                :default t)]))
@@ -1208,7 +1210,7 @@
   :ensure t)
 
 (defun my/load-default-theme ()
-  (let ((theme (cond ((eq window-system 'w32)
+  (let ((theme (cond ((eq system-type 'windows-nt)
                       'eclipse)
                      ((eq window-system nil)
                       'eclipse)
@@ -1453,7 +1455,7 @@
   :if (memq window-system '(mac ns x pgtk))
   :config (exec-path-from-shell-initialize))
 
-(if (eq window-system 'w32)
+(if (eq system-type 'windows-nt)
     (let ((path (shell-command-to-string "powershell.exe -Command \"echo $Env:PATH\"")))
       (setenv "PATH" path)
       (setq exec-path (append (parse-colon-path path) (list exec-directory)))
@@ -1547,17 +1549,21 @@
 ;;                 (copilot-complete)))
 ;;             (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
 
-(use-package llm
-  :pin gnu
-  :ensure t)
+(if (not (eq system-type 'windows-nt))
+    (progn
+      (use-package llm
+        :if (not (eq system-type 'windows-nt))
+        :pin gnu
+        :ensure t)
 
-(use-package ellama
-  :ensure t
-  :pin gnu
-  :after llm
-  :init
-  (setopt ellama-language "English")
-  (require 'llm-ollama))
+      (use-package ellama
+        :if (not (eq system-type 'windows-nt))
+        :ensure t
+        :pin gnu
+        :after llm
+        :init
+        (setopt ellama-language "English")
+        (require 'llm-ollama))))
 
 (defun ellama-code-agent (prompt)
   (interactive "sWhat coding task can I help with? \n")
