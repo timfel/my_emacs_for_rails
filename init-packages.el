@@ -341,20 +341,12 @@
 (use-package vc
   :if (eq system-type 'windows-nt)
   :bind (("C-x C-z" . project-vc-dir)
-         :map vc-git-log-edit-mode-map
-         ("C-c C-a" . vc-git-log-edit-toggle-amend)
-         ("C-c C-l" . vc-print-log)
-         :map vc-git-log-view-mode-map
-         ("r" . (lambda ()
-                  (interactive)
-                  (let* ((rev (log-view-current-entry))
-                         (default-directory (vc-root-dir))
-                         (cmd (format "%s rebase --autostash --autosquash %s" vc-git-program (cadr rev))))
-                    (if (yes-or-no-p (concat "Run `" cmd "`?"))
-                        (shell-command cmd)))))
          :map diff-mode-map
-         ("c" . vc-next-action)
-         :map vc-dir-mode-map
+         ("c" . vc-next-action)))
+
+(use-package vc-dir
+  :if (eq system-type 'windows-nt)
+  :bind (:map vc-dir-mode-map
          ("!" . eshell)
          ("F" . vc-pull)
          ("P" . (lambda ()
@@ -391,6 +383,20 @@
                          (fileset (list backend (list file) nil nil nil)))
                     (if (eq (vc-state file) 'added) (vc-revert-file file))
                     (vc-dir-mark-by-regexp (regexp-quote (file-relative-name file (vc-root-dir))) t))))))
+
+(use-package vc-git
+  :if (eq system-type 'windows-nt)
+  :bind (:map vc-git-log-edit-mode-map
+         ("C-c C-a" . vc-git-log-edit-toggle-amend)
+         ("C-c C-l" . vc-print-log)
+         :map vc-git-log-view-mode-map
+         ("r" . (lambda ()
+                  (interactive)
+                  (let* ((rev (log-view-current-entry))
+                         (default-directory (vc-root-dir))
+                         (cmd (format "%s rebase --autostash --autosquash %s" vc-git-program (cadr rev))))
+                    (if (yes-or-no-p (concat "Run `" cmd "`?"))
+                        (shell-command cmd)))))))
 
 (use-package magit
   :if (not (eq system-type 'windows-nt))
