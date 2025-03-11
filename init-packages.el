@@ -1220,28 +1220,9 @@
   :after (helm lsp-mode)
   :commands helm-lsp-workspace-symbol)
 
-;; The spacemacs default colors
-
-(use-package eclipse-theme
-  :ensure t)
-
 (use-package spacemacs-theme
+  :defer t
   :ensure t)
-
-(defun my/load-default-theme ()
-  (let ((theme (cond ((eq system-type 'windows-nt)
-                      'vscode-dark-plus)
-                      ;; 'eclipse)
-                     ((eq window-system nil)
-                      'eclipse)
-                     ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
-                      'modus-vivendi)
-                     (t 'modus-operandi))))
-    (load-theme theme t)))
-(my/load-default-theme)
-(defadvice load-theme (before theme-dont-propagate activate)
-  (mapcar #'disable-theme custom-enabled-themes))
-
 (use-package almost-mono-themes
   :defer t
   :ensure t)
@@ -1258,8 +1239,22 @@
   :defer t
   :ensure t)
 
+(defun my/load-default-theme ()
+  (let ((theme (cond ((eq system-type 'windows-nt)
+                      'vscode-dark-plus)
+                     ((eq window-system nil)
+                      'eclipse)
+                     ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
+                      'modus-vivendi)
+                     (t 'modus-operandi))))
+    (load-theme theme t)))
+(my/load-default-theme)
+(defadvice load-theme (before theme-dont-propagate activate)
+  (mapcar #'disable-theme custom-enabled-themes))
+
 ;; Flyspell options
 (use-package ispell
+  :defer t
   :ensure t
   :commands ispell
   :bind (("<f8>" . fd-switch-dictionary))
