@@ -702,10 +702,8 @@
                     (lsp-notify "workspace/didChangeWatchedFiles"
                                 `((changes . [((type . ,(alist-get 'changed lsp--file-change-type))
                                                (uri . ,(lsp--path-to-uri buffer-file-name)))]))))))
-            (if (eq system-type 'windows-nt)
-                (defun lsp-headerline--arrow-icon ()
-                  ">"))
             (setq lsp-print-io nil
+                  lsp-headerline-arrow ">"
                   lsp-lens-enable t
                   lsp-completion-enable-additional-text-edit t
                   lsp-enable-snippet t
