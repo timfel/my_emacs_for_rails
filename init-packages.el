@@ -584,6 +584,9 @@
   :config (progn
             (require 'desktop)
 
+            (if (eq system-type 'windows-nt)
+                (setq treemacs-git-mode nil))
+
             ;; Sessions
             (defun my/treemacs-desktop-hook ()
               (dolist (buffer (buffer-list))
