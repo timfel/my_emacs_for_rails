@@ -1660,6 +1660,13 @@ You should have all the context you need now. Please finish on the task." major-
   :commands impatient-mode
   :ensure t)
 
+(use-package buffer-terminator
+  :ensure t
+  :custom
+  (buffer-terminator-verbose nil)
+  :config
+  (buffer-terminator-mode 1))
+
 ;; (add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
 ;; (require 'jsonnet-language-server)
 
