@@ -1230,7 +1230,8 @@
 
 (defun my/load-default-theme ()
   (let ((theme (cond ((eq system-type 'windows-nt)
-                      'eclipse)
+                      'vscode-dark-plus)
+                      ;; 'eclipse)
                      ((eq window-system nil)
                       'eclipse)
                      ((string-equal (getenv "GTK_THEME") "Adwaita:dark")

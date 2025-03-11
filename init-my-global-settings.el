@@ -68,7 +68,7 @@
 (setq default-directory "~/")
 ;; Get rid of toolbar and scrollbar
 (tool-bar-mode 0)
-(menu-bar-mode t)
+(menu-bar-mode 0)
 (scroll-bar-mode 0)
 ;; wheel mouse
 ;; Standard copy'n'paste
