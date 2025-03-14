@@ -1581,6 +1581,18 @@
         (setopt ellama-language "English")
         (require 'llm-ollama))))
 
+(use-package aider
+  :ensure t
+  :if (file-executable-p "/home/tim/dev/aider/.venv/bin/aider")
+  :vc (:url "https://github.com/tninja/aider.el")
+  :bind (("C-c C-a" . aider-transient-menu))
+  :custom
+  (aider-program "/home/tim/dev/aider/.venv/bin/aider")
+  (aider-args '("--model" "ollama_chat/qwen2.5-coder:7b"))
+  :config
+  (require 'aider-helm)
+  (setenv "OLLAMA_API_BASE" "http://127.0.0.1:11434"))
+
 (use-package impatient-mode
   :commands impatient-mode
   :ensure t)
