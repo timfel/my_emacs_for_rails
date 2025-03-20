@@ -1602,7 +1602,13 @@
   :custom
   (buffer-terminator-verbose nil)
   :config
-  (buffer-terminator-mode 1))
+  (buffer-terminator-mode 1)
+  (add-to-list 'buffer-terminator-rules-alist
+               `(call-function . ,(lambda ()
+                                    (if (> (/ buffer-terminator-interval 2)
+                                           (time-convert (current-idle-time) 'integer))
+                                        :keep
+                                      nil)))))
 
 ;; (add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
 ;; (require 'jsonnet-language-server)
