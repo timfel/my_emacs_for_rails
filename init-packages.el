@@ -1588,7 +1588,10 @@
   :bind (("C-c C-a" . aider-transient-menu))
   :custom
   (aider-program "/home/tim/dev/aider/.venv/bin/aider")
-  (aider-args '("--model" "ollama_chat/qwen2.5-coder:7b"))
+  (aider-args '("--no-analytics"
+                "--model" "ollama_chat/qwen2.5-coder:7b"
+                "--editor-model" "ollama_chat/codellama:latest"
+                ))
   :config
   (require 'aider-helm)
   (setenv "OLLAMA_API_BASE" "http://127.0.0.1:11434"))
