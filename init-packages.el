@@ -1483,9 +1483,8 @@
   :mode ("\\.rs$")
   :config (progn
             (add-to-list 'auto-mode-alist '("\\.rs$" . rustic-mode))
-            (setq rustic-lsp-client 'lsp-mode
-                  rustic-lsp-server
-                  lsp-rust-server)))
+            (require 'rustic-lsp)
+            (rustic-lsp-mode-setup)))
 
 (use-package multiple-cursors
   :ensure t
@@ -1606,6 +1605,12 @@
   (buffer-terminator-verbose nil)
   :config
   (buffer-terminator-mode 1)
+  (add-to-list 'buffer-terminator-rules-alist
+               `(call-function . ,(lambda ()
+                                    (if (not (seq-filter (lambda (x) (string-suffix-p x (buffer-name)))
+                                                         '(".java")))
+                                        :keep
+                                      nil))))
   (add-to-list 'buffer-terminator-rules-alist
                `(call-function . ,(lambda ()
                                     (if (> (/ buffer-terminator-interval 2)
