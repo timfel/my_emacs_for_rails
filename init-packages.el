@@ -864,9 +864,25 @@
                 )))
             (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)))
 
-(defun treemacs-t ()
-  (interactive)
-  (treemacs t))
+(defun treemacs-t (path?)
+  (interactive "P")
+  (require 'lsp-java)
+  (if path?
+      (let* ((path (read-directory-name "Select folder for  worktree: "))
+             (name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" path))
+             (ws (treemacs-find-workspace-by-name name)))
+        (if (not ws)
+            (setq ws (cdar (treemacs-do-create-workspace name))))
+        (if (not (seq-find (lambda (elt)
+                             (or (string-equal-ignore-case (treemacs-project->name elt) path)
+                                 (string-equal-ignore-case (treemacs-project->path elt) path)))
+                           (treemacs-workspace->projects ws)))
+            (push (treemacs-project->create! :name path :path path :path-status 'local-readable)
+                  (treemacs-workspace->projects ws)))
+        (treemacs-do-switch-workspace ws))
+    ;; (seq-map (lambda (elt) (treemacs-workspace->name elt))
+    ;;          (treemacs-workspaces))
+    (treemacs t)))
 
 (use-package koopa-mode
   :if (eq system-type 'windows-nt)
