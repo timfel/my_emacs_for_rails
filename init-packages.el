@@ -592,9 +592,10 @@
               (dolist (buffer (buffer-list))
                 (let ((name (buffer-name buffer)))
                   (if (and (not (string-match-p "\\*" name))
-                           (not (buffer-modified-p buffer)))
+                           (not (buffer-modified-p buffer))
+                           (not (get-buffer-window (current-buffer) t)))
                       (kill-buffer buffer))))
-              (if desktop-save-mode
+              (if (and desktop-save-mode desktop-dirname)
                   (desktop-save desktop-dirname))
               (desktop-save-mode-off)
               (setq
