@@ -1481,7 +1481,7 @@
 (use-package rustic
   :ensure t
   :defer t
-  :mode ("\\.rs$")
+  :mode ("\\.rs$" . rustic-mode)
   :config (progn
             (add-to-list 'auto-mode-alist '("\\.rs$" . rustic-mode))
             (require 'rustic-lsp)
