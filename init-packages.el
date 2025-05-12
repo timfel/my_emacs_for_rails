@@ -864,25 +864,44 @@
                 )))
             (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)))
 
-(defun treemacs-t (path?)
-  (interactive "P")
+(defun treemacs-t ()
+  (interactive)
   (require 'lsp-java)
-  (if path?
-      (let* ((path (read-directory-name "Select folder for  worktree: "))
-             (name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" path))
-             (ws (treemacs-find-workspace-by-name name)))
-        (if (not ws)
-            (setq ws (cdar (treemacs-do-create-workspace name))))
-        (if (not (seq-find (lambda (elt)
-                             (or (string-equal-ignore-case (treemacs-project->name elt) path)
-                                 (string-equal-ignore-case (treemacs-project->path elt) path)))
-                           (treemacs-workspace->projects ws)))
-            (push (treemacs-project->create! :name path :path path :path-status 'local-readable)
-                  (treemacs-workspace->projects ws)))
-        (treemacs-do-switch-workspace ws))
-    ;; (seq-map (lambda (elt) (treemacs-workspace->name elt))
-    ;;          (treemacs-workspaces))
-    (treemacs t)))
+  (let* ((path (completing-read "Workspace or folder: "
+                               (completion-table-dynamic
+                                (lambda (s)
+                                  (let* ((parent-folder (file-name-directory s))
+                                         (folders (if (and parent-folder (file-directory-p parent-folder))
+                                                      (seq-filter
+                                                       (lambda (p) (file-directory-p p))
+                                                       (seq-map
+                                                        (lambda (d) (file-name-concat parent-folder d))
+                                                        (directory-files parent-folder)))))
+                                         (workspaces (seq-map (lambda (elt) (treemacs-workspace->name elt))
+                                                              (treemacs-workspaces))))
+                                    (if (and folders (string-prefix-p s (expand-file-name ".")))
+                                        (setq folders (seq-concatenate 'list folders (list (expand-file-name ".")))))
+                                    (if (string-empty-p s)
+                                        (setq workspaces (seq-concatenate 'list workspaces (list (expand-file-name ".")))))
+                                    (if folders
+                                        folders
+                                      workspaces))))))
+         (name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" path))
+         (ws (or (treemacs-find-workspace-by-name path) (treemacs-find-workspace-by-name name))))
+    (if (file-directory-p path)
+        (progn
+          (if (not ws)
+              (setq ws (nth 1 (treemacs-do-create-workspace name))))
+          (if (not (seq-find (lambda (elt)
+                               (or (string-equal-ignore-case (treemacs-project->name elt) path)
+                                   (string-equal-ignore-case (treemacs-project->path elt) path)))
+                             (treemacs-workspace->projects ws)))
+              (push (treemacs-project->create! :name path :path path :path-status 'local-readable)
+                    (treemacs-workspace->projects ws)))))
+    (if ws
+        (progn
+          (treemacs-do-switch-workspace ws)
+          (treemacs-select-window)))))
 
 (use-package koopa-mode
   :if (eq system-type 'windows-nt)
