@@ -867,6 +867,7 @@
 (defun treemacs-t ()
   (interactive)
   (require 'lsp-java)
+  (require 'treemacs)
   (let* ((cwd (expand-file-name "."))
          (path (completing-read (format "Workspace or folder (return for %s): " cwd)
                                (completion-table-dynamic
@@ -1578,33 +1579,47 @@
   :defer t
   :ensure t)
 
-;; (use-package quelpa
-;;   :ensure t
-;;   :defer t
-;;   :commands copilot-mode
-;;   :config (progn
-;;             (quelpa
-;;              '(copilot
-;;                :fetcher git
-;;                :url "https://github.com/zerolfx/copilot.el"
-;;                :branch "main"
-;;                :files ("dist" "*.el")))
-;;             (setq copilot-idle-delay 1
-;;                   copilot-log-max 100)
-;;             (require 'copilot)
-
-;;             ;; Based on function from https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
-;;             (defun copilot-complete-or-accept ()
-;;               "Command that either triggers a completion or accepts one if one is available."
-;;               (interactive)
-;;               (if (copilot--overlay-visible)
-;;                   (progn
-;;                     (copilot-accept-completion))
-;;                 (copilot-complete)))
-;;             (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
-
-(if (not (eq system-type 'windows-nt))
+(if (and nil (not (eq system-type 'windows-nt)))
     (progn
+      (use-package quelpa
+        :ensure t
+        :defer t
+        :commands copilot-mode
+        :config (progn
+                  (quelpa
+                   '(copilot
+                     :fetcher git
+                     :url "https://github.com/zerolfx/copilot.el"
+                     :branch "main"
+                     :files ("dist" "*.el")))
+                  (setq copilot-idle-delay 1
+                        copilot-log-max 100)
+                  (require 'copilot)
+
+                  ;; Based on function from https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
+                  (defun copilot-complete-or-accept ()
+                    "Command that either triggers a completion or accepts one if one is available."
+                    (interactive)
+                    (if (copilot--overlay-visible)
+                        (progn
+                          (copilot-accept-completion))
+                      (copilot-complete)))
+                  (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
+      
+      (use-package aider
+        :ensure t
+        :if (file-executable-p "/home/tim/dev/aider/.venv/bin/aider")
+        :vc (:url "https://github.com/tninja/aider.el")
+        :bind (("C-c C-a" . aider-transient-menu))
+        :custom
+        (aider-program "/home/tim/dev/aider/.venv/bin/aider")
+        (aider-args '("--no-analytics"
+                      "--model" "ollama_chat/qwen2.5-coder:latest"
+                      ))
+        :config
+        (require 'aider-helm)
+        (setenv "OLLAMA_API_BASE" "http://127.0.0.1:11434"))
+
       (use-package llm
         :if (not (eq system-type 'windows-nt))
         :pin gnu
@@ -1619,20 +1634,15 @@
         (setopt ellama-language "English")
         (require 'llm-ollama))))
 
-(use-package aider
+(use-package gptel
   :ensure t
-  :if (file-executable-p "/home/tim/dev/aider/.venv/bin/aider")
-  :vc (:url "https://github.com/tninja/aider.el")
-  :bind (("C-c C-a" . aider-transient-menu))
-  :custom
-  (aider-program "/home/tim/dev/aider/.venv/bin/aider")
-  (aider-args '("--no-analytics"
-                "--model" "ollama_chat/qwen2.5-coder:7b"
-                "--editor-model" "ollama_chat/codellama:latest"
-                ))
   :config
-  (require 'aider-helm)
-  (setenv "OLLAMA_API_BASE" "http://127.0.0.1:11434"))
+  (setq gptel-model 'qwen2.5-coder:latest
+        gptel-backend (gptel-make-ollama "Ollama"
+                                         :host "localhost:11434"
+                                         :stream t
+                                         :models '(qwen2.5-coder:latest)))
+  :bind (("C-x a i" . gptel-send)))
 
 (use-package impatient-mode
   :commands impatient-mode
