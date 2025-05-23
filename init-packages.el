@@ -19,6 +19,9 @@
    (package-install 'use-package)
    (require 'use-package)))
 
+(unless (package-installed-p 'vc-use-package)
+  (package-vc-install "https://github.com/slotThe/vc-use-package"))
+
 (use-package ht
   :ensure t
   :demand t)
@@ -1650,6 +1653,12 @@
                                          :stream t
                                          :models '(qwen2.5-coder:latest)))
   :bind (("C-x a i" . gptel-send)))
+
+(use-package gptel-quick
+  :vc (:url "https://github.com/karthink/gptel-quick")
+  :ensure t
+  :after gptel
+  :bind (("C-x a e" . gptel-quick)))
 
 (use-package impatient-mode
   :commands impatient-mode
