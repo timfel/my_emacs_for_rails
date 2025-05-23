@@ -802,8 +802,8 @@
              dap-python-debugger 'debugpy)
 
             (defun get-venv-executable (orig-fun command)
-              (let* ((root (lsp-workspace-root (buffer-file-name)))
-                     (cfg (f-join root "pyrightconfig.json")))
+              (if-let* ((root (lsp-workspace-root (buffer-file-name)))
+                        (cfg (f-join root "pyrightconfig.json")))
                 (if (file-exists-p cfg) ; have a pyrightconfig.json, parse it
                     (let* ((json (with-temp-buffer (insert-file-contents cfg) (json-parse-buffer)))
                            (venvPathCfg (ht-get json "venvPath" lsp-pyright-venv-directory))
