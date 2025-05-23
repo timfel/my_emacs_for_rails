@@ -866,33 +866,33 @@
 
 (defun treemacs-t ()
   (interactive)
-  (require 'lsp-java)
   (require 'treemacs)
+  (require 'lsp-java)
   (let* ((cwd (expand-file-name "."))
          (path (completing-read (format "Workspace or folder (return for %s): " cwd)
-                               (completion-table-dynamic
-                                (lambda (s)
-                                  (let* ((parent-folder (file-name-directory s))
-                                         (folders (if (and parent-folder (file-directory-p parent-folder))
-                                                      (seq-filter
-                                                       (lambda (p) (file-directory-p p))
-                                                       (seq-map
-                                                        (lambda (d) (file-name-concat parent-folder d))
-                                                        (directory-files parent-folder)))))
-                                         (workspaces (seq-map (lambda (elt) (treemacs-workspace->name elt))
-                                                              (treemacs-workspaces))))
-                                    (if (and folders (string-prefix-p s cwd))
-                                        (setq folders (seq-concatenate 'list folders (list cwd))))
-                                    (if (string-empty-p s)
-                                        (setq workspaces (seq-concatenate 'list workspaces (list cwd))))
-                                    (if folders
-                                        folders
-                                      workspaces)))))))
+                                (completion-table-dynamic
+                                 (lambda (s)
+                                   (let* ((parent-folder (file-name-directory s))
+                                          (folders (if (and parent-folder (file-directory-p parent-folder))
+                                                       (seq-filter
+                                                        (lambda (p) (file-directory-p p))
+                                                        (seq-map
+                                                         (lambda (d) (file-name-concat parent-folder d))
+                                                         (directory-files parent-folder)))))
+                                          (workspaces (seq-map (lambda (elt) (treemacs-workspace->name elt))
+                                                               (treemacs-workspaces))))
+                                     (if (and folders (string-prefix-p s cwd))
+                                         (setq folders (seq-concatenate 'list folders (list cwd))))
+                                     (if (string-empty-p s)
+                                         (setq workspaces (seq-concatenate 'list workspaces (list cwd))))
+                                     (if folders
+                                         folders
+                                       workspaces)))))))
     (if (string-empty-p path)
         (setq path cwd))
     (let* ((name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" path))
            (ws (or (treemacs-find-workspace-by-name path) (treemacs-find-workspace-by-name name))))
-      (if (file-directory-p path)
+      (if (and (file-directory-p path) (file-name-absolute-p path))
           (progn
             (if (not ws)
                 (setq ws (nth 1 (treemacs-do-create-workspace name))))
@@ -900,8 +900,9 @@
                                  (or (string-equal-ignore-case (treemacs-project->name elt) path)
                                      (string-equal-ignore-case (treemacs-project->path elt) path)))
                                (treemacs-workspace->projects ws)))
-                (push (treemacs-project->create! :name path :path path :path-status 'local-readable)
-                      (treemacs-workspace->projects ws)))))
+                (let ((projects (treemacs-workspace->projects ws)))
+                  (push (treemacs-project->create! :name path :path path :path-status 'local-readable)
+                        projects)))))
       (if ws
           (progn
             (treemacs-do-switch-workspace ws)
@@ -1170,6 +1171,12 @@
             (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
             (add-hook 'dap-terminated-hook (lambda (arg) (if (fboundp #'dap-hydra/nil) (call-interactively #'dap-hydra/nil))))
 
+            (with-eval-after-load 'dap-python
+              (dap-register-debug-template "DAP debugpy Attach 4711"
+                                           (list :type "python"
+                                                 :request "attach"
+                                                 :connect (list :host "localhost"
+                                                                :port 4711))))
             ;; default settings
             (setq
              dap-stack-trace-limit 40
