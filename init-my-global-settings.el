@@ -36,6 +36,7 @@
                             (set-face-attribute 'default nil :family "Consolas" :height 105))))
 
 (when (eq system-type 'windows-nt)
+  (setq-default buffer-file-coding-system 'utf-8-unix)
   (with-eval-after-load 'grep
     ;; findstr can handle the basic find|grep use case
     (grep-apply-setting 'grep-find-template
@@ -52,7 +53,8 @@
    (toggle-frame-fullscreen)))
 
 ;; if run in terminal, use the mouse
-(xterm-mouse-mode 0)
+(if (eq system-type 'gnu/linux)
+    (xterm-mouse-mode 0))
 
 ;; Don't even blink
 (blink-cursor-mode 0)
@@ -356,27 +358,6 @@
 ;;         (".c" (display-buffer-same-window) ())
 ;;         (".h" (display-buffer-same-window) ())))
 
-;; the below ensures we don't get conflicting emacs desktops for multiple instances
-(cond
- ((string-equal (frame-parameter nil 'name) "evolution")
-  (condition-case nil
-      (org-caldav-sync)
-    (error nil))
-  (save-some-buffers 'no-confirm)
-  ;; (cfw:open-org-calendar)
-  (wl))
- ((string-equal (frame-parameter nil 'name) (concat invocation-name "@" system-name))
-  ;; the default emacs
-  ;; Start the emacs server
-  ;; (setq server-use-tcp t) ;; Use TCP mode, my socket is often unavailable
-  ;; (setq server-host "127.0.0.1")
-  (if (functionp 'server-running-p)
-      (if (server-running-p)
-          (server-force-stop))
-    (if (file-exists-p "~/.emacs.d/server/server")
-        (delete-file "~/.emacs.d/server/server"))
-    (server-start))))
-
 (if (or
      (eq window-system 'pgtk)
      (and (eq window-system nil)
@@ -399,32 +380,6 @@
       (setq interprogram-paste-function 'wl-paste)))
 
 (global-set-key (kbd "C-z") 'beep)
-
-(defun irccloud ()
-  (interactive)
-
-  (let* ((host "bnc.irccloud.com")
-         (user "phlebas")
-         (port 6697)
-         (password (auth-source-pick-first-password
-                    :host host
-                    :user user
-                    :port (number-to-string port))))
-    (if (not password)
-        (progn
-          (setq password
-                (read-string (format "Enter password for %s@%s:%d: "
-                                     user host port)))
-          (write-region (format "machine %s login %s port %d password %s"
-                                host user port password)
-                        nil
-                        (f-expand "~/.authinfo")
-                        'append)))
-    (erc-tls :server host
-             :port port
-             :nick user
-             :full-name "Tim Felgentreff"
-             :password password)))
 
 ;; add latest nvm node if we have it
 (if-let* ((nvm "~/.nvm/versions/node/")
