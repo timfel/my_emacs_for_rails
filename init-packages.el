@@ -20,6 +20,9 @@
    (package-install 'use-package)
    (require 'use-package)))
 
+(unless (package-installed-p 'vc-use-package)
+  (package-vc-install "https://github.com/slotThe/vc-use-package"))
+
 (use-package ht
   :defer t
   :ensure t)
@@ -610,9 +613,10 @@
               (dolist (buffer (buffer-list))
                 (let ((name (buffer-name buffer)))
                   (if (and (not (string-match-p "\\*" name))
-                           (not (buffer-modified-p buffer)))
+                           (not (buffer-modified-p buffer))
+                           (not (get-buffer-window (current-buffer) t)))
                       (kill-buffer buffer))))
-              (if desktop-save-mode
+              (if (and desktop-save-mode desktop-dirname)
                   (desktop-save desktop-dirname))
               (desktop-save-mode-off)
               (setq
@@ -820,8 +824,8 @@
              dap-python-debugger 'debugpy)
 
             (defun get-venv-executable (orig-fun command)
-              (let* ((root (lsp-workspace-root (buffer-file-name)))
-                     (cfg (f-join root "pyrightconfig.json")))
+              (if-let* ((root (lsp-workspace-root (buffer-file-name)))
+                        (cfg (f-join root "pyrightconfig.json")))
                 (if (file-exists-p cfg) ; have a pyrightconfig.json, parse it
                     (let* ((json (with-temp-buffer (insert-file-contents cfg) (json-parse-buffer)))
                            (venvPathCfg (ht-get json "venvPath" lsp-pyright-venv-directory))
@@ -886,7 +890,47 @@
 
 (defun treemacs-t ()
   (interactive)
-  (treemacs t))
+  (require 'treemacs)
+  (require 'lsp-java)
+  (let* ((cwd (expand-file-name "."))
+         (path (completing-read (format "Workspace or folder (return for %s): " cwd)
+                                (completion-table-dynamic
+                                 (lambda (s)
+                                   (let* ((parent-folder (file-name-directory s))
+                                          (folders (if (and parent-folder (file-directory-p parent-folder))
+                                                       (seq-filter
+                                                        (lambda (p) (file-directory-p p))
+                                                        (seq-map
+                                                         (lambda (d) (file-name-concat parent-folder d))
+                                                         (directory-files parent-folder)))))
+                                          (workspaces (seq-map (lambda (elt) (treemacs-workspace->name elt))
+                                                               (treemacs-workspaces))))
+                                     (if (and folders (string-prefix-p s cwd))
+                                         (setq folders (seq-concatenate 'list folders (list cwd))))
+                                     (if (string-empty-p s)
+                                         (setq workspaces (seq-concatenate 'list workspaces (list cwd))))
+                                     (if folders
+                                         folders
+                                       workspaces)))))))
+    (if (string-empty-p path)
+        (setq path cwd))
+    (let* ((name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" path))
+           (ws (or (treemacs-find-workspace-by-name path) (treemacs-find-workspace-by-name name))))
+      (if (and (file-directory-p path) (file-name-absolute-p path))
+          (progn
+            (if (not ws)
+                (setq ws (nth 1 (treemacs-do-create-workspace name))))
+            (if (not (seq-find (lambda (elt)
+                                 (or (string-equal-ignore-case (treemacs-project->name elt) path)
+                                     (string-equal-ignore-case (treemacs-project->path elt) path)))
+                               (treemacs-workspace->projects ws)))
+                (let ((projects (treemacs-workspace->projects ws)))
+                  (push (treemacs-project->create! :name path :path path :path-status 'local-readable)
+                        projects)))))
+      (if ws
+          (progn
+            (treemacs-do-switch-workspace ws)
+            (treemacs-select-window))))))
 
 (use-package koopa-mode
   :if (eq system-type 'windows-nt)
@@ -1151,6 +1195,12 @@
             (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
             (add-hook 'dap-terminated-hook (lambda (arg) (if (fboundp #'dap-hydra/nil) (call-interactively #'dap-hydra/nil))))
 
+            (with-eval-after-load 'dap-python
+              (dap-register-debug-template "DAP debugpy Attach 4711"
+                                           (list :type "python"
+                                                 :request "attach"
+                                                 :connect (list :host "localhost"
+                                                                :port 4711))))
             ;; default settings
             (setq
              dap-stack-trace-limit 40
@@ -1504,12 +1554,11 @@
 (use-package rustic
   :ensure t
   :defer t
-  :mode ("\\.rs$")
+  :mode ("\\.rs$" . rustic-mode)
   :config (progn
             (add-to-list 'auto-mode-alist '("\\.rs$" . rustic-mode))
-            (setq rustic-lsp-client 'lsp-mode
-                  rustic-lsp-server
-                  lsp-rust-server)))
+            (require 'rustic-lsp)
+            (rustic-lsp-mode-setup)))
 
 (use-package multiple-cursors
   :ensure t
@@ -1565,33 +1614,47 @@
   :defer t
   :ensure t)
 
-;; (use-package quelpa
-;;   :ensure t
-;;   :defer t
-;;   :commands copilot-mode
-;;   :config (progn
-;;             (quelpa
-;;              '(copilot
-;;                :fetcher git
-;;                :url "https://github.com/zerolfx/copilot.el"
-;;                :branch "main"
-;;                :files ("dist" "*.el")))
-;;             (setq copilot-idle-delay 1
-;;                   copilot-log-max 100)
-;;             (require 'copilot)
-
-;;             ;; Based on function from https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
-;;             (defun copilot-complete-or-accept ()
-;;               "Command that either triggers a completion or accepts one if one is available."
-;;               (interactive)
-;;               (if (copilot--overlay-visible)
-;;                   (progn
-;;                     (copilot-accept-completion))
-;;                 (copilot-complete)))
-;;             (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
-
-(if (not (eq system-type 'windows-nt))
+(if (and nil (not (eq system-type 'windows-nt)))
     (progn
+      (use-package quelpa
+        :ensure t
+        :defer t
+        :commands copilot-mode
+        :config (progn
+                  (quelpa
+                   '(copilot
+                     :fetcher git
+                     :url "https://github.com/zerolfx/copilot.el"
+                     :branch "main"
+                     :files ("dist" "*.el")))
+                  (setq copilot-idle-delay 1
+                        copilot-log-max 100)
+                  (require 'copilot)
+
+                  ;; Based on function from https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
+                  (defun copilot-complete-or-accept ()
+                    "Command that either triggers a completion or accepts one if one is available."
+                    (interactive)
+                    (if (copilot--overlay-visible)
+                        (progn
+                          (copilot-accept-completion))
+                      (copilot-complete)))
+                  (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
+      
+      (use-package aider
+        :ensure t
+        :if (file-executable-p "/home/tim/dev/aider/.venv/bin/aider")
+        :vc (:url "https://github.com/tninja/aider.el")
+        :bind (("C-c C-a" . aider-transient-menu))
+        :custom
+        (aider-program "/home/tim/dev/aider/.venv/bin/aider")
+        (aider-args '("--no-analytics"
+                      "--model" "ollama_chat/qwen2.5-coder:latest"
+                      ))
+        :config
+        (require 'aider-helm)
+        (setenv "OLLAMA_API_BASE" "http://127.0.0.1:11434"))
+
       (use-package llm
         :if (not (eq system-type 'windows-nt))
         :pin gnu
@@ -1606,87 +1669,44 @@
         (setopt ellama-language "English")
         (require 'llm-ollama))))
 
-(defun ellama-code-agent (prompt)
-  (interactive "sWhat coding task can I help with? \n")
-  (let* ((origin (vc-responsible-backend buffer-file-name t))
-         (context (list buffer-file-name))
-         (project-directory
-          (if origin (vc-call-backend origin 'root buffer-file-name) default-directory))
-         (strip-response (lambda (r) ; strip response a bit, just hardcoded for common models
-                           (if (string-match "<think>\\(.*\\|\n\\)*</think>" r)
-                               (setq r (replace-match "" t t r)))
-                           r))
-         (add-file-to-context (lambda (filename root)
-                                (let ((full-path (if (file-name-absolute-p filename)
-                                                     filename
-                                                   (file-name-concat (or root project-directory) filename))))
-                                  (if (and (file-exists-p full-path) ; file must exist
-                                           (not (file-directory-p full-path)) ; directories are not context
-                                           (not (string-match-p (regexp-quote "/.") full-path))) ; hidden files or files in any hidden directory should be ignored
-                                      (ellama-context-element-add (ellama-context-element-file :name full-path))))))
-         (add-current-context (lambda (c)
-                                (dolist (filename c) (funcall add-file-to-context filename project-directory)))))
-    (ellama-chain
-     prompt
-     `((:chat t
-              :transform ,(lambda (_ _)
-		            (format "You are a software developer pair programmer.
-The mode of the file we are in is \"%s\", so that should give you a hint as to the programming language we are using.
-Which kinds of source or configuration files would a developer typically edit in a project using this language? Don't overthink it, just quickly answer 1 file ending per line, beginning with a '.' (dot)." major-mode)))
-       (:chat t
-              :transform ,(lambda (_ acc)
-                            (funcall add-current-context context)
+(use-package gptel
+  :ensure t
+  :config
+  (setq gptel-model 'qwen2.5-coder:latest
+        gptel-backend (gptel-make-ollama "Ollama"
+                                         :host "localhost:11434"
+                                         :stream t
+                                         :models '(qwen2.5-coder:latest)))
+  :bind (("C-x a i" . gptel-send)))
 
-                            (let* ((default-directory project-directory)
-                                   (project-files nil)
-                                   (file-endings
-                                    (seq-remove (lambda (s) (not (string-prefix-p "." s)))
-                                                (seq-mapcat (lambda (s) (split-string s "[\*: `~\+\-]"))
-                                                            (seq-remove (lambda (s) (not (string-match-p "^[\*: `~\+\-]*\." s)))
-                                                                        (seq-map (lambda (s) (string-trim s)) (split-string (funcall strip-response (car acc)) "\n")))))))
-                              (dolist (file-ending file-endings)
-                                      (setq project-files (seq-uniq (seq-concatenate 'list
-                                                                                     project-files
-                                                                                     (string-split (shell-command-to-string (format "git ls-tree -r --name-only HEAD | grep '%s$'" file-ending)) "\n")))))
-
-                              (format "You are a software developer pair programmer.
-The mode of the file we are in is \"%s\", so that should give you a hint as to the programming language we are using.
-Your task is:
-
-%s
-
-The project has the following files which may be relevant.
-
-%s
-
-Before solving the task, we need to read the contents of a subset of project files that might help.
-Answer up to 6 grep shell commands you would use to find files relevant to the task. Use the -r -i -l flags to make grep recursive, match case-insensitive, and print only filenames." major-mode prompt (string-join project-files "\n")))))
-       (:chat t
-              :transform ,(lambda (_ acc)
-                            ;; Ask if we should run the grep command and add any returned
-                            ;; files to the context.
-                            (let ((default-directory project-directory)
-                                  (grep-commands (seq-remove (lambda (s) (not (string-prefix-p "grep " s)))
-                                                             (seq-map (lambda (s) (string-trim s)) (split-string (funcall strip-response (car acc)) "[:\n`~]")))))
-                              (dolist (grep-command grep-commands)
-                                (if (yes-or-no-p (format "Ok to run `%s` in `%s`?" grep-command default-directory))
-                                    (let ((filenames (seq-uniq (split-string (shell-command-to-string grep-command) "[\n:]"))))
-                                      (dolist (filename filenames)
-                                        (funcall add-file-to-context filename project-directory))))))
-
-                            (funcall add-current-context context)
-
-                            (format "You are a software developer pair programmer.
-The mode of the file we are in is \"%s\", so that should give you a hint as to the programming language we are using.
-Your task is:
-
-%s
-
-You should have all the context you need now. Please finish on the task." major-mode prompt)))))))
+(use-package gptel-quick
+  :vc (:url "https://github.com/karthink/gptel-quick")
+  :ensure t
+  :after gptel
+  :bind (("C-x a e" . gptel-quick)))
 
 (use-package impatient-mode
   :commands impatient-mode
   :ensure t)
+
+(use-package buffer-terminator
+  :ensure t
+  :custom
+  (buffer-terminator-verbose nil)
+  :config
+  (buffer-terminator-mode 1)
+  (add-to-list 'buffer-terminator-rules-alist
+               `(call-function . ,(lambda ()
+                                    (if (not (seq-filter (lambda (x) (string-suffix-p x (buffer-name)))
+                                                         '(".java")))
+                                        :keep
+                                      nil))))
+  (add-to-list 'buffer-terminator-rules-alist
+               `(call-function . ,(lambda ()
+                                    (if (> (/ buffer-terminator-interval 2)
+                                           (time-convert (current-idle-time) 'integer))
+                                        :keep
+                                      nil)))))
 
 ;; (add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
 ;; (require 'jsonnet-language-server)
