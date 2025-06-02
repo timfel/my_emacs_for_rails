@@ -1335,8 +1335,9 @@
 
 ;; Interactively Do Things
 (use-package ido
-  :commands (ido-find-file)
-  :bind ("C-x C-f" . ido-find-file)
+  :commands (ido-find-file ido-switch-buffer)
+  :bind (("C-x C-f" . ido-find-file)
+         ("C-x C-b" . ido-switch-buffer))
   :ensure t
   :config (ido-mode t))
 
