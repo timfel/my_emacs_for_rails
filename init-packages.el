@@ -348,6 +348,8 @@
 
 (use-package vc
   :if (eq system-type 'windows-nt)
+  :config
+  (setq vc-revert-show-diff nil)
   :bind (("C-x C-z" . project-vc-dir)
          :map diff-mode-map
          ("c" . vc-next-action)))
@@ -362,7 +364,18 @@
                   (if (eq 'Git (vc-deduce-backend))
                       (vc-git-push t)
                     (vc-push))))
-         ("k" . vc-revert)
+         ("k" . (lambda ()
+                  (interactive)
+                  (let* ((files (or (vc-dir-marked-files)
+                                    (list (vc-dir-current-file))))
+                         (tracked
+                          (seq-filter (lambda (file)
+                                        (not (eq (vc-call-backend vc-dir-backend 'state file)
+                                                 'unregistered)))
+                                      files)))
+                    (map-y-or-n-p "Revert %s? " #'vc-revert-file tracked)
+                    (map-y-or-n-p "Delete %s? " #'delete-file files)
+                    (revert-buffer))))
          ("TAB" . (lambda ()
                     (interactive)
                     (vc-diff nil nil (list (vc-deduce-backend) (list (vc-dir-current-file)) nil nil))))
