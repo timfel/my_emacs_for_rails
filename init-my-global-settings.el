@@ -446,3 +446,14 @@
 (setq sentence-end-double-space nil)
 
 (global-set-key (kbd "C-M-q") #'ospl/fill-paragraph)
+
+(if (not (display-graphic-p))
+    (progn
+      (global-set-key (kbd "M-[ 1 ; 3 a") 'move-line-up)
+      (global-set-key (kbd "M-[ 1 ; 3 b") 'move-line-down)
+      (global-set-key (kbd "M-[ 1 ; 2 a") (kbd "S-<up>"))
+      (global-set-key (kbd "M-[ 1 ; 2 b") (kbd "S-<down>"))
+      (global-set-key (kbd "M-[ 1 ; 5 a") (kbd "C-<up>"))
+      (global-set-key (kbd "M-[ 1 ; 5 b") (kbd "C-<down>"))
+      (global-set-key (kbd "M-[ 1 ; 5 d") (kbd "C-<left>"))
+      (global-set-key (kbd "M-[ 1 ; 5 c") (kbd "C-<right>"))))

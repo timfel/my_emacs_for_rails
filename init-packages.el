@@ -634,6 +634,12 @@
                   treemacs-width 45
                   treemacs-width-is-initially-locked t)))
 
+(use-package treemacs-nerd-icons
+  :if (not (display-graphic-p))
+  :ensure t
+  :config
+  (treemacs-load-theme "nerd-icons"))
+
 (use-package which-key
   ;; shows bindings for current prefix in side window
   :ensure t
@@ -1682,6 +1688,18 @@
                                            (time-convert (current-idle-time) 'integer))
                                         :keep
                                       nil)))))
+
+(use-package xt-mouse
+  :if (eq window-system nil)
+  :commands xterm-mouse-mode
+  :config (run-with-idle-timer 0.1 nil #'xterm-mouse-mode +1))
+
+(use-package clipetty
+  :ensure t
+  :if (and (eq window-system nil)
+           (eq system-type 'gnu/linux)
+           (not (getenv "WAYLAND_DISPLAY")))
+  :hook (after-init . global-clipetty-mode))
 
 ;; (add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
 ;; (require 'jsonnet-language-server)
