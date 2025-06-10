@@ -1,5 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 (package-initialize)
+;; (setq use-package-compute-statistics t)
 (require 'compile)
 (require 'cc-mode)
 (require 'hl-line)
@@ -23,8 +24,8 @@
   (package-vc-install "https://github.com/slotThe/vc-use-package"))
 
 (use-package ht
-  :ensure t
-  :demand t)
+  :defer t
+  :ensure t)
 
 ;; additional modes I like
 (use-package yaml-mode :ensure t
@@ -172,7 +173,9 @@
              org-image-actual-width (list 600)
              org-download-image-org-width 200
              org-download-screenshot-method (if (eq system-type 'windows-nt)
-                                                (expand-file-name "~/dotfiles/bin/wslscr.py %s")
+                                                (format "%s %s"
+                                                        (executable-find "python3")
+                                                        (expand-file-name "~/dotfiles/bin/wslscr.py %s"))
                                               (expand-file-name "~/bin/wslscr.py %s")))
             (set-default 'org-download-image-dir
                          (if (eq system-type 'windows-nt)
@@ -308,7 +311,9 @@
 
 (use-package helm
   :ensure t
-  :config (setq helm-buffers-maybe-switch-to-tab nil)
+  :config
+  (setq helm-buffers-maybe-switch-to-tab nil)
+  (require 'fuzzy)
   :bind (("C-." . helm-semantic-or-imenu)))
 
 (use-package helm-etags-plus
@@ -343,6 +348,8 @@
 
 (use-package vc
   :if (eq system-type 'windows-nt)
+  :config
+  (setq vc-revert-show-diff nil)
   :bind (("C-x C-z" . project-vc-dir)
          :map diff-mode-map
          ("c" . vc-next-action)))
@@ -357,7 +364,18 @@
                   (if (eq 'Git (vc-deduce-backend))
                       (vc-git-push t)
                     (vc-push))))
-         ("k" . vc-revert)
+         ("k" . (lambda ()
+                  (interactive)
+                  (let* ((files (or (vc-dir-marked-files)
+                                    (list (vc-dir-current-file))))
+                         (tracked
+                          (seq-filter (lambda (file)
+                                        (not (eq (vc-call-backend vc-dir-backend 'state file)
+                                                 'unregistered)))
+                                      files)))
+                    (map-y-or-n-p "Revert %s? " #'vc-revert-file tracked)
+                    (map-y-or-n-p "Delete %s? " #'delete-file files)
+                    (revert-buffer))))
          ("TAB" . (lambda ()
                     (interactive)
                     (vc-diff nil nil (list (vc-deduce-backend) (list (vc-dir-current-file)) nil nil))))
@@ -393,11 +411,18 @@
          ("C-c C-a" . vc-git-log-edit-toggle-amend)
          ("C-c C-l" . vc-print-log)
          :map vc-git-log-view-mode-map
+         ("v" . (lambda ()
+                  (interactive)
+                  (let* ((rev (log-view-current-entry))
+                         (default-directory (vc-root-dir))
+                         (cmd (format "%s revert --no-commit %s" vc-git-program (cadr rev))))
+                    (if (yes-or-no-p (concat "Run `" cmd "`?"))
+                        (shell-command cmd)))))
          ("r" . (lambda ()
                   (interactive)
                   (let* ((rev (log-view-current-entry))
                          (default-directory (vc-root-dir))
-                         (cmd (format "%s rebase --autostash --autosquash %s" vc-git-program (cadr rev))))
+                         (cmd (format "%s rebase --allow-empty --autostash --autosquash %s" vc-git-program (cadr rev))))
                     (if (yes-or-no-p (concat "Run `" cmd "`?"))
                         (shell-command cmd)))))))
 
@@ -461,9 +486,13 @@
 
 (use-package popup :ensure t)
 
-(use-package fuzzy :ensure t)
+(use-package fuzzy
+  :defer t
+  :ensure t)
 
-(use-package pcache :ensure t)
+(use-package pcache
+  :defer t
+  :ensure t)
 
 (use-package logito :ensure t)
 
@@ -490,11 +519,13 @@
 
 (use-package all-the-icons-completion
   :after all-the-icons
+  :if (display-graphic-p)
   :demand t
   :ensure t)
 
 (use-package all-the-icons-dired
   :after all-the-icons
+  :if (display-graphic-p)
   :demand t
   :ensure t)
 
@@ -653,6 +684,7 @@
   :preface (setq lsp-use-plists t)
   :ensure t
   :config (progn
+            (require 'pcache)
 
             (defun my/c-clear-string-fences (orig-fun)
               (condition-case nil
@@ -855,6 +887,8 @@
 
 (use-package mmm-mode
   :ensure t
+  :commands (mmm-parse-buffer)
+  :hook (java-mode . (lambda () (mmm-parse-buffer)))
   :config (progn
             (require 'mmm-auto)
             (setq mmm-global-mode 'maybe)
@@ -1377,7 +1411,9 @@
 
 ;; Interactively Do Things
 (use-package ido
-  :demand t
+  :commands (ido-find-file ido-switch-buffer)
+  :bind (("C-x C-f" . ido-find-file)
+         ("C-x C-b" . ido-switch-buffer))
   :ensure t
   :config (ido-mode t))
 
@@ -1391,6 +1427,7 @@
 
 (use-package dumb-jump
   :ensure t
+  :defer 10
   :config (progn
             (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
 
@@ -1535,7 +1572,7 @@
   :config (exec-path-from-shell-initialize))
 
 (if (eq system-type 'windows-nt)
-    (let ((path (shell-command-to-string "powershell.exe -Command \"echo $Env:PATH\"")))
+    (let ((path (string-trim (shell-command-to-string "powershell.exe -Command \"echo $Env:PATH\""))))
       (setenv "PATH" path)
       (setq exec-path (append (parse-colon-path path) (list exec-directory)))
       (setq-default eshell-path-env path)))
@@ -1561,6 +1598,7 @@
 (use-package emojify
   :ensure t
   :demand t
+  :if (display-graphic-p)
   :commands emojify-insert-emoji
   :config (progn
             (set-fontset-font
