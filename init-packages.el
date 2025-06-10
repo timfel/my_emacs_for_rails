@@ -1664,7 +1664,7 @@
         gptel-backend (gptel-make-ollama "Ollama"
                                          :host "localhost:11434"
                                          :stream t
-                                         :models '(qwen2.5-coder:latest)))
+                                         :models '(qwen2.5-coder:latest gemma3:12b-it-qat)))
   :bind (("C-x a i" . gptel-send)))
 
 (use-package gptel-quick
