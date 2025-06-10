@@ -871,7 +871,14 @@
                 :back ".*\"\"\".*"
                 :face mmm-code-submode-face
                 )))
-            (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)))
+            (mmm-add-classes
+             '((md-javascript-block
+                :submode javascript-mode
+                :front "<script>"
+                :back "</script>"
+                :face mmm-code-submode-face)))
+            (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)
+            (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-javascript-block)))
 
 (defun treemacs-t ()
   (interactive)
