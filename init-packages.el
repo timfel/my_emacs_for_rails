@@ -917,6 +917,7 @@
 (defun treemacs-t ()
   (interactive)
   (require 'treemacs)
+  (treemacs--restore)
   (require 'lsp-java)
   (let* ((cwd (expand-file-name "."))
          (path (completing-read (format "Workspace or folder (return for %s): " cwd)
