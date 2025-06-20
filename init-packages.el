@@ -1452,6 +1452,19 @@
 (use-package sudo-save
   :if (not (eq system-type 'windows-nt)))
 
+(use-package term
+  :commands term
+  :defer t
+  :config
+  (advice-add #'term :after (lambda (&rest args)
+                              (let ((b (get-buffer "*terminal*")))
+                                (when b
+                                  (call-interactively #'previous-buffer)
+                                  (display-buffer-in-side-window
+                                   (get-buffer "*terminal*")
+                                   '((side . bottom)
+                                     (slot . 1))))))))
+
 (use-package redo+
   :demand t
   :bind (("C--" . redo)))
