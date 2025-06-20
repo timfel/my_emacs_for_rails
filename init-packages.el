@@ -1342,7 +1342,7 @@
   (let ((theme (cond ((eq system-type 'windows-nt)
                       'vscode-dark-plus)
                      ((eq window-system nil)
-                      'eclipse)
+                      'modus-vivendi)
                      ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
                       'modus-vivendi)
                      (t 'modus-operandi))))
@@ -1852,3 +1852,8 @@
   (define-key webkit-mode-map (kbd "C-x r p") #'my/webkit-reload-with-proxy)
 
   (call-interactively 'webkit))
+
+(use-package auto-dim-other-buffers
+  :ensure t
+  :if (not window-system)
+  :config (auto-dim-other-buffers-mode t))
