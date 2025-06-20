@@ -1868,5 +1868,16 @@
 
 (use-package auto-dim-other-buffers
   :ensure t
-  :if (not window-system)
-  :config (auto-dim-other-buffers-mode t))
+  :config
+  (require 'color)
+  (custom-set-faces
+   `(auto-dim-other-buffers
+     ((t (:background
+          ,(let* ((r (/ (string-to-number (substring (face-attribute 'default :background) 1 3) 16) 255.0))
+                  (g (/ (string-to-number (substring (face-attribute 'default :background) 3 5) 16) 255.0))
+                  (b (/ (string-to-number (substring (face-attribute 'default :background) 5 7) 16) 255.0))
+                  (hsl (color-rgb-to-hsl r g b))
+                  (lighter (apply #'color-lighten-hsl `(,@hsl 10)))
+                  (darker (apply #'color-darken-hsl `(,@hsl 6))))
+             (apply #'color-rgb-to-hex `(,@(apply #'color-hsl-to-rgb (if (< 0.5 (caddr hsl)) darker lighter)) 2))))))))
+  (auto-dim-other-buffers-mode t))
