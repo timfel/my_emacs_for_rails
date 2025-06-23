@@ -1713,6 +1713,11 @@
                                          :models '(qwen2.5-coder:latest gemma3:12b-it-qat)))
   :bind (("C-x a i" . gptel-send)))
 
+(use-package oca
+  :load-path "~/dev/gists/"
+  :if (file-exists-p "~/dev/gists/oca.el")
+  :demand t)
+
 (use-package gptel-quick
   :vc (:url "https://github.com/karthink/gptel-quick")
   :ensure t
