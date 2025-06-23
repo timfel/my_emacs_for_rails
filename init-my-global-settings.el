@@ -391,12 +391,10 @@
 (setq frame-title-format
       '(multiple-frames "%b" ("" (:eval (if (functionp 'treemacs-current-workspace) (or (treemacs-workspace->name (treemacs-current-workspace)) "%b") "No workspace %b")))))
 
-(if window-system
-    (progn
-      (global-set-key (kbd "M-<up>") 'move-line-up)
-      (global-set-key (kbd "M-<down>") 'move-line-down))
-  (global-set-key (kbd "ESC <up>") 'move-line-up)
-  (global-set-key (kbd "ESC <down>") 'move-line-down))
+(global-set-key (kbd "M-<up>") 'move-line-up)
+(global-set-key (kbd "M-<down>") 'move-line-down)
+(global-set-key (kbd "ESC <up>") 'move-line-up)
+(global-set-key (kbd "ESC <down>") 'move-line-down)
 
 (setq sentence-end-double-space nil)
 
