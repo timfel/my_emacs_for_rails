@@ -1681,20 +1681,6 @@
                       (copilot-complete)))
                   (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
       
-      (use-package aider
-        :ensure t
-        :if (file-executable-p "/home/tim/dev/aider/.venv/bin/aider")
-        :vc (:url "https://github.com/tninja/aider.el")
-        :bind (("C-c C-a" . aider-transient-menu))
-        :custom
-        (aider-program "/home/tim/dev/aider/.venv/bin/aider")
-        (aider-args '("--no-analytics"
-                      "--model" "ollama_chat/qwen2.5-coder:latest"
-                      ))
-        :config
-        (require 'aider-helm)
-        (setenv "OLLAMA_API_BASE" "http://127.0.0.1:11434"))
-
       (use-package llm
         :if (not (eq system-type 'windows-nt))
         :pin gnu
@@ -1708,6 +1694,14 @@
         :init
         (setopt ellama-language "English")
         (require 'llm-ollama))))
+
+(use-package aider
+  :ensure t
+  :if (file-executable-p "~/.local/bin/aider")
+  :commands aider-run-aider
+  :bind (("C-c C-a" . aider-transient-menu))
+  :config
+  (require 'aider-helm))
 
 (use-package gptel
   :ensure t
