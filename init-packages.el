@@ -1459,9 +1459,11 @@
   (advice-add #'term :after (lambda (&rest args)
                               (let ((b (get-buffer "*terminal*")))
                                 (when b
+                                  (text-scale-adjust 0)
+                                  (text-scale-adjust -1)
                                   (call-interactively #'previous-buffer)
                                   (display-buffer-in-side-window
-                                   (get-buffer "*terminal*")
+                                   b
                                    '((side . bottom)
                                      (slot . 1))))))))
 
