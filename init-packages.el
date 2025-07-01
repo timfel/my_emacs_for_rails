@@ -1342,14 +1342,14 @@
   (let ((theme (cond ((eq system-type 'windows-nt)
                       'vscode-dark-plus)
                      ((eq window-system nil)
-                      'modus-vivendi)
+                      'modus-operandi)
                      ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
                       'modus-vivendi)
                      (t 'modus-operandi))))
     (load-theme theme t)))
 (my/load-default-theme)
-(defadvice load-theme (before theme-dont-propagate activate)
-  (mapcar #'disable-theme custom-enabled-themes))
+(advice-add #'load-theme :before (lambda (&rest args)
+                                   (mapcar #'disable-theme custom-enabled-themes)))
 
 ;; Flyspell options
 (use-package ispell
@@ -1410,11 +1410,10 @@
                                           (cdr (assoc "ssh" tramp-methods))))
                           :test #'equal))))
 
-;; Interactively Do Things
 (use-package ido
   :commands (ido-find-file ido-switch-buffer)
   :bind (("C-x C-f" . ido-find-file)
-         ("C-x C-b" . ido-switch-buffer))
+         ("C-x b" . ido-switch-buffer))
   :ensure t
   :config (ido-mode t))
 
@@ -1444,6 +1443,7 @@
 
 (use-package jsonnet-mode
   :mode ("\\.jsonnet$")
+  :config (require 'lsp-jsonnet)
   :ensure t)
 
 ;; local lisp code
@@ -1697,7 +1697,7 @@
 
 (use-package aider
   :ensure t
-  :if (file-executable-p "~/.local/bin/aider")
+  :if (executable-find "aider")
   :commands aider-run-aider
   :bind (("C-c C-a" . aider-transient-menu))
   :config
@@ -1713,8 +1713,20 @@
                                          :models '(qwen2.5-coder:latest gemma3:12b-it-qat)))
   :bind (("C-x a i" . gptel-send)))
 
+(use-package llm-tool-collection
+  :ensure t
+  :after gptel
+  :vc (:url "https://github.com/skissue/llm-tool-collection")
+  :config
+  (mapcar (apply-partially #'apply #'gptel-make-tool)
+          (llm-tool-collection-get-category "filesystem"))
+  (mapcar (apply-partially #'apply #'gptel-make-tool)
+          (llm-tool-collection-get-category "buffers")))
+
 (use-package oca
   :load-path "~/dev/gists/"
+  :after (gptel)
+  :commands oca-key
   :if (file-exists-p "~/dev/gists/oca.el")
   :demand t)
 
@@ -1867,16 +1879,20 @@
 
 (use-package auto-dim-other-buffers
   :ensure t
+  :defer 5
   :config
   (require 'color)
-  (custom-set-faces
-   `(auto-dim-other-buffers
-     ((t (:background
-          ,(let* ((r (/ (string-to-number (substring (face-attribute 'default :background) 1 3) 16) 255.0))
-                  (g (/ (string-to-number (substring (face-attribute 'default :background) 3 5) 16) 255.0))
-                  (b (/ (string-to-number (substring (face-attribute 'default :background) 5 7) 16) 255.0))
-                  (hsl (color-rgb-to-hsl r g b))
-                  (lighter (apply #'color-lighten-hsl `(,@hsl 10)))
-                  (darker (apply #'color-darken-hsl `(,@hsl 6))))
-             (apply #'color-rgb-to-hex `(,@(apply #'color-hsl-to-rgb (if (< 0.5 (caddr hsl)) darker lighter)) 2))))))))
+  (cl-labels ((my/adjust-auto-dim-colors (&rest args)
+                (custom-set-faces
+                 `(auto-dim-other-buffers
+                   ((t (:background
+                        ,(let* ((r (/ (string-to-number (substring (face-attribute 'default :background) 1 3) 16) 255.0))
+                                (g (/ (string-to-number (substring (face-attribute 'default :background) 3 5) 16) 255.0))
+                                (b (/ (string-to-number (substring (face-attribute 'default :background) 5 7) 16) 255.0))
+                                (hsl (color-rgb-to-hsl r g b))
+                                (lighter (apply #'color-lighten-hsl `(,@hsl 10)))
+                                (darker (apply #'color-darken-hsl `(,@hsl 6))))
+                           (apply #'color-rgb-to-hex `(,@(apply #'color-hsl-to-rgb (if (< 0.5 (caddr hsl)) darker lighter)) 2))))))))))
+    (my/adjust-auto-dim-colors)
+    (advice-add #'load-theme :after #'my/adjust-auto-dim-colors))
   (auto-dim-other-buffers-mode t))
