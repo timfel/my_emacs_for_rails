@@ -1713,7 +1713,7 @@
         gptel-backend (gptel-make-ollama "Ollama"
                                          :host "localhost:11434"
                                          :stream t
-                                         :models '(gemma3n:latest)))
+                                         :models '(gemma3n:latest gemma3n-tools)))
   :bind (("C-x a i" . gptel-send)))
 
 (use-package llm-tool-collection
