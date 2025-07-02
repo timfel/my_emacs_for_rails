@@ -1332,6 +1332,9 @@
 (use-package vscode-dark-plus-theme
   :defer t
   :ensure t)
+(use-package color-theme-sanityinc-tomorrow
+  :defer t
+  :ensure t)
 (use-package eclipse-theme
   :defer t
   :ensure t)
@@ -1340,8 +1343,10 @@
   :ensure t)
 
 (defun my/load-default-theme ()
-  (let ((theme (cond ((eq system-type 'windows-nt)
-                      'vscode-dark-plus)
+  (if-let ((theme (cond ((eq system-type 'windows-nt)
+                      (require 'color-theme-sanityinc-tomorrow)
+                      (color-theme-sanityinc-tomorrow-day)
+                      nil)
                      ((eq window-system nil)
                       'modus-operandi)
                      ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
