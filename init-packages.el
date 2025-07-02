@@ -1686,11 +1686,11 @@
 (use-package gptel
   :ensure t
   :config
-  (setq gptel-model 'qwen2.5-coder:latest
+  (setq gptel-model 'gemma3:gpu
         gptel-backend (gptel-make-ollama "Ollama"
                                          :host "localhost:11434"
                                          :stream t
-                                         :models '(qwen2.5-coder:latest)))
+                                         :models '(gemma3:gpu qwen2.5-coder:latest)))
   :bind (("C-x a i" . gptel-send)))
 
 (use-package gptel-quick
