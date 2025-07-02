@@ -1719,7 +1719,7 @@
 (use-package llm-tool-collection
   :ensure t
   :after gptel
-  :vc (:url "https://github.com/skissue/llm-tool-collection")
+  :vc (:url "https://github.com/skissue/llm-tool-collection" :branch "main" :rev :newest)
   :config
   (mapcar (apply-partially #'apply #'gptel-make-tool)
           (llm-tool-collection-get-category "filesystem"))
