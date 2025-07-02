@@ -1709,11 +1709,11 @@
 (use-package gptel
   :ensure t
   :config
-  (setq gptel-model 'gemma3:gpu
+  (setq gptel-model 'gemma3n:latest
         gptel-backend (gptel-make-ollama "Ollama"
                                          :host "localhost:11434"
                                          :stream t
-                                         :models '(gemma3:gpu qwen2.5-coder:latest)))
+                                         :models '(gemma3n:latest)))
   :bind (("C-x a i" . gptel-send)))
 
 (use-package llm-tool-collection
