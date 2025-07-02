@@ -349,6 +349,7 @@
 (use-package vc
   :if (eq system-type 'windows-nt)
   :config
+  (require 'diff)
   (setq vc-revert-show-diff nil)
   :bind (("C-x C-z" . project-vc-dir)
          :map diff-mode-map
