@@ -666,6 +666,12 @@
                   treemacs-width 45
                   treemacs-width-is-initially-locked t)))
 
+(use-package treemacs-nerd-icons
+  :if (not (display-graphic-p))
+  :ensure t
+  :config
+  (treemacs-load-theme "nerd-icons"))
+
 (use-package which-key
   ;; shows bindings for current prefix in side window
   :ensure t
@@ -900,11 +906,19 @@
                 :back ".*\"\"\".*"
                 :face mmm-code-submode-face
                 )))
-            (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)))
+            (mmm-add-classes
+             '((md-javascript-block
+                :submode javascript-mode
+                :front "<script>"
+                :back "</script>"
+                :face mmm-code-submode-face)))
+            (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)
+            (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-javascript-block)))
 
 (defun treemacs-t ()
   (interactive)
   (require 'treemacs)
+  (treemacs--restore)
   (require 'lsp-java)
   (let* ((cwd (expand-file-name "."))
          (path (completing-read (format "Workspace or folder (return for %s): " cwd)
@@ -1329,14 +1343,14 @@
   (let ((theme (cond ((eq system-type 'windows-nt)
                       'vscode-dark-plus)
                      ((eq window-system nil)
-                      'eclipse)
+                      'modus-operandi)
                      ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
                       'modus-vivendi)
                      (t 'modus-operandi))))
     (load-theme theme t)))
 (my/load-default-theme)
-(defadvice load-theme (before theme-dont-propagate activate)
-  (mapcar #'disable-theme custom-enabled-themes))
+(advice-add #'load-theme :before (lambda (&rest args)
+                                   (mapcar #'disable-theme custom-enabled-themes)))
 
 ;; Flyspell options
 (use-package ispell
@@ -1397,11 +1411,10 @@
                                           (cdr (assoc "ssh" tramp-methods))))
                           :test #'equal))))
 
-;; Interactively Do Things
 (use-package ido
   :commands (ido-find-file ido-switch-buffer)
   :bind (("C-x C-f" . ido-find-file)
-         ("C-x C-b" . ido-switch-buffer))
+         ("C-x b" . ido-switch-buffer))
   :ensure t
   :config (ido-mode t))
 
@@ -1431,6 +1444,7 @@
 
 (use-package jsonnet-mode
   :mode ("\\.jsonnet$")
+  :config (require 'lsp-jsonnet)
   :ensure t)
 
 ;; local lisp code
@@ -1438,6 +1452,21 @@
 
 (use-package sudo-save
   :if (not (eq system-type 'windows-nt)))
+
+(use-package term
+  :commands term
+  :defer t
+  :config
+  (advice-add #'term :after (lambda (&rest args)
+                              (let ((b (get-buffer "*terminal*")))
+                                (when b
+                                  (text-scale-adjust 0)
+                                  (text-scale-adjust -1)
+                                  (call-interactively #'previous-buffer)
+                                  (display-buffer-in-side-window
+                                   b
+                                   '((side . bottom)
+                                     (slot . 1))))))))
 
 (use-package redo+
   :demand t
@@ -1655,20 +1684,6 @@
                       (copilot-complete)))
                   (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
       
-      (use-package aider
-        :ensure t
-        :if (file-executable-p "/home/tim/dev/aider/.venv/bin/aider")
-        :vc (:url "https://github.com/tninja/aider.el")
-        :bind (("C-c C-a" . aider-transient-menu))
-        :custom
-        (aider-program "/home/tim/dev/aider/.venv/bin/aider")
-        (aider-args '("--no-analytics"
-                      "--model" "ollama_chat/qwen2.5-coder:latest"
-                      ))
-        :config
-        (require 'aider-helm)
-        (setenv "OLLAMA_API_BASE" "http://127.0.0.1:11434"))
-
       (use-package llm
         :if (not (eq system-type 'windows-nt))
         :pin gnu
@@ -1683,6 +1698,14 @@
         (setopt ellama-language "English")
         (require 'llm-ollama))))
 
+(use-package aider
+  :ensure t
+  :if (executable-find "aider")
+  :commands aider-run-aider
+  :bind (("C-c C-a" . aider-transient-menu))
+  :config
+  (require 'aider-helm))
+
 (use-package gptel
   :ensure t
   :config
@@ -1692,6 +1715,23 @@
                                          :stream t
                                          :models '(gemma3:gpu qwen2.5-coder:latest)))
   :bind (("C-x a i" . gptel-send)))
+
+(use-package llm-tool-collection
+  :ensure t
+  :after gptel
+  :vc (:url "https://github.com/skissue/llm-tool-collection")
+  :config
+  (mapcar (apply-partially #'apply #'gptel-make-tool)
+          (llm-tool-collection-get-category "filesystem"))
+  (mapcar (apply-partially #'apply #'gptel-make-tool)
+          (llm-tool-collection-get-category "buffers")))
+
+(use-package oca
+  :load-path "~/dev/gists/"
+  :after (gptel)
+  :commands oca-key
+  :if (file-exists-p "~/dev/gists/oca.el")
+  :demand t)
 
 (use-package gptel-quick
   :vc (:url "https://github.com/karthink/gptel-quick")
@@ -1721,6 +1761,18 @@
                                            (time-convert (current-idle-time) 'integer))
                                         :keep
                                       nil)))))
+
+(use-package xt-mouse
+  :if (eq window-system nil)
+  :commands xterm-mouse-mode
+  :config (run-with-idle-timer 0.1 nil #'xterm-mouse-mode +1))
+
+(use-package clipetty
+  :ensure t
+  :if (and (eq window-system nil)
+           (eq system-type 'gnu/linux)
+           (not (getenv "WAYLAND_DISPLAY")))
+  :hook (after-init . global-clipetty-mode))
 
 ;; (add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
 ;; (require 'jsonnet-language-server)
@@ -1827,3 +1879,23 @@
   (define-key webkit-mode-map (kbd "C-x r p") #'my/webkit-reload-with-proxy)
 
   (call-interactively 'webkit))
+
+(use-package auto-dim-other-buffers
+  :ensure t
+  :defer 5
+  :config
+  (require 'color)
+  (cl-labels ((my/adjust-auto-dim-colors (&rest args)
+                (custom-set-faces
+                 `(auto-dim-other-buffers
+                   ((t (:background
+                        ,(let* ((r (/ (string-to-number (substring (face-attribute 'default :background) 1 3) 16) 255.0))
+                                (g (/ (string-to-number (substring (face-attribute 'default :background) 3 5) 16) 255.0))
+                                (b (/ (string-to-number (substring (face-attribute 'default :background) 5 7) 16) 255.0))
+                                (hsl (color-rgb-to-hsl r g b))
+                                (lighter (apply #'color-lighten-hsl `(,@hsl 10)))
+                                (darker (apply #'color-darken-hsl `(,@hsl 6))))
+                           (apply #'color-rgb-to-hex `(,@(apply #'color-hsl-to-rgb (if (< 0.5 (caddr hsl)) darker lighter)) 2))))))))))
+    (my/adjust-auto-dim-colors)
+    (advice-add #'load-theme :after #'my/adjust-auto-dim-colors))
+  (auto-dim-other-buffers-mode t))
