@@ -1710,6 +1710,8 @@
   :ensure t
   :config
   (setq gptel-model 'gemma3n:latest
+        gptel-include-tool-results t
+        gptel-include-reasoning t
         gptel-backend (gptel-make-ollama "Ollama"
                                          :host "localhost:11434"
                                          :stream t
@@ -1724,7 +1726,15 @@
   (mapcar (apply-partially #'apply #'gptel-make-tool)
           (llm-tool-collection-get-category "filesystem"))
   (mapcar (apply-partially #'apply #'gptel-make-tool)
-          (llm-tool-collection-get-category "buffers")))
+          (llm-tool-collection-get-category "buffers"))
+  (setq gptel-tools
+        (let ((funcs nil)
+              (names (list "view_buffer" "read_file" "list_directory")))
+          (dolist (category gptel--known-tools)
+            (dolist (pair (cdr category))
+              (when (member (car pair) names)
+                (push (cdr pair) funcs))))
+          funcs)))
 
 (use-package oca
   :load-path "~/dev/gists/"
