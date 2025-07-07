@@ -410,3 +410,6 @@
       (global-set-key (kbd "M-[ 1 ; 5 b") (kbd "C-<down>"))
       (global-set-key (kbd "M-[ 1 ; 5 d") (kbd "C-<left>"))
       (global-set-key (kbd "M-[ 1 ; 5 c") (kbd "C-<right>"))))
+
+(unless (getenv "JAVA_HOME")
+  (setenv "JAVA_HOME" (expand-file-name "~/.mx/jdks/labsjdk-ce-latest/")))
