@@ -105,12 +105,9 @@
 
             (setq org-log-done 'time)
             (require 'org-tempo)
-            (let ((todos (if (eq system-type 'windows-nt)
-                             (expand-file-name "~/../../OneDrive/todo.org")
-                           (expand-file-name "~/OneDrive/todo.org")))
-                  (notes (if (eq system-type 'windows-nt)
-                             (expand-file-name "~/../../OneDrive/notes.org")
-                           (expand-file-name "~/OneDrive/notes.org"))))
+            (let* ((home (expand-file-name (getenv (if (eq system-type 'windows-nt) "USERPROFILE" "HOME"))))
+                   (todos (expand-file-name "OneDrive/todo.org" home))
+                   (notes (expand-file-name "OneDrive/notes.org" home)))
               (setq
                org-return-follows-link t
                org-file-apps '((auto-mode . emacs)
