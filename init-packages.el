@@ -1341,9 +1341,7 @@
 
 (defun my/load-default-theme ()
   (if-let ((theme (cond ((eq system-type 'windows-nt)
-                      (require 'color-theme-sanityinc-tomorrow)
-                      (color-theme-sanityinc-tomorrow-day)
-                      nil)
+                      'eclipse)
                      ((eq window-system nil)
                       'modus-operandi)
                      ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
