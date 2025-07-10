@@ -105,7 +105,9 @@
 
             (setq org-log-done 'time)
             (require 'org-tempo)
-            (let* ((home (expand-file-name (getenv (if (eq system-type 'windows-nt) "USERPROFILE" "HOME"))))
+            (let* ((home (expand-file-name (if (eq system-type 'windows-nt)
+                                               (if (file-exists-p "D:") "D:" (getenv "USERPROFILE"))
+                                             (getenv "HOME"))))
                    (todos (expand-file-name "OneDrive/todo.org" home))
                    (notes (expand-file-name "OneDrive/notes.org" home)))
               (setq
