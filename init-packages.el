@@ -1718,6 +1718,65 @@
                                          :host "localhost:11434"
                                          :stream t
                                          :models '(gemma3n:latest gemma3n-tools)))
+
+  (setq
+   cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
+   cashpw/gptel-mode-line--indicator-responding "↓GPTEL↓ "
+   cashpw/gptel-show-progress-in-mode-line t)
+  (defun cashpw/gptel-mode-line--indicator (mode)
+    "Return indicator string for MODE."
+    (pcase mode
+      ('querying
+       cashpw/gptel-mode-line--indicator-querying)
+      ('responding
+       cashpw/gptel-mode-line--indicator-responding)
+      (t
+       "")))
+  (defun cashpw/gptel-mode-line (command mode)
+    "Update mode line to COMMAND (show|hide) indicator for MODE."
+    (when cashpw/gptel-show-progress-in-mode-line
+      (let ((indicator (list t (cashpw/gptel-mode-line--indicator mode))))
+        (pcase command
+          ('show
+           (cl-pushnew indicator global-mode-string :test #'equal))
+          ('hide
+           (setf global-mode-string (remove indicator global-mode-string)))))
+      (force-mode-line-update t)))
+  (defun cashpw/gptel-mode-line--hide-all (&rest _)
+    (cashpw/gptel-mode-line 'hide 'querying)
+    (cashpw/gptel-mode-line 'hide 'responding))
+  (defun cashpw/gptel-mode-line--show-querying ()
+    (cashpw/gptel-mode-line--hide-all)
+    (cashpw/gptel-mode-line 'show 'querying))
+  (defun cashpw/gptel-mode-line--show-responding ()
+    (cashpw/gptel-mode-line--hide-all)
+    (cashpw/gptel-mode-line 'show 'responding))
+  (add-hook 'gptel-post-request-hook 'cashpw/gptel-mode-line--show-querying)
+  (add-hook 'gptel-pre-response-hook 'cashpw/gptel-mode-line--show-responding)
+  (add-hook 'gptel-post-response-functions 'cashpw/gptel-mode-line--hide-all)
+
+  (setq gptel-directives (let* ((promptdir (expand-file-name "prompts" user-emacs-directory))
+                                (prompt-files (directory-files promptdir t "md$")))
+                           (mapcar (lambda (prompt-file)
+                                     ;; (list (intern (f-base prompt-file)) "filler1" "filler2")
+                                     (with-temp-buffer
+                                       (insert-file-contents prompt-file)
+                                       (let ((prompt-description "NO DESCRIPTION")
+                                             (prompt-text nil))
+                                         ;; nab the description - single-line descriptions only!
+                                         (goto-char (point-min))
+                                         (when (re-search-forward "#\\+description: \\(.*?\\) *--> *$" nil t)
+                                           (setq prompt-description (match-string 1)))
+                                         ;; remove all comments
+                                         (delete-matching-lines "^ *<!--" (point-min) (point-max))
+                                         (delete-matching-lines "^$" (point-min) (+ 1 (point-min))) ; remove first blank line if exists
+                                         (goto-char (point-min)) ;; not necessary, point is in the midst of comments to start
+                                         ;; return the megillah
+                                         (list
+                                          (intern (f-base prompt-file)) ; gptel-directives key
+                                          prompt-description
+                                          (buffer-substring-no-properties (point-min) (point-max)) ))))
+                                   prompt-files)))
   :bind (("C-x a i" . gptel-send)))
 
 (use-package llm-tool-collection
