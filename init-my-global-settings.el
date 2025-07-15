@@ -413,3 +413,6 @@
 
 (unless (getenv "JAVA_HOME")
   (setenv "JAVA_HOME" (expand-file-name "~/.mx/jdks/labsjdk-ce-latest/")))
+
+(unless (getenv "ECLIPSE_EXE")
+  (setenv "ECLIPSE_EXE" (expand-file-name "~/dev/eclipse/eclipse")))
