@@ -1784,13 +1784,23 @@
   :after gptel
   :vc (:url "https://github.com/skissue/llm-tool-collection" :branch "main" :rev :newest)
   :config
+
+  (llm-tool-collection-deftool list-buffers
+    (:category "buffers" :tags (buffers editing))
+    nil
+    "Get the list of files the user has open in buffers."
+    (string-join
+     (remove nil (mapcar #'buffer-file-name
+                         (buffer-list)))
+     "\n"))
+
   (mapcar (apply-partially #'apply #'gptel-make-tool)
           (llm-tool-collection-get-category "filesystem"))
   (mapcar (apply-partially #'apply #'gptel-make-tool)
           (llm-tool-collection-get-category "buffers"))
   (setq gptel-tools
         (let ((funcs nil)
-              (names (list "view_buffer" "read_file" "list_directory")))
+              (names (list "view_buffer" "read_file" "list_directory" "list_buffers")))
           (dolist (category gptel--known-tools)
             (dolist (pair (cdr category))
               (when (member (car pair) names)
