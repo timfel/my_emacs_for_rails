@@ -1755,6 +1755,56 @@
   (add-hook 'gptel-pre-response-hook 'cashpw/gptel-mode-line--show-responding)
   (add-hook 'gptel-post-response-functions 'cashpw/gptel-mode-line--hide-all)
 
+  (gptel-make-tool
+   :function (lambda (command &optional working_dir)
+               (with-temp-message (format "Executing command: `%s`" command)
+                 (let ((default-directory (if (and working_dir (not (string= working_dir "")))
+                                              (expand-file-name working_dir)
+                                            default-directory)))
+                   (shell-command-to-string command))))
+   :name "execute_command"
+   :description "Executes a shell command and returns the output as a string. IMPORTANT: This tool allows execution of arbitrary code; user confirmation will be required before any command is run."
+   :args (list
+          '(:name "command"
+                  :type string
+                  :description "The complete shell command to execute.")
+          '(:name "working_dir"
+                  :type string
+                  :description "Optional: The directory in which to run the command. Defaults to the current directory if not specified."))
+   :category "command"
+   :confirm t
+   :include t)
+
+  (gptel-make-tool
+   :function (lambda (dir)
+               (if (file-directory-p dir)
+                   (setq default-directory dir)))
+   :name "change_directory"
+   :description "Change the default working directory for subsequent work."
+   :args (list '(:name "dir" :type string :description "The directory to cd into."))
+   :category "command"
+   :confirm t
+   :include nil)
+
+  (gptel-make-tool
+   :function (lambda () default-directory)
+   :name "get_current_directory"
+   :description "Return the name of the current working directory."
+   :args (list)
+   :confirm nil
+   :include nil
+   :category "command")
+
+  (gptel-make-tool
+   :function (lambda (url)
+               (shell-command-to-string (format "w3m -dump '%s'" url)))
+   :name "read_webpage"
+   :description "Read the contents of a URL"
+   :args (list '(:name "url"
+                       :type string
+                       :description "The URL to read"))
+   :category "web")
+
   (setq gptel-directives (let* ((promptdir (expand-file-name "prompts" user-emacs-directory))
                                 (prompt-files (directory-files promptdir t "md$")))
                            (mapcar (lambda (prompt-file)
@@ -1798,9 +1848,22 @@
           (llm-tool-collection-get-category "filesystem"))
   (mapcar (apply-partially #'apply #'gptel-make-tool)
           (llm-tool-collection-get-category "buffers"))
-  (setq gptel-tools
+  (setq
+   gptel-use-tools t
+   gptel-confirm-tool-calls 'auto
+   gptel-tools
         (let ((funcs nil)
-              (names (list "view_buffer" "read_file" "list_directory" "list_buffers")))
+              (names (list
+                      "read_webpage"
+                      "change_directory"
+                      "get_current_directory"
+                      "execute_command"
+                      "view_buffer"
+                      "read_file"
+                      "list_directory"
+                      "list_buffers"
+                      "create_file"
+                      "create_directory")))
           (dolist (category gptel--known-tools)
             (dolist (pair (cdr category))
               (when (member (car pair) names)
