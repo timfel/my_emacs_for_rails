@@ -1805,6 +1805,38 @@
                        :description "The URL to read"))
    :category "web")
 
+  (gptel-make-tool
+   :function (lambda (phrase)
+               (if (string-match-p "^http" phrase)
+                   (shell-command-to-string (format "w3m -dump '%s'" phrase))
+                 (shell-command-to-string
+                  (format
+                   "w3m -dump 'https://duckduckgo.com/?q=%s'"
+                   (url-hexify-string phrase)))))
+   :name "search_web"
+   :description "Search the web for a string."
+   :args (list '(:name "phrase"
+                       :type string
+                       :description "The keywords to search for on the web, just the KEYWORDS"))
+   :category "web")
+
+  (gptel-make-tool
+   :function (lambda (filename patch)
+               (with-temp-buffer
+                 (insert patch)
+                 (ediff-dispatch-file-patching-job (current-buffer) filename)))
+   :name "patch_file"
+   :description "Apply a patch to the given filename."
+   :args (list '(:name "filename"
+                       :type string
+                       :description "The full path to the file that we should patch")
+               '(:name "patch"
+                       :type string
+                       :description "A unified diff to apply to the file"))
+   :category "filesystem"
+   :confirm t
+   :include nil)
+
   (setq gptel-directives (let* ((promptdir (expand-file-name "prompts" user-emacs-directory))
                                 (prompt-files (directory-files promptdir t "md$")))
                            (mapcar (lambda (prompt-file)
@@ -1855,6 +1887,7 @@
         (let ((funcs nil)
               (names (list
                       "read_webpage"
+                      "search_web"
                       "change_directory"
                       "get_current_directory"
                       "execute_command"
@@ -1863,6 +1896,7 @@
                       "list_directory"
                       "list_buffers"
                       "create_file"
+                      "patch_file"
                       "create_directory")))
           (dolist (category gptel--known-tools)
             (dolist (pair (cdr category))
