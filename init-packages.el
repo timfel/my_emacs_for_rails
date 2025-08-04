@@ -1730,7 +1730,7 @@
        cashpw/gptel-mode-line--indicator-querying)
       ('responding
        cashpw/gptel-mode-line--indicator-responding)
-      (t
+      (_
        "")))
   (defun cashpw/gptel-mode-line (command mode)
     "Update mode line to COMMAND (show|hide) indicator for MODE."
@@ -1859,7 +1859,28 @@
                                           prompt-description
                                           (buffer-substring-no-properties (point-min) (point-max)) ))))
                                    prompt-files)))
-  :bind (("C-x a i" . gptel-send)))
+  :bind (("C-x a i" . gptel-send)
+         ("C-x a c" . (lambda ()
+                        (interactive
+                         (let ((query (if (use-region-p)
+                                          (buffer-substring-no-properties (region-beginning)
+                                                                          (region-end))
+                                        (buffer-substring-no-properties (point-min)
+                                                                        (point))))
+                               (gptel-use-tools nil)
+                               (gptel-include-reasoning nil))
+                           (gptel-request query
+                             :callback (lambda (response info)
+                                         (let* ((start-marker (plist-get info :position))
+                                                (tracking-marker (plist-get info :tracking-marker)))
+                                           (if (stringp response)
+                                               (save-excursion
+                                                 (with-current-buffer (marker-buffer start-marker)
+                                                   (goto-char (or tracking-marker start-marker))
+                                                   (insert response)
+                                                   (plist-put info :tracking-marker (setq tracking-marker (point-marker))))))))
+                             :stream gptel-stream
+                             :system "Continue writing until the current control flow is completed or the task described in the last comment is done. Only write code, no markup, no communication, no explanations, do not repeat parts of the request, just continue writing the code.")))))))
 
 (use-package llm-tool-collection
   :ensure t
