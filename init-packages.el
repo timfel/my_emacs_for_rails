@@ -799,17 +799,20 @@
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit (not (eq system-type 'windows-nt))
-                  lsp-ui-doc-show-with-cursor nil
+                  lsp-ui-doc-show-with-cursor t
                   lsp-ui-sideline-enable (not (eq system-type 'windows-nt))
                   lsp-ui-sideline-show-symbol nil
                   lsp-ui-sideline-show-hover (not (eq system-type 'windows-nt))
                   lsp-ui-sideline-show-code-actions t
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
-                  lsp-eldoc-enable-hover nil
+                  lsp-eldoc-enable-hover t
                   lsp-idle-delay 1.000
+                  lsp-treemacs-error-list-current-project-only t
+                  lsp-treemacs-error-list-expand-depth nil
+                  lsp-treemacs-error-list-severity 1
                   lsp-tcp-connection-timeout 20
-                  lsp-modeline-diagnostics-enable nil
+                  lsp-modeline-diagnostics-enable t
                   lsp-modeline-code-actions-enable nil
                   lsp-ui-sideline-code-actions-prefix ""
                   lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default
@@ -818,7 +821,23 @@
 (use-package lsp-treemacs
   :ensure t
   :after (lsp-mode treemacs)
-  :commands lsp-treemacs-errors-list)
+  :commands lsp-treemacs-errors-list
+  :config
+
+  (cl-flet*
+      ((error-list-advice (oldfun &rest args)
+         "Show only diagnostics for the current folder if there are any."
+         (if-let* ((vc-root (vc-root-dir))
+                   (root (expand-file-name vc-root))
+                   (folder-arg (seq-elt args 0))
+                   (folder (expand-file-name folder-arg)))
+             (when (string-prefix-p root folder)
+               (apply oldfun args))
+           (apply oldfun args))))
+
+    (advice-add #'lsp-treemacs--build-error-list
+                :around
+                #'error-list-advice)))
 
 (use-package python
   :hook friendly-whitespace)
@@ -1507,9 +1526,15 @@
 (use-package deadgrep
   :commands (rg deadgrep)
   :ensure t
-  :config (defun rg ()
-            (interactive)
-            (call-interactively #'deadgrep)))
+  :config (defun rg (what where)
+            (interactive (list
+                          (read-string
+                           "Search what? "
+                           (if (use-region-p)
+                               (buffer-substring-no-properties (region-beginning) (region-end))
+                             (if (symbol-at-point) (prin1-to-string (symbol-at-point)))))
+                          (read-directory-name "Search where? ")))
+            (deadgrep what where)))
 
 (use-package pypytrace-mode
   :defer t
@@ -1685,7 +1710,7 @@
                           (copilot-accept-completion))
                       (copilot-complete)))
                   (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
-      
+
       (use-package llm
         :if (not (eq system-type 'windows-nt))
         :pin gnu
