@@ -1980,6 +1980,9 @@
    gptel-tools
         (let ((funcs nil)
               (names (list
+                      "get_recently_edited_filenames"
+                      "search_in_project"
+                      "set_file_content"
                       "read_webpage"
                       "search_web"
                       "change_directory"
