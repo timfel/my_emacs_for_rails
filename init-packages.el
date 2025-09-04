@@ -1821,6 +1821,54 @@
    :category "command")
 
   (gptel-make-tool
+   :name "get_recently_edited_filenames"
+   :description "Return a list of the 5 most recently opened buffers in this emacs session to help better understand the context of what we are doing and the users request."
+   :function (lambda ()
+               (mapcar #'buffer-file-name
+                       (seq-take
+                        (delete-dups
+                         (seq-remove
+                          (lambda (b)
+                            (or (null b)
+                                (not (buffer-file-name b))
+                                (string-prefix-p " " (buffer-name b))))
+                          (buffer-list)))
+                        5)))
+   :args (list)
+   :confirm nil
+   :include nil
+   :category "buffers")
+
+  (gptel-make-tool
+   :name "search_in_project"
+   :description "Search for a string within the project using a fast search tool (like ripgrep)."
+   :function (lambda (pattern)
+               (let ((rg-cmd (format "rg --max-count 20 --no-heading --color never %s %s"
+                                     (shell-quote-argument pattern)
+                                     (project-root (project-current)))))
+                 (shell-command-to-string rg-cmd)))
+   :args (list '(:name "pattern"
+                       :type string
+                       :description "Pattern to search for"))
+   :confirm t
+   :include nil
+   :category "search")
+
+  (gptel-make-tool
+   :name "set_file_content"
+   :description "Set the content of a file to the given string. Expects filename, and the full content."
+   :function (lambda (filename content)
+               (with-temp-file filename
+                 (insert content))
+               "Saved!")
+   :args (list
+          '(:name "filename" :type string :description "The file to overwrite.")
+          '(:name "content" :type string :description "The new content for the file."))
+   :confirm t
+   :include t
+   :category "files")
+
+  (gptel-make-tool
    :function (lambda (url)
                (shell-command-to-string (format "w3m -dump '%s'" url)))
    :name "read_webpage"
@@ -1851,7 +1899,7 @@
                  (insert patch)
                  (ediff-dispatch-file-patching-job (current-buffer) filename)))
    :name "patch_file"
-   :description "Apply a patch to the given filename."
+   :description "Apply a unified diff to a file."
    :args (list '(:name "filename"
                        :type string
                        :description "The full path to the file that we should patch")
