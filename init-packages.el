@@ -1735,6 +1735,7 @@
 
 (use-package gptel
   :ensure t
+  :commands (gptel gptel-request)
   :config
   (setq gptel-model 'gemma3n:latest
         gptel-include-tool-results t
@@ -1909,6 +1910,8 @@
    :category "filesystem"
    :confirm t
    :include nil)
+
+  (advice-add 'keyboard-quit :before (lambda (&rest args) (ignore-errors (gptel-abort (current-buffer)))))
 
   (setq gptel-directives (let* ((promptdir (expand-file-name "prompts" user-emacs-directory))
                                 (prompt-files (directory-files promptdir t "md$")))
