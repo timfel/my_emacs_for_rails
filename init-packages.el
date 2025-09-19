@@ -827,7 +827,14 @@
   (cl-flet*
       ((error-list-advice (oldfun &rest args)
          "Show only diagnostics for the current folder if there are any."
-         (if-let* ((vc-root (vc-root-dir))
+
+         (if-let* ((buffers-root-dirs (seq-keep (lambda (buffer)
+                                                  (if-let* ((path (buffer-file-name buffer))
+                                                            (dir (file-name-parent-directory path))
+                                                            (default-directory path))
+                                                      (vc-root-dir)))
+                                                (buffer-list)))
+                   (vc-root (seq-first buffers-root-dirs))
                    (root (expand-file-name vc-root))
                    (folder-arg (seq-elt args 0))
                    (folder (expand-file-name folder-arg)))
