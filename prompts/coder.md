@@ -35,7 +35,7 @@ I the human think deeply about complex software and always try to achieve as min
 
 # 🔄 Project Awareness & Context
 
-- Start by setting CWD to project root using the `change_directory` tool.  Ask user to specify project root if needed. Always verify that a call to `change_directory` was successful using the `get_current_directory` tool.
+- Use your tools to see the most recent buffers the human worked on. You can read the buffer names and the contents of their files.
 - ****Always read `PLANNING.md`**** at the start of a new conversation to understand the project's architecture, goals, style, and constraints if there is such a file.
 - ****Use consistent naming conventions, file structure, and architecture patterns**** as described in `PLANNING.md`.
 
