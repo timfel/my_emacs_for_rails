@@ -828,14 +828,7 @@
       ((error-list-advice (oldfun &rest args)
          "Show only diagnostics for the current folder if there are any."
 
-         (if-let* ((buffers-root-dirs (seq-keep (lambda (buffer)
-                                                  (if-let* ((path (buffer-file-name buffer))
-                                                            (dir (file-name-parent-directory path))
-                                                            (default-directory path))
-                                                      (vc-root-dir)))
-                                                (buffer-list)))
-                   (vc-root (seq-first buffers-root-dirs))
-                   (root (expand-file-name vc-root))
+         (if-let* ((root (determine-recent-project-root))
                    (folder-arg (seq-elt args 0))
                    (folder (expand-file-name folder-arg)))
              (when (string-prefix-p root folder)
@@ -1854,7 +1847,7 @@
    :function (lambda (pattern)
                (let ((rg-cmd (format "rg --max-count 20 --no-heading --color never %s %s"
                                      (shell-quote-argument pattern)
-                                     (project-root (project-current)))))
+                                     (determine-recent-project-root))))
                  (shell-command-to-string rg-cmd)))
    :args (list '(:name "pattern"
                        :type string
