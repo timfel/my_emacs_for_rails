@@ -1895,23 +1895,6 @@
                        :description "The keywords to search for on the web, just the KEYWORDS"))
    :category "web")
 
-  (gptel-make-tool
-   :function (lambda (filename patch)
-               (with-temp-buffer
-                 (insert patch)
-                 (ediff-dispatch-file-patching-job (current-buffer) filename)))
-   :name "patch_file"
-   :description "Apply a unified diff to a file."
-   :args (list '(:name "filename"
-                       :type string
-                       :description "The full path to the file that we should patch")
-               '(:name "patch"
-                       :type string
-                       :description "A unified diff to apply to the file"))
-   :category "filesystem"
-   :confirm t
-   :include nil)
-
   (advice-add 'keyboard-quit :before (lambda (&rest args) (ignore-errors (gptel-abort (current-buffer)))))
 
   (setq gptel-directives (let* ((promptdir (expand-file-name "prompts" user-emacs-directory))
