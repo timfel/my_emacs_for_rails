@@ -1995,6 +1995,11 @@
   :if (file-exists-p "~/dev/gists/oca.el")
   :demand t)
 
+(use-package orcl
+  :load-path "~/dev/gists/"
+  :commands my-git-merges-jira-html
+  :if (file-exists-p "~/dev/gists/orcl.el"))
+
 (use-package gptel-quick
   :vc (:url "https://github.com/karthink/gptel-quick")
   :ensure t
