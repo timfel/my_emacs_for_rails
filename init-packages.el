@@ -1023,6 +1023,19 @@
                                                                :path (expand-file-name "~/.sdkman/candidates/java/21.0.1-oracle")
                                                                :default t)]))
 
+
+            (defun my/lsp-find-session-folder-with-mx (oldfun session file-name)
+              (or (funcall oldfun session file-name)
+                  (funcall oldfun session
+                           (string-replace
+                            "/mxbuild/" "/"
+                            (replace-regexp-in-string
+                             "/mxbuild/jdk[0-9]+/" "/"
+                             (string-replace
+                              "/src_gen/" "/src/"
+                              file-name))))))
+            (advice-add #'lsp-find-session-folder :around #'my/lsp-find-session-folder-with-mx)
+
             (setq lsp-java-imports-gradle-wrapper-checksums
                   [(:sha256 "504b38a11c466aecb2f5c0b0d8ce0ed7ffa810bf70b9b7a599c570051be8fb4e" :allowed t)])
 
