@@ -1180,18 +1180,20 @@
       ;; if we added projects to the list of projects to import, go deeper
       (setq go-again (> (length projects-to-import) go-again)))
 
+    ;; expand-file-name and remove duplicates from projects-to-import
+    (setq projects-to-import (seq-uniq (seq-map #'expand-file-name projects-to-import)))
+
     ;; add projects to session
-    (dolist (elt projects-to-import)
-      (let ((exp (expand-file-name elt)))
-        (if (not (seq-contains-p (lsp-session-folders (lsp-session)) exp))
-            (progn
-              (lsp-workspace-folders-add exp)
-              (puthash 'jdtls
-                       (append (gethash 'jdtls
-                                        (lsp-session-server-id->folders (lsp-session)))
-                               (list exp))
-                       (lsp-session-server-id->folders (lsp-session)))
-              ))))
+    (dolist (exp projects-to-import)
+      (if (not (seq-contains-p (lsp-session-folders (lsp-session)) exp))
+          (progn
+            (lsp-workspace-folders-add exp)
+            (puthash 'jdtls
+                     (append (gethash 'jdtls
+                                      (lsp-session-server-id->folders (lsp-session)))
+                             (list exp))
+                     (lsp-session-server-id->folders (lsp-session)))
+            )))
     (lsp--persist-session (lsp-session))
     (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-to-import)))
 
