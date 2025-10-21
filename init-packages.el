@@ -1112,8 +1112,10 @@
             (if (not (eq system-type 'windows-nt))
                 (setq lsp-java-configuration-runtimes '[(:name "JavaSE-21"
                                                                :path (expand-file-name "~/.sdkman/candidates/java/21.0.1-oracle")
+                                                               :default nil)
+                                                        (:name "JavaSE-25"
+                                                               :path (expand-file-name "~/.sdkman/candidates/java/25-graal/")
                                                                :default t)]))
-
 
             (defun my/lsp-find-session-folder-with-mx (oldfun session file-name)
               (or (funcall oldfun session file-name)
