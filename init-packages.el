@@ -684,6 +684,97 @@
   :config (progn
             (require 'pcache)
 
+            (defun lsp-goto-next-diagnostic ()
+              "Get lsp-diagnostics, it returns a hash mapping file names to a list of
+	 	hashes, each of which is a diagnostic. Search in the file names for the
+	 	current buffer's file name. If found, search the list of diagnostics.
+	 	Get the vallue for the :range key, and compare the :start of the
+	 	resulting hash with the current point position until we find the next
+	 	diagnostic that is after the current point. If found, set the point to
+	 	that next diagnistic's start position. If there are no more diagnistics
+	 	after the current point in the list, take the next file name from the
+	 	outer hash. If the file name that got picked is not the current buffer,
+	 	open the file and position the point at the start of the range of the
+	 	first hash in the list of diagnistics."
+              (interactive)
+              (let* ((current-file (or (buffer-file-name) (dired-get-file-for-visit)))
+                     (diagnostics-table (lsp-diagnostics))
+                     (all-files (hash-table-keys diagnostics-table))
+                     (files-ordered (seq-sort #'string-lessp all-files))
+                     (point-pos (point))
+                     (found (gethash current-file diagnostics-table))
+                     (files-to-seek (seq-drop-while
+                                     (lambda (f) (and found (not (string-equal f current-file))))
+                                     files-ordered)))
+                (catch 'done
+                  (dolist (file files-to-seek)
+                    (let* ((diagnostics (gethash file diagnostics-table))
+                           (next-diag
+                            (seq-find (lambda (diag)
+                                        (let ((range (plist-get diag :range))
+                                              (severity (plist-get diag :severity)))
+                                          (when (and range (< severity 2))
+                                            (let* ((start (plist-get range :start))
+                                                   (pos (lsp--line-character-to-point
+                                                         (plist-get start :line)
+                                                         (plist-get start :character))))
+                                              (or
+                                               (not (equal file current-file))
+                                               (< point-pos pos))))))
+                                      diagnostics)))
+                      (when next-diag
+                        (let* ((range (plist-get next-diag :range))
+                               (start (plist-get range :start)))
+                          (unless (equal file current-file)
+                            (find-file file))
+                          (goto-char (point-min))
+                          (forward-line (plist-get start :line))
+                          (forward-char (plist-get start :character))
+                          (message "Jumped to diagnostic: %s (%d)" (plist-get next-diag :message) (plist-get next-diag :severity))
+                          (throw 'done t))))))))
+
+            (defun lsp-goto-previous-diagnostic ()
+              "Move to the previous diagnostic before point."
+              (interactive)
+              (let* ((current-file (or (buffer-file-name) (dired-get-file-for-visit)))
+                     (diagnostics-table (lsp-diagnostics))
+                     (all-files (hash-table-keys diagnostics-table))
+                     (files-ordered (seq-sort #'string-lessp all-files))
+                     (point-pos (point))
+                     (found (gethash current-file diagnostics-table))
+                     (files-to-seek (seq-reverse (append (seq-take-while
+                                                          (lambda (f) (and found (not (string-equal f current-file))))
+                                                          files-ordered)
+                                                         (list current-file)))))
+                (catch 'done
+                  (dolist (file files-to-seek)
+                    (let* ((diagnostics (gethash file diagnostics-table))
+                           (reversed-diags (reverse diagnostics))
+                           (prev-diag
+                            (seq-find (lambda (diag)
+                                        (let ((range (plist-get diag :range))
+                                              (severity (plist-get diag :severity)))
+                                          (when (and range (< severity 2))
+                                            (let* ((start (plist-get range :start))
+                                                   (pos (lsp--line-character-to-point
+                                                         (plist-get start :line)
+                                                         (plist-get start :character))))
+                                              (or
+                                               (not (equal file current-file))
+                                               (> point-pos pos))))))
+                                      reversed-diags)))
+                      (when prev-diag
+                        (let* ((range (plist-get prev-diag :range))
+                               (start (plist-get range :start))
+                               (pos (lsp--line-character-to-point
+                                     (plist-get start :line)
+                                     (plist-get start :character))))
+                          (unless (equal file current-file)
+                            (find-file file))
+                          (goto-char pos)
+                          (message "Jumped to diagnostic: %s" (plist-get prev-diag :message))
+                          (throw 'done t))))))))
+
             (defun my/c-clear-string-fences (orig-fun)
               (condition-case nil
                   (funcall orig-fun)
