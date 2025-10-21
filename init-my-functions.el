@@ -160,41 +160,39 @@ Non-interactive arguments are Begin End Regexp"
 
 (defun update-proxies-from-wpad ()
   (interactive)
-  ;; (setq wpad (shell-command-to-string "curl -s wpad")
-  (if url-proxy-services
-      (setq url-proxy-services nil)
-    (let ((wpad (shell-command-to-string "curl -s wpad")))
-      (if (string-match "PROXY\s\\([^; \n\t]+\\)" wpad)
-          (progn
-            (setq wpad (match-string-no-properties 1 wpad))
-            (let ((wpad_with_protocol (if (not (string-match "^https?://" wpad))
-                                          (concat "http://" wpad)
-                                        wpad)))
-              (setenv "http_proxy" wpad_with_protocol)
-              (setenv "https_proxy" wpad_with_protocol)
-              (setenv "HTTP_PROXY" wpad_with_protocol)
-              (setenv "HTTPS_PROXY" wpad_with_protocol))
-            (if (string-match "\\([^:]+\\):\\([0-9]+\\)$" wpad)
-                (progn
-                  (setq url-proxy-services
-                        (list (cons "http" wpad)
-                              (cons "https" wpad)))
-                  (setq copilot-network-proxy
-                        `(:host ,(match-string-no-properties 1 wpad)
-                                :port ,(string-to-number (match-string-no-properties 2 wpad)))))
-              (progn
-                (setq url-proxy-services
-                      (list (cons "http" (concat wpad ":80"))
-                            (cons "https" (concat wpad ":443"))))
-                (setq copilot-network-proxy `(:host ,wpad :port 443))))
-            (message "Proxies set: %s" url-proxy-services))
+  (let (wpad)
+    (if (not (or url-proxy-services
+                 (not (setq wpad (shell-command-to-string "curl -s wpad")))
+                 (not (string-match "PROXY\s\\([^; \n\t]+\\)" wpad))))
         (progn
-          (setq url-proxy-services nil)
-          (setenv "http_proxy" nil)
-          (setenv "https_proxy" nil)
-          (setenv "HTTP_PROXY" nil)
-          (setenv "HTTPS_PROXY" nil)
-          (message "Proxies disabled")))))
+          (setq wpad (match-string-no-properties 1 wpad))
+          (let ((wpad_with_protocol (if (not (string-match "^https?://" wpad))
+                                        (concat "http://" wpad)
+                                      wpad)))
+            (setenv "http_proxy" wpad_with_protocol)
+            (setenv "https_proxy" wpad_with_protocol)
+            (setenv "HTTP_PROXY" wpad_with_protocol)
+            (setenv "HTTPS_PROXY" wpad_with_protocol))
+          (let* ((m (string-match "\\([^:]+\\):\\([0-9]+\\)$" wpad))
+                 (host (if m (match-string-no-properties 1 wpad) wpad))
+                 (port (if m (match-string-no-properties 2 wpad) 443))
+                 (http (if m wpad (concat wpad ":80")))
+                 (https (if m wpad (concat wpad ":443"))))
+            (setq
+             url-proxy-services (list (cons "http" http) (cons "https" https))
+             copilot-network-proxy `(:host ,host :port ,(string-to-number port)))
+            (setenv "GRADLE_OPTS" (format "-Dhttp.proxyHost=%s -Dhttp.proxyPort=%s -Dhttps.proxyHost=%s -Dhttps.proxyPort=%s" host port host port))
+            (setenv "MAVEN_OPTS" (format "-Dhttp.proxyHost=%s -Dhttp.proxyPort=%s -Dhttps.proxyHost=%s -Dhttps.proxyPort=%s" host port host port)))
+          (message "Proxies set: %s" url-proxy-services))
+      (progn
+        (setq url-proxy-services nil)
+        (setenv "http_proxy" nil)
+        (setenv "https_proxy" nil)
+        (setenv "HTTP_PROXY" nil)
+        (setenv "HTTPS_PROXY" nil)
+        (setenv "MAVEN_OPTS" nil)
+        (setenv "GRADLE_OPTS" nil)
+        (message "Proxies disabled"))))
   (cdar url-proxy-services))
 
 (defun projector-enable ()
