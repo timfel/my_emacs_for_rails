@@ -686,6 +686,97 @@
   :config (progn
             (require 'pcache)
 
+            (defun lsp-goto-next-diagnostic ()
+              "Get lsp-diagnostics, it returns a hash mapping file names to a list of
+	 	hashes, each of which is a diagnostic. Search in the file names for the
+	 	current buffer's file name. If found, search the list of diagnostics.
+	 	Get the vallue for the :range key, and compare the :start of the
+	 	resulting hash with the current point position until we find the next
+	 	diagnostic that is after the current point. If found, set the point to
+	 	that next diagnistic's start position. If there are no more diagnistics
+	 	after the current point in the list, take the next file name from the
+	 	outer hash. If the file name that got picked is not the current buffer,
+	 	open the file and position the point at the start of the range of the
+	 	first hash in the list of diagnistics."
+              (interactive)
+              (let* ((current-file (or (buffer-file-name) (dired-get-file-for-visit)))
+                     (diagnostics-table (lsp-diagnostics))
+                     (all-files (hash-table-keys diagnostics-table))
+                     (files-ordered (seq-sort #'string-lessp all-files))
+                     (point-pos (point))
+                     (found (gethash current-file diagnostics-table))
+                     (files-to-seek (seq-drop-while
+                                     (lambda (f) (and found (not (string-equal f current-file))))
+                                     files-ordered)))
+                (catch 'done
+                  (dolist (file files-to-seek)
+                    (let* ((diagnostics (gethash file diagnostics-table))
+                           (next-diag
+                            (seq-find (lambda (diag)
+                                        (let ((range (plist-get diag :range))
+                                              (severity (plist-get diag :severity)))
+                                          (when (and range (< severity 2))
+                                            (let* ((start (plist-get range :start))
+                                                   (pos (lsp--line-character-to-point
+                                                         (plist-get start :line)
+                                                         (plist-get start :character))))
+                                              (or
+                                               (not (equal file current-file))
+                                               (< point-pos pos))))))
+                                      diagnostics)))
+                      (when next-diag
+                        (let* ((range (plist-get next-diag :range))
+                               (start (plist-get range :start)))
+                          (unless (equal file current-file)
+                            (find-file file))
+                          (goto-char (point-min))
+                          (forward-line (plist-get start :line))
+                          (forward-char (plist-get start :character))
+                          (message "Jumped to diagnostic: %s (%d)" (plist-get next-diag :message) (plist-get next-diag :severity))
+                          (throw 'done t))))))))
+
+            (defun lsp-goto-previous-diagnostic ()
+              "Move to the previous diagnostic before point."
+              (interactive)
+              (let* ((current-file (or (buffer-file-name) (dired-get-file-for-visit)))
+                     (diagnostics-table (lsp-diagnostics))
+                     (all-files (hash-table-keys diagnostics-table))
+                     (files-ordered (seq-sort #'string-lessp all-files))
+                     (point-pos (point))
+                     (found (gethash current-file diagnostics-table))
+                     (files-to-seek (seq-reverse (append (seq-take-while
+                                                          (lambda (f) (and found (not (string-equal f current-file))))
+                                                          files-ordered)
+                                                         (list current-file)))))
+                (catch 'done
+                  (dolist (file files-to-seek)
+                    (let* ((diagnostics (gethash file diagnostics-table))
+                           (reversed-diags (reverse diagnostics))
+                           (prev-diag
+                            (seq-find (lambda (diag)
+                                        (let ((range (plist-get diag :range))
+                                              (severity (plist-get diag :severity)))
+                                          (when (and range (< severity 2))
+                                            (let* ((start (plist-get range :start))
+                                                   (pos (lsp--line-character-to-point
+                                                         (plist-get start :line)
+                                                         (plist-get start :character))))
+                                              (or
+                                               (not (equal file current-file))
+                                               (> point-pos pos))))))
+                                      reversed-diags)))
+                      (when prev-diag
+                        (let* ((range (plist-get prev-diag :range))
+                               (start (plist-get range :start))
+                               (pos (lsp--line-character-to-point
+                                     (plist-get start :line)
+                                     (plist-get start :character))))
+                          (unless (equal file current-file)
+                            (find-file file))
+                          (goto-char pos)
+                          (message "Jumped to diagnostic: %s" (plist-get prev-diag :message))
+                          (throw 'done t))))))))
+
             (defun my/c-clear-string-fences (orig-fun)
               (condition-case nil
                   (funcall orig-fun)
@@ -801,17 +892,20 @@
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
                   lsp-ui-doc-use-webkit (not (eq system-type 'windows-nt))
-                  lsp-ui-doc-show-with-cursor nil
+                  lsp-ui-doc-show-with-cursor t
                   lsp-ui-sideline-enable (not (eq system-type 'windows-nt))
                   lsp-ui-sideline-show-symbol nil
                   lsp-ui-sideline-show-hover (not (eq system-type 'windows-nt))
                   lsp-ui-sideline-show-code-actions t
                   lsp-ui-sideline-ignore-duplicate t
                   lsp-ui-sideline-delay 2
-                  lsp-eldoc-enable-hover nil
+                  lsp-eldoc-enable-hover t
                   lsp-idle-delay 1.000
+                  lsp-treemacs-error-list-current-project-only t
+                  lsp-treemacs-error-list-expand-depth nil
+                  lsp-treemacs-error-list-severity 1
                   lsp-tcp-connection-timeout 20
-                  lsp-modeline-diagnostics-enable nil
+                  lsp-modeline-diagnostics-enable t
                   lsp-modeline-code-actions-enable nil
                   lsp-ui-sideline-code-actions-prefix ""
                   lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default
@@ -820,7 +914,23 @@
 (use-package lsp-treemacs
   :ensure t
   :after (lsp-mode treemacs)
-  :commands lsp-treemacs-errors-list)
+  :commands lsp-treemacs-errors-list
+  :config
+
+  (cl-flet*
+      ((error-list-advice (oldfun &rest args)
+         "Show only diagnostics for the current folder if there are any."
+
+         (if-let* ((root (determine-recent-project-root))
+                   (folder-arg (seq-elt args 0))
+                   (folder (expand-file-name folder-arg)))
+             (when (string-prefix-p root folder)
+               (apply oldfun args))
+           (apply oldfun args))))
+
+    (advice-add #'lsp-treemacs--build-error-list
+                :around
+                #'error-list-advice)))
 
 (use-package python
   :hook friendly-whitespace)
@@ -892,19 +1002,20 @@
   :config (progn
             (require 'mmm-auto)
             (setq mmm-global-mode 'maybe)
+
+            (defun polyglot-mode-match (front)
+              (if (string-match ".+\"\\([^\"]+\\)\", \"\"\"" front)
+                  (let ((sym (intern-soft (concat (match-string-no-properties 1 front) "-mode"))))
+                    (if (fboundp sym)
+                        sym
+                      'text-mode))
+                'text-mode))
             (mmm-add-classes
              '((java-text-block
-                :match-submode (lambda (front)
-                                 (if (string-match ".+\"\\([^\"]+\\)\", \"\"\"" front)
-                                     (let ((sym (intern-soft (concat (match-string-no-properties 1 front) "-mode"))))
-                                       (if (fboundp sym)
-                                           sym
-                                         'text-mode))
-                                   'text-mode))
+                :match-submode polyglot-mode-match
                 :front ".+\"\"\"$"
                 :back ".*\"\"\".*"
-                :face mmm-code-submode-face
-                )))
+                :face mmm-code-submode-face)))
             (mmm-add-classes
              '((md-javascript-block
                 :submode javascript-mode
@@ -1003,7 +1114,22 @@
             (if (not (eq system-type 'windows-nt))
                 (setq lsp-java-configuration-runtimes '[(:name "JavaSE-21"
                                                                :path (expand-file-name "~/.sdkman/candidates/java/21.0.1-oracle")
+                                                               :default nil)
+                                                        (:name "JavaSE-25"
+                                                               :path (expand-file-name "~/.sdkman/candidates/java/25-graal/")
                                                                :default t)]))
+
+            (defun my/lsp-find-session-folder-with-mx (oldfun session file-name)
+              (or (funcall oldfun session file-name)
+                  (funcall oldfun session
+                           (string-replace
+                            "/mxbuild/" "/"
+                            (replace-regexp-in-string
+                             "/mxbuild/jdk[0-9]+/" "/"
+                             (string-replace
+                              "/src_gen/" "/src/"
+                              file-name))))))
+            (advice-add #'lsp-find-session-folder :around #'my/lsp-find-session-folder-with-mx)
 
             (setq lsp-java-imports-gradle-wrapper-checksums
                   [(:sha256 "504b38a11c466aecb2f5c0b0d8ce0ed7ffa810bf70b9b7a599c570051be8fb4e" :allowed t)])
@@ -1162,18 +1288,20 @@
       ;; if we added projects to the list of projects to import, go deeper
       (setq go-again (> (length projects-to-import) go-again)))
 
+    ;; expand-file-name and remove duplicates from projects-to-import
+    (setq projects-to-import (seq-uniq (seq-map #'expand-file-name projects-to-import)))
+
     ;; add projects to session
-    (dolist (elt projects-to-import)
-      (let ((exp (expand-file-name elt)))
-        (if (not (seq-contains-p (lsp-session-folders (lsp-session)) exp))
-            (progn
-              (lsp-workspace-folders-add exp)
-              (puthash 'jdtls
-                       (append (gethash 'jdtls
-                                        (lsp-session-server-id->folders (lsp-session)))
-                               (list exp))
-                       (lsp-session-server-id->folders (lsp-session)))
-              ))))
+    (dolist (exp projects-to-import)
+      (if (not (seq-contains-p (lsp-session-folders (lsp-session)) exp))
+          (progn
+            (lsp-workspace-folders-add exp)
+            (puthash 'jdtls
+                     (append (gethash 'jdtls
+                                      (lsp-session-server-id->folders (lsp-session)))
+                             (list exp))
+                     (lsp-session-server-id->folders (lsp-session)))
+            )))
     (lsp--persist-session (lsp-session))
     (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-to-import)))
 
@@ -1507,9 +1635,15 @@
 (use-package deadgrep
   :commands (rg deadgrep)
   :ensure t
-  :config (defun rg ()
-            (interactive)
-            (call-interactively #'deadgrep)))
+  :config (defun rg (what where)
+            (interactive (list
+                          (read-string
+                           "Search what? "
+                           (if (use-region-p)
+                               (buffer-substring-no-properties (region-beginning) (region-end))
+                             (if (symbol-at-point) (prin1-to-string (symbol-at-point)))))
+                          (read-directory-name "Search where? ")))
+            (deadgrep what where)))
 
 (use-package pypytrace-mode
   :defer t
@@ -1685,7 +1819,7 @@
                           (copilot-accept-completion))
                       (copilot-complete)))
                   (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
-      
+
       (use-package llm
         :if (not (eq system-type 'windows-nt))
         :pin gnu
@@ -1710,6 +1844,7 @@
 
 (use-package gptel
   :ensure t
+  :commands (gptel gptel-request)
   :config
   (setq gptel-model 'gemma3n:latest
         gptel-include-tool-results t
@@ -1718,20 +1853,243 @@
                                          :host "localhost:11434"
                                          :stream t
                                          :models '(gemma3n:latest gemma3n-tools)))
-  :bind (("C-x a i" . gptel-send)))
+
+  (setq
+   cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
+   cashpw/gptel-mode-line--indicator-responding "↓GPTEL↓ "
+   cashpw/gptel-show-progress-in-mode-line t)
+  (defun cashpw/gptel-mode-line--indicator (mode)
+    "Return indicator string for MODE."
+    (pcase mode
+      ('querying
+       cashpw/gptel-mode-line--indicator-querying)
+      ('responding
+       cashpw/gptel-mode-line--indicator-responding)
+      (_
+       "")))
+  (defun cashpw/gptel-mode-line (command mode)
+    "Update mode line to COMMAND (show|hide) indicator for MODE."
+    (when cashpw/gptel-show-progress-in-mode-line
+      (let ((indicator (list t (cashpw/gptel-mode-line--indicator mode))))
+        (pcase command
+          ('show
+           (cl-pushnew indicator global-mode-string :test #'equal))
+          ('hide
+           (setf global-mode-string (remove indicator global-mode-string)))))
+      (force-mode-line-update t)))
+  (defun cashpw/gptel-mode-line--hide-all (&rest _)
+    (cashpw/gptel-mode-line 'hide 'querying)
+    (cashpw/gptel-mode-line 'hide 'responding))
+  (defun cashpw/gptel-mode-line--show-querying ()
+    (cashpw/gptel-mode-line--hide-all)
+    (cashpw/gptel-mode-line 'show 'querying))
+  (defun cashpw/gptel-mode-line--show-responding ()
+    (cashpw/gptel-mode-line--hide-all)
+    (cashpw/gptel-mode-line 'show 'responding))
+  (add-hook 'gptel-post-request-hook 'cashpw/gptel-mode-line--show-querying)
+  (add-hook 'gptel-pre-response-hook 'cashpw/gptel-mode-line--show-responding)
+  (add-hook 'gptel-post-response-functions 'cashpw/gptel-mode-line--hide-all)
+
+  (gptel-make-tool
+   :function (lambda (command &optional working_dir)
+               (with-temp-message (format "Executing command: `%s`" command)
+                 (let ((default-directory (if (and working_dir (not (string= working_dir "")))
+                                              (expand-file-name working_dir)
+                                            default-directory)))
+                   (shell-command-to-string command))))
+   :name "execute_command"
+   :description "Executes a shell command and returns the output as a string. IMPORTANT: This tool allows execution of arbitrary code; user confirmation will be required before any command is run."
+   :args (list
+          '(:name "command"
+                  :type string
+                  :description "The complete shell command to execute.")
+          '(:name "working_dir"
+                  :type string
+                  :description "Optional: The directory in which to run the command. Defaults to the current directory if not specified."))
+   :category "command"
+   :confirm t
+   :include t)
+
+  (gptel-make-tool
+   :function (lambda (dir)
+               (if (file-directory-p dir)
+                   (setq default-directory dir)))
+   :name "change_directory"
+   :description "Change the default working directory for subsequent work."
+   :args (list '(:name "dir" :type string :description "The directory to cd into."))
+   :category "command"
+   :confirm t
+   :include nil)
+
+  (gptel-make-tool
+   :function (lambda () default-directory)
+   :name "get_current_directory"
+   :description "Return the name of the current working directory."
+   :args (list)
+   :confirm nil
+   :include nil
+   :category "command")
+
+  (gptel-make-tool
+   :name "get_recently_edited_filenames"
+   :description "Return a list of the 5 most recently opened buffers in this emacs session to help better understand the context of what we are doing and the users request."
+   :function (lambda ()
+               (mapcar #'buffer-file-name
+                       (seq-take
+                        (delete-dups
+                         (seq-remove
+                          (lambda (b)
+                            (or (null b)
+                                (not (buffer-file-name b))
+                                (string-prefix-p " " (buffer-name b))))
+                          (buffer-list)))
+                        5)))
+   :args (list)
+   :confirm nil
+   :include nil
+   :category "buffers")
+
+  (gptel-make-tool
+   :name "search_in_project"
+   :description "Search for a string within the project using a fast search tool (like ripgrep)."
+   :function (lambda (pattern)
+               (let ((rg-cmd (format "rg --max-count 20 --no-heading --color never %s %s"
+                                     (shell-quote-argument pattern)
+                                     (determine-recent-project-root))))
+                 (shell-command-to-string rg-cmd)))
+   :args (list '(:name "pattern"
+                       :type string
+                       :description "Pattern to search for"))
+   :confirm t
+   :include nil
+   :category "search")
+
+  (gptel-make-tool
+   :name "set_file_content"
+   :description "Set the content of a file to the given string. Expects filename, and the full content."
+   :function (lambda (filename content)
+               (with-temp-file filename
+                 (insert content))
+               "Saved!")
+   :args (list
+          '(:name "filename" :type string :description "The file to overwrite.")
+          '(:name "content" :type string :description "The new content for the file."))
+   :confirm t
+   :include t
+   :category "files")
+
+  (gptel-make-tool
+   :function (lambda (url)
+               (shell-command-to-string (format "w3m -dump '%s'" url)))
+   :name "read_webpage"
+   :description "Read the contents of a URL"
+   :args (list '(:name "url"
+                       :type string
+                       :description "The URL to read"))
+   :category "web")
+
+  (gptel-make-tool
+   :function (lambda (phrase)
+               (if (string-match-p "^http" phrase)
+                   (shell-command-to-string (format "w3m -dump '%s'" phrase))
+                 (shell-command-to-string
+                  (format
+                   "w3m -dump 'https://duckduckgo.com/?q=%s'"
+                   (url-hexify-string phrase)))))
+   :name "search_web"
+   :description "Search the web for a string."
+   :args (list '(:name "phrase"
+                       :type string
+                       :description "The keywords to search for on the web, just the KEYWORDS"))
+   :category "web")
+
+  (advice-add 'keyboard-quit :before (lambda (&rest args) (ignore-errors (gptel-abort (current-buffer)))))
+
+  (setq gptel-directives (let* ((promptdir (expand-file-name "prompts" user-emacs-directory))
+                                (prompt-files (directory-files promptdir t "md$")))
+                           (mapcar (lambda (prompt-file)
+                                     ;; (list (intern (f-base prompt-file)) "filler1" "filler2")
+                                     (with-temp-buffer
+                                       (insert-file-contents prompt-file)
+                                       (let ((prompt-description "NO DESCRIPTION")
+                                             (prompt-text nil))
+                                         ;; nab the description - single-line descriptions only!
+                                         (goto-char (point-min))
+                                         (when (re-search-forward "#\\+description: \\(.*?\\) *--> *$" nil t)
+                                           (setq prompt-description (match-string 1)))
+                                         ;; remove all comments
+                                         (delete-matching-lines "^ *<!--" (point-min) (point-max))
+                                         (delete-matching-lines "^$" (point-min) (+ 1 (point-min))) ; remove first blank line if exists
+                                         (goto-char (point-min)) ;; not necessary, point is in the midst of comments to start
+                                         ;; return the megillah
+                                         (list
+                                          (intern (f-base prompt-file)) ; gptel-directives key
+                                          prompt-description
+                                          (buffer-substring-no-properties (point-min) (point-max)) ))))
+                                   prompt-files)))
+  :bind (("C-x a i" . gptel-send)
+         ("C-x a c" . (lambda ()
+                        (interactive
+                         (let ((query (if (use-region-p)
+                                          (buffer-substring-no-properties (region-beginning)
+                                                                          (region-end))
+                                        (buffer-substring-no-properties (point-min)
+                                                                        (point))))
+                               (gptel-use-tools nil)
+                               (gptel-include-reasoning nil))
+                           (gptel-request query
+                             :callback (lambda (response info)
+                                         (let* ((start-marker (plist-get info :position))
+                                                (tracking-marker (plist-get info :tracking-marker)))
+                                           (if (stringp response)
+                                               (save-excursion
+                                                 (with-current-buffer (marker-buffer start-marker)
+                                                   (goto-char (or tracking-marker start-marker))
+                                                   (insert response)
+                                                   (plist-put info :tracking-marker (setq tracking-marker (point-marker))))))))
+                             :stream gptel-stream
+                             :system "Continue writing until the current control flow is completed or the task described in the last comment is done. Only write code, no markup, no communication, no explanations, do not repeat parts of the request, just continue writing the code.")))))))
 
 (use-package llm-tool-collection
   :ensure t
   :after gptel
   :vc (:url "https://github.com/skissue/llm-tool-collection" :branch "main" :rev :newest)
   :config
+
+  (llm-tool-collection-deftool list-buffers
+    (:category "buffers" :tags (buffers editing))
+    nil
+    "Get the list of files the user has open in buffers."
+    (string-join
+     (remove nil (mapcar #'buffer-file-name
+                         (buffer-list)))
+     "\n"))
+
   (mapcar (apply-partially #'apply #'gptel-make-tool)
           (llm-tool-collection-get-category "filesystem"))
   (mapcar (apply-partially #'apply #'gptel-make-tool)
           (llm-tool-collection-get-category "buffers"))
-  (setq gptel-tools
+  (setq
+   gptel-use-tools t
+   gptel-confirm-tool-calls 'auto
+   gptel-tools
         (let ((funcs nil)
-              (names (list "view_buffer" "read_file" "list_directory")))
+              (names (list
+                      "get_recently_edited_filenames"
+                      "search_in_project"
+                      "set_file_content"
+                      "read_webpage"
+                      "search_web"
+                      "change_directory"
+                      "get_current_directory"
+                      "execute_command"
+                      "view_buffer"
+                      "read_file"
+                      "list_directory"
+                      "list_buffers"
+                      "create_file"
+                      "patch_file"
+                      "create_directory")))
           (dolist (category gptel--known-tools)
             (dolist (pair (cdr category))
               (when (member (car pair) names)
@@ -1744,6 +2102,11 @@
   :commands oca-key
   :if (file-exists-p "~/dev/gists/oca.el")
   :demand t)
+
+(use-package orcl
+  :load-path "~/dev/gists/"
+  :commands my-git-merges-jira-html
+  :if (file-exists-p "~/dev/gists/orcl.el"))
 
 (use-package gptel-quick
   :vc (:url "https://github.com/karthink/gptel-quick")

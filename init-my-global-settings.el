@@ -412,4 +412,7 @@
       (global-set-key (kbd "M-[ 1 ; 5 c") (kbd "C-<right>"))))
 
 (unless (getenv "JAVA_HOME")
-  (setenv "JAVA_HOME" (expand-file-name "~/.mx/jdks/labsjdk-ce-latest/")))
+  (setenv "JAVA_HOME" (expand-file-name "~/.mx/jdks/labsjdk-ce-21/")))
+
+(unless (getenv "ECLIPSE_EXE")
+  (setenv "ECLIPSE_EXE" (expand-file-name "~/dev/eclipse/eclipse")))
