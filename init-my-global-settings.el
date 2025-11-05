@@ -177,6 +177,11 @@
 	    (_ (and (file-exists-p jdk21) (not (getenv "JAVA_HOME")))))
   (setenv "JAVA_HOME" jdk21))
 
+(when-let* ((sdkman (getenv "SDKMAN_DIR"))
+            (jdk21 (expand-file-name (concat sdkman "candidates/java/21.0.4-oracle")))
+	    (_ (and (file-exists-p jdk21) (not (getenv "JAVA_HOME")))))
+  (setenv "JAVA_HOME" jdk21))
+
 (when-let* ((eclipse (expand-file-name "~/dev/eclipse/eclipse"))
 	    (_ (and (file-exists-p eclipse) (not (getenv "ECLIPSE_EXE")))))
   (setenv "ECLIPSE_EXE" eclipse))

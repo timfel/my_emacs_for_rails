@@ -651,6 +651,7 @@
 
 (use-package treemacs
   :ensure t
+  :defer t
   :bind (("<f5>" . (lambda ()
 		     (interactive)
 		     (require 'treemacs)
@@ -1306,9 +1307,6 @@
   :after (helm lsp-mode)
   :commands helm-lsp-workspace-symbol)
 
-(use-package color-theme-sanityinc-tomorrow
-  :defer t
-  :ensure t)
 (use-package eclipse-theme
   :defer t
   :ensure t)
@@ -1317,10 +1315,7 @@
   :demand t
   :config 
   (defun my/load-default-theme ()
-    (if-let ((theme (cond ((eq system-type 'windows-nt)
-			   (require 'color-theme-sanityinc-tomorrow)
-			   (color-theme-sanityinc-tomorrow-day)
-			   nil)
+    (if-let ((theme (cond ((eq window-system 'w32) 'eclipse)
 			  ((eq window-system nil) nil)
 			  (t 'eclipse))))
 	(load-theme theme t)))
