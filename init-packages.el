@@ -2,16 +2,12 @@
 (package-initialize)
 ;; (setq use-package-compute-statistics t)
 (require 'compile)
-(require 'cc-mode)
-(require 'hl-line)
-(require 'gud)
 
-(setq warning-minimum-level :error)
+(setq warning-minimum-level :error
+      use-package-verbose t)
 
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-(add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
-
-(setq use-package-verbose t)
+;; (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
 
 (condition-case nil
     (require 'use-package)
@@ -23,25 +19,86 @@
 (unless (package-installed-p 'vc-use-package)
   (package-vc-install "https://github.com/slotThe/vc-use-package"))
 
+(add-to-list 'load-path (locate-user-emacs-file "lisp"))
+
+(use-package timfel
+  :demand t)
+
 (use-package ht
   :defer t
   :ensure t)
 
-;; additional modes I like
-(use-package yaml-mode :ensure t
-  :mode ("\\.yml$" "\\.yaml$" "Gemfile.lock$"))
+(use-package isearch
+  :bind (("C-S-s" . timfel/isearch-word-at-point)
+	 :map isearch-mode-map
+	 ([backspace] . isearch-edit-string))
+  :hook ((isearch-mode . timfel/isearch-yank-word-hook))
+  :config
+  (defun timfel/isearch-word-at-point ()
+    (interactive)
+    (call-interactively 'isearch-forward-regexp))
 
-(use-package coffee-mode :ensure t
-  :mode ("\\.coffee$")
-  :hook (coffee-mode-hook
-         . (lambda() (progn
-                       ;; Enable compile-on-save if there is already a *.coffee & *.js file
-                       (if (and (file-exists-p (buffer-file-name))
-                                (file-exists-p (coffee-compiled-file-name)))
-                           (coffee-cos-mode t))
-                       (setq coffee-args-compile '("-c" "--bare"))
-                       (set (make-local-variable 'tab-width) 2)
-                       (define-key coffee-mode-map [(meta r)] 'coffee-compile-buffer)))))
+  (defun timfel/isearch-yank-word-hook ()
+    (when (equal this-command 'timfel/isearch-word-at-point)
+      (let ((string (concat "\\<"
+                            (buffer-substring-no-properties
+                             (progn (skip-syntax-backward "w_") (point))
+                             (progn (skip-syntax-forward "w_") (point)))
+                            "\\>")))
+	(skip-syntax-backward "w_") ;; go before the current search term
+	(if (and isearch-case-fold-search
+		 (eq 'not-yanks search-upper-case))
+            (setq string (downcase string)))
+	(setq string (regexp-quote (substring string 2 (- (length string) 2))))
+	(setq isearch-string string
+              isearch-message
+              (concat isearch-message
+                      (mapconcat 'isearch-text-char-description
+				 string ""))
+              isearch-yank-flag t)
+	(isearch-search-and-update)))))
+
+(use-package python
+  :mode ("\\.py$" "\\.pyi$" "\\.pyx$")
+  :hook ((python-mode . turn-on-font-lock)
+	 (python-mode . (lambda ()
+			  (imenu-add-to-menubar "IMENU")
+			  (setq ac-sources
+				'(ac-source-python
+				  ac-source-semantic
+				  ac-source-words-in-same-mode-buffers
+				  ac-source-yasnippet
+				  ac-source-abbrev))))))
+
+(use-package xref
+  :config
+  (if (and
+     (not (fboundp 'xref-quit-and-goto-xref))
+     (fboundp 'xref-goto-xref))
+    (defun xref-quit-and-goto-xref ()
+      "Quit *xref* buffer, then jump to xref on current line."
+      (interactive)
+      (let* ((buffer (current-buffer))
+             (xref (or (xref--item-at-point)
+                       (user-error "No reference at point")))
+             (xref--current-item xref))
+        (quit-window nil nil)
+        (xref--show-location (xref-item-location xref) t)
+        (next-error-found buffer (current-buffer))))))
+
+(use-package hippie-exp
+  :config
+  (defun timfel/try-complete-abbrev (old)
+    (if (expand-abbrev) t nil))
+  (setq hippie-expand-try-functions-list
+	'(timfel/try-complete-abbrev
+          try-complete-file-name
+          try-expand-dabbrev)))
+
+;; additional modes I like
+(use-package yaml-mode
+  :ensure t
+  :mode ("\\.yml$" "\\.yaml$" "Gemfile.lock$"))
 
 (use-package haml-mode :ensure t
   :mode ("\\.haml$"))
@@ -70,12 +127,11 @@
 
 (use-package ruby-electric :ensure t
   :defer t
-  :after ruby)
+  :after ruby-mode)
 
 (use-package ruby-mode :ensure t
   :mode ("\\.rb$" "\\.rjs$" "\\.rake$" "Rakefile$" "Gemfile$" "Vagrantfile$")
   :hook ((ruby-mode . turn-on-font-lock)
-         (ruby-mode . friendly-whitespace)
          (ruby-mode . ruby-electric-mode)
          (ruby-mode . (lambda() (progn
                                   (set (make-local-variable 'indent-tabs-mode) 'nil)
@@ -290,9 +346,6 @@
                                     (setq visual-fill-column-center-text nil)
                                     (visual-line-mode 0)))))
 
-;; tags and navigation
-;; (use-package ggtags :ensure t)
-;; (use-package xcscope :ensure t)
 (use-package projectile
   :ensure t
   :defer t
@@ -480,9 +533,9 @@
   :commands (mw-thesaurus-lookup mw-thesaurus-lookup-at-point mw-thesaurus-lookup-dwim)
   :after request)
 
-;; (use-package switch-window :ensure t)
-
-(use-package popup :ensure t)
+(use-package popup
+  :defer t
+  :ensure t)
 
 (use-package fuzzy
   :defer t
@@ -492,24 +545,9 @@
   :defer t
   :ensure t)
 
-(use-package logito :ensure t)
-
-;; (use-package textmate
-;;   :ensure t
-;;   :bind (("C-/" . comment-or-uncomment-region-or-line))
-;;   :demand t
-;;   :config (textmate-define-comment-line))
-
-(defun comment-or-uncomment-region-or-line ()
-  (interactive)
-  (if mark-active
-      (call-interactively #'comment-or-uncomment-region)
-    (save-excursion
-      (beginning-of-line)
-      (set-mark (point))
-      (end-of-line)
-      (call-interactively #'comment-or-uncomment-region))))
-(global-set-key (kbd "C-/") #'comment-or-uncomment-region-or-line)
+(use-package logito
+  :defer t
+  :ensure t)
 
 (use-package all-the-icons
   :demand t
@@ -543,7 +581,7 @@
                 doom-modeline-buffer-file-name-style 'truncate-all))
 
 ;; LaTeX
-(use-package auctex
+(use-package auctex-mode
   :mode ("\\.tex$")
   :ensure auctex
   :if (executable-find "pdflatex")
@@ -577,9 +615,10 @@
             (setq TeX-save-query nil)
             (setq TeX-parse-self t)))
 
-(use-package reftex
-  :after tex
-  :ensure t
+(use-package reftex-mode
+  :after auctex-mode
+  :ensure reftex
+  :mode ("\\.bib$")
   :if (executable-find "pdflatex")
   :config (progn
             (defun bibtex ()
@@ -608,11 +647,52 @@
 
             (setq reftex-default-bibliography (list (expand-file-name "~/Dropbox/Papers/library.bib")))))
 
-;; LSP and especially Java
 (use-package treemacs
-  ;; :pin melpa-stable
   :ensure t
-  :bind (("<f5>" . treemacs-t))
+  :bind (("<f5>" . (lambda ()
+		     (interactive)
+		     (require 'treemacs)
+		     (treemacs--restore)
+		     (require 'lsp-java)
+		     (let* ((cwd (expand-file-name "."))
+			    (path (completing-read (format "Workspace or folder (return for %s): " cwd)
+						   (completion-table-dynamic
+						    (lambda (s)
+						      (let* ((parent-folder (file-name-directory s))
+							     (folders (if (and parent-folder (file-directory-p parent-folder))
+									  (seq-filter
+									   (lambda (p) (file-directory-p p))
+									   (seq-map
+									    (lambda (d) (file-name-concat parent-folder d))
+									    (directory-files parent-folder)))))
+							     (workspaces (seq-map (lambda (elt) (treemacs-workspace->name elt))
+										  (treemacs-workspaces))))
+							(if (and folders (string-prefix-p s cwd))
+							    (setq folders (seq-concatenate 'list folders (list cwd))))
+							(if (string-empty-p s)
+							    (setq workspaces (seq-concatenate 'list workspaces (list cwd))))
+							(if folders
+							    folders
+							  workspaces)))))))
+		       (if (string-empty-p path)
+			   (setq path cwd))
+		       (let* ((name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" path))
+			      (ws (or (treemacs-find-workspace-by-name path) (treemacs-find-workspace-by-name name))))
+			 (if (and (file-directory-p path) (file-name-absolute-p path))
+			     (progn
+			       (if (not ws)
+				   (setq ws (nth 1 (treemacs-do-create-workspace name))))
+			       (if (not (seq-find (lambda (elt)
+						    (or (string-equal-ignore-case (treemacs-project->name elt) path)
+							(string-equal-ignore-case (treemacs-project->path elt) path)))
+						  (treemacs-workspace->projects ws)))
+				   (let ((projects (treemacs-workspace->projects ws)))
+				     (push (treemacs-project->create! :name path :path path :path-status 'local-readable)
+					   projects)))))
+			 (if ws
+			     (progn
+			       (treemacs-do-switch-workspace ws)
+			       (treemacs-select-window))))))))
   :config (progn
             (require 'desktop)
 
@@ -665,12 +745,12 @@
 
 (use-package treemacs-nerd-icons
   :if (not (display-graphic-p))
+  :after treemacs
   :ensure t
   :config
   (treemacs-load-theme "nerd-icons"))
 
 (use-package which-key
-  ;; shows bindings for current prefix in side window
   :ensure t
   :config (progn
             (which-key-mode)
@@ -681,6 +761,7 @@
   :hook ((lsp-mode . lsp-enable-which-key-integration))
   :preface (setq lsp-use-plists t)
   :ensure t
+  :commands lsp
   :config (progn
             (require 'pcache)
 
@@ -849,6 +930,7 @@
   :ensure t
   :hook (lsp-mode . lsp-ui-mode)
   :commands lsp-ui-mode
+  :after lsp-mode
   :bind (:map lsp-mode-map
          ("C-." . helm-semantic-or-imenu)
          ("C-S-t" . helm-lsp-workspace-symbol)
@@ -914,7 +996,6 @@
   :after (lsp-mode treemacs)
   :commands lsp-treemacs-errors-list
   :config
-
   (cl-flet*
       ((error-list-advice (oldfun &rest args)
          "Show only diagnostics for the current folder if there are any."
@@ -930,14 +1011,29 @@
                 :around
                 #'error-list-advice)))
 
-(use-package python
-  :hook friendly-whitespace)
-
-(use-package js
-  :hook friendly-whitespace)
-
 (use-package cc-mode
-  :hook infer-indentation-style)
+  :hook ((cc-mode . infer-indentation-style)
+	 (java-mode . timfel/friendly-whitespace)
+	 (java-mode . (lambda () (company-mode t)))
+	 (java-mode . (lambda ()
+			(set-fill-column 99)
+			(c-set-offset 'substatement-open 0)
+			(c-set-offset 'case-label '+)
+			(c-set-offset 'arglist-close 0)
+			(if (assoc 'inexpr-class c-offsets-alist)
+			    (c-set-offset 'inexpr-class 0))
+			(c-set-offset 'arglist-cont-nonempty
+				      (lambda (syntax)
+					(save-excursion
+					  (if (and (= (length c-syntactic-context) 2)
+						   (eq (caar c-syntactic-context) 'arglist-cont-nonempty)
+						   (or
+						    (eq (caadr c-syntactic-context) 'statement-block-intro)
+						    (eq (caadr c-syntactic-context) 'block-close)))
+					      0
+					    16)))))))
+  :bind (:map java-mode-map
+	      ("C-S-o" . lsp-java-organize-imports)))
 
 (use-package lsp-pyright
   :ensure t
@@ -969,30 +1065,6 @@
                                 (funcall orig-fun command)))))))))
             (advice-add 'dap-python--pyenv-executable-find :around #'get-venv-executable)))
 
-;; Global Java settings
-(add-hook 'java-mode-hook
-          (lambda ()
-            (set-fill-column 99)
-            (c-set-offset 'substatement-open 0)
-            (c-set-offset 'case-label '+)
-            (c-set-offset 'arglist-close 0)
-            (if (assoc 'inexpr-class c-offsets-alist)
-                (c-set-offset 'inexpr-class 0))
-            (c-set-offset 'arglist-cont-nonempty
-                          (lambda (syntax)
-                            (save-excursion
-                              (if (and (= (length c-syntactic-context) 2)
-                                       (eq (caar c-syntactic-context) 'arglist-cont-nonempty)
-                                       (or
-                                        (eq (caadr c-syntactic-context) 'statement-block-intro)
-                                        (eq (caadr c-syntactic-context) 'block-close)))
-                                  0
-                                16))))))
-(define-key java-mode-map (kbd "C-S-o") #'lsp-java-organize-imports)
-(add-hook 'java-mode-hook 'friendly-whitespace)
-;; (add-hook 'java-mode-hook (lambda () (flycheck-mode t)))
-(add-hook 'java-mode-hook (lambda () (company-mode t)))
-
 (use-package mmm-mode
   :ensure t
   :commands (mmm-parse-buffer)
@@ -1023,51 +1095,6 @@
             (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)
             (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-javascript-block)))
 
-(defun treemacs-t ()
-  (interactive)
-  (require 'treemacs)
-  (treemacs--restore)
-  (require 'lsp-java)
-  (let* ((cwd (expand-file-name "."))
-         (path (completing-read (format "Workspace or folder (return for %s): " cwd)
-                                (completion-table-dynamic
-                                 (lambda (s)
-                                   (let* ((parent-folder (file-name-directory s))
-                                          (folders (if (and parent-folder (file-directory-p parent-folder))
-                                                       (seq-filter
-                                                        (lambda (p) (file-directory-p p))
-                                                        (seq-map
-                                                         (lambda (d) (file-name-concat parent-folder d))
-                                                         (directory-files parent-folder)))))
-                                          (workspaces (seq-map (lambda (elt) (treemacs-workspace->name elt))
-                                                               (treemacs-workspaces))))
-                                     (if (and folders (string-prefix-p s cwd))
-                                         (setq folders (seq-concatenate 'list folders (list cwd))))
-                                     (if (string-empty-p s)
-                                         (setq workspaces (seq-concatenate 'list workspaces (list cwd))))
-                                     (if folders
-                                         folders
-                                       workspaces)))))))
-    (if (string-empty-p path)
-        (setq path cwd))
-    (let* ((name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" path))
-           (ws (or (treemacs-find-workspace-by-name path) (treemacs-find-workspace-by-name name))))
-      (if (and (file-directory-p path) (file-name-absolute-p path))
-          (progn
-            (if (not ws)
-                (setq ws (nth 1 (treemacs-do-create-workspace name))))
-            (if (not (seq-find (lambda (elt)
-                                 (or (string-equal-ignore-case (treemacs-project->name elt) path)
-                                     (string-equal-ignore-case (treemacs-project->path elt) path)))
-                               (treemacs-workspace->projects ws)))
-                (let ((projects (treemacs-workspace->projects ws)))
-                  (push (treemacs-project->create! :name path :path path :path-status 'local-readable)
-                        projects)))))
-      (if ws
-          (progn
-            (treemacs-do-switch-workspace ws)
-            (treemacs-select-window))))))
-
 (use-package koopa-mode
   :if (eq system-type 'windows-nt)
   :mode "\\.ps1\\'"
@@ -1080,7 +1107,6 @@
 (use-package lsp-java
   :ensure t
   :hook (java-mode . (lambda () (require 'lsp-java) (require 'dap-java)))
-  :bind (("<f5>" . treemacs-t))
   :after (lsp-mode company lsp-treemacs)
   :config (progn
             (require 'lsp-ui-flycheck)
@@ -1120,13 +1146,9 @@
             (defun my/lsp-find-session-folder-with-mx (oldfun session file-name)
               (or (funcall oldfun session file-name)
                   (funcall oldfun session
-                           (string-replace
-                            "/mxbuild/" "/"
-                            (replace-regexp-in-string
-                             "/mxbuild/jdk[0-9]+/" "/"
-                             (string-replace
-                              "/src_gen/" "/src/"
-                              file-name))))))
+                           (replace-regexp-in-string
+                             "/mxbuild/\\(jdk[0-9]+/\\)?" "/"
+                             file-name))))
             (advice-add #'lsp-find-session-folder :around #'my/lsp-find-session-folder-with-mx)
 
             (setq lsp-java-imports-gradle-wrapper-checksums
@@ -1172,179 +1194,16 @@
               (if (lsp-find-workspace 'jdtls nil) (lsp)))
             (add-hook 'java-mode-hook #'lsp-if-jdtls-running)))
 
-(defun my/lsp/find-eclipse-projects-recursively (directory)
-  (let ((current-directory-list (directory-files directory)))
-    (seq-concatenate 'list
-     (if (seq-some (lambda (elt) (string-equal ".project" elt)) current-directory-list)
-         (list directory)
-       '())
-      (seq-mapcat (lambda (elt) (my/lsp/find-eclipse-projects-recursively (concat (file-name-as-directory directory) elt)))
-                  (seq-filter (lambda (elt) (and (file-directory-p (concat (file-name-as-directory directory) elt))
-                                                 (not (f-symlink-p (concat (file-name-as-directory directory) elt)))
-                                                 (not (string-prefix-p "." elt))
-                                                 (not (string-prefix-p "mxbuild" elt)))) current-directory-list)))))
-
-(defun my/lsp/reload-all-java-buffers ()
-  (interactive)
-  (let ((list (buffer-list)))
-    (dolist (buffer list)
-      (let ((name (buffer-name buffer))
-            (mode (with-current-buffer buffer major-mode)))
-        (if (eq mode 'java-mode)
-            (if (not (buffer-modified-p buffer))
-                (with-current-buffer buffer
-                  (if (funcall buffer-stale-function)
-                      (progn
-                        (message "Reverting %s" (buffer-name))
-                        (revert-buffer :ignore-auto :noconfirm))))))))))
-
-(defun my/lsp/kill-old-java-buffers ()
-  (interactive)
-  (let ((list (buffer-list))
-        (recent-cnt 0))
-    (dolist (buffer list)
-      (let ((name (buffer-name buffer))
-            (mode (with-current-buffer buffer major-mode)))
-        (if (eq mode 'java-mode)
-            (progn
-              (setq recent-cnt (+ 1 recent-cnt))
-              (if (and (not (buffer-modified-p buffer))
-                       (> recent-cnt 5))
-                  (kill-buffer buffer))))))))
-
-(defun my/lsp/kill-all-java-buffers ()
-  (interactive)
-  (let ((list (buffer-list)))
-    (dolist (buffer list)
-      (let ((name (buffer-name buffer))
-            (mode (with-current-buffer buffer major-mode)))
-        (if (eq mode 'java-mode)
-            (if (and (not (buffer-modified-p buffer))
-                     (not (eq (current-buffer) buffer)))
-                (kill-buffer buffer)))))))
-
-(defun my/lsp/clear-workspace ()
-  (interactive)
-  (seq-do (lambda (elt)
-            (lsp-workspace-folders-remove elt))
-          (lsp-session-folders (lsp-session)))
-  (puthash 'jdtls
-           '()
-           (lsp-session-server-id->folders (lsp-session)))
-  (lsp--persist-session (lsp-session)))
-
-(defun my/lsp/import-eclipse-projects ()
-  (interactive)
-  (let* ((base-dir (read-directory-name "Base directory to search projects in: "))
-         (base-dirs (completing-read-multiple "Base sub-directories to search projects in: " (directory-files base-dir) nil t))
-         (projects-found (seq-mapcat (lambda (elt) (my/lsp/find-eclipse-projects-recursively (concat (file-name-as-directory base-dir) elt))) base-dirs))
-         (projects-to-import (completing-read-multiple "Select projects to import (comma-sep, * for all): " projects-found nil nil))
-         (additional-required-projects '())
-         (go-again t))
-    (require 'xml)
-    (if (equal projects-to-import '("*"))
-        (setq projects-to-import projects-found))
-    (setq projects-to-import
-          (mapcan (lambda (elt)
-                    (if (string-suffix-p "*" elt)
-                        (seq-filter (lambda (elt2) (string-prefix-p (substring elt 0 (- (length elt) 1)) elt2)) projects-found)
-                      (list elt)))
-                  projects-to-import))
-    (while go-again
-      (setq go-again (length projects-to-import))
-      (seq-do (lambda (elt)
-                (progn
-                  ;; find the required projects for each selected project
-                  (seq-do
-                   (lambda (elt)
-                     (add-to-list 'additional-required-projects (car (xml-node-children elt))))
-                   (xml-get-children
-                    (car
-                     (xml-get-children
-                      (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
-                      'projects))
-                    'project))
-                  ;; find JAR projects on the factorypath that are part of a
-                  ;; workspace project no go through
-                  (if (file-exists-p (concat (file-name-as-directory elt) ".factorypath"))
-                      (seq-do (lambda (elt)
-                                (if (string-equal (xml-get-attribute-or-nil elt 'kind) "WKSPJAR")
-                                    (add-to-list 'additional-required-projects (cadr (split-string (xml-get-attribute elt 'id) "/")))))
-                              (xml-get-children
-                               (assq 'factorypath (xml-parse-file (concat (file-name-as-directory elt) ".factorypath")))
-                               'factorypathentry)))))
-              projects-to-import)
-
-      ;; resolve dependencies
-      (seq-do (lambda (elt)
-                (let ((name (car (xml-node-children (car (xml-get-children
-                                                          (assq 'projectDescription (xml-parse-file (concat (file-name-as-directory elt) ".project")))
-                                                          'name))))))
-                  (if (seq-contains-p additional-required-projects name)
-                      (add-to-list 'projects-to-import elt))))
-              projects-found)
-      ;; if we added projects to the list of projects to import, go deeper
-      (setq go-again (> (length projects-to-import) go-again)))
-
-    ;; expand-file-name and remove duplicates from projects-to-import
-    (setq projects-to-import (seq-uniq (seq-map #'expand-file-name projects-to-import)))
-
-    ;; add projects to session
-    (dolist (exp projects-to-import)
-      (if (not (seq-contains-p (lsp-session-folders (lsp-session)) exp))
-          (progn
-            (lsp-workspace-folders-add exp)
-            (puthash 'jdtls
-                     (append (gethash 'jdtls
-                                      (lsp-session-server-id->folders (lsp-session)))
-                             (list exp))
-                     (lsp-session-server-id->folders (lsp-session)))
-            )))
-    (lsp--persist-session (lsp-session))
-    (seq-do (lambda (elt) (message (format "Imported '%s'" elt))) projects-to-import)))
-
-(defun my/lsp/rebuild-java ()
-  (interactive)
-  (my/lsp/reload-all-java-buffers)
-  (lsp-send-notification
-   (lsp-make-request "java/buildWorkspace" t)))
-
 (use-package dap-mode
   :ensure t
   :after lsp-mode
+  :commands dap-debug
   ;; :bind (("C-c C-d" . my/dap-debug)
   ;;        :map java-mode-map
   ;;        ("C-c C-d" . my/dap-debug))
   ;; :hooks ((dap-session-created . dap-ui-repl)
   ;;         (dap-session-created . dap-ui-breakpoints))
   :config (progn
-            ;; ;; XXX: workaround for some weird behaviour only I am seeing  ¯\_(ツ)_/¯
-            ;; (defun my/dap--debug-session-workspace (origfunc session)
-            ;;   (or (funcall origfunc session)
-            ;;       (seq-some #'identity (lsp-workspaces))
-            ;;       (lsp-find-workspace 'jdtls nil)))
-            ;; (advice-add 'dap--debug-session-workspace :around #'my/dap--debug-session-workspace)
-
-            ;; (defun my/show-debug-windows (session)
-            ;;   (save-excursion
-            ;;     (call-interactively #'dap-ui-repl)
-            ;;     (call-interactively #'dap-ui-breakpoints)
-            ;;     ;; (call-interactively #'dap-ui-locals)
-            ;;     ;; (call-interactively #'dap-ui-sessions)
-            ;;     (if (get-buffer-window "*dap-ui-repl*")
-            ;;         (delete-other-windows)
-            ;;         (delete-window (get-buffer-window "*dap-ui-repl*")))
-            ;;     (display-buffer-in-side-window (get-buffer "*dap-ui-repl*") `((side . bottom)
-            ;;                                                                   (slot . 1)
-            ;;                                                                   (window-height . 10)))))
-            ;; (add-hook 'dap-session-created-hook 'my/show-debug-windows)
-
-            ;; (defun my/close-debug-windows (session)
-            ;;   (condition-case nil
-            ;;       (if (get-buffer-window "*dap-ui-repl*")
-            ;;           (delete-window (get-buffer-window "*dap-ui-repl*")))))
-            ;; (add-hook 'dap-terminated-hook 'my/close-debug-windows)
-
             (add-hook 'dap-stopped-hook (lambda (arg) (call-interactively #'dap-hydra)))
             (add-hook 'dap-terminated-hook (lambda (arg) (if (fboundp #'dap-hydra/nil) (call-interactively #'dap-hydra/nil))))
 
@@ -1445,42 +1304,27 @@
   :after (helm lsp-mode)
   :commands helm-lsp-workspace-symbol)
 
-(use-package spacemacs-theme
-  :defer t
-  :ensure t)
-(use-package almost-mono-themes
-  :defer t
-  :ensure t)
-(use-package atom-one-dark-theme
-  :defer t
-  :ensure t)
-(use-package vscode-dark-plus-theme
-  :defer t
-  :ensure t)
 (use-package color-theme-sanityinc-tomorrow
   :defer t
   :ensure t)
 (use-package eclipse-theme
   :defer t
   :ensure t)
-(use-package modus-themes
-  :defer t
-  :ensure t)
 
-(defun my/load-default-theme ()
-  (if-let ((theme (cond ((eq system-type 'windows-nt)
-                      (require 'color-theme-sanityinc-tomorrow)
-                      (color-theme-sanityinc-tomorrow-day)
-                      nil)
-                     ((eq window-system nil)
-                      'modus-operandi)
-                     ((string-equal (getenv "GTK_THEME") "Adwaita:dark")
-                      'modus-vivendi)
-                     (t 'modus-operandi))))
-    (load-theme theme t)))
-(my/load-default-theme)
-(advice-add #'load-theme :before (lambda (&rest args)
-                                   (mapcar #'disable-theme custom-enabled-themes)))
+(use-package custom
+  :demand t
+  :config 
+  (defun my/load-default-theme ()
+    (if-let ((theme (cond ((eq system-type 'windows-nt)
+			   (require 'color-theme-sanityinc-tomorrow)
+			   (color-theme-sanityinc-tomorrow-day)
+			   nil)
+			  ((eq window-system nil) nil)
+			  (t 'eclipse))))
+	(load-theme theme t)))
+  (advice-add #'load-theme :before (lambda (&rest args)
+                                     (mapcar #'disable-theme custom-enabled-themes)))
+  (my/load-default-theme))
 
 ;; Flyspell options
 (use-package ispell
@@ -1510,23 +1354,6 @@
   :ensure t
   :config (setq flyspell-issue-message-flag nil))
 
-;; Term mode
-;; enable cua and transient mark modes in term-line-mode
-(defadvice term-line-mode (after term-line-mode-fixes ())
-  (set (make-local-variable 'truncate-lines) nil)
-  (set (make-local-variable 'cua-mode) nil)
-  (set (make-local-variable 'transient-mark-mode) t)
-  (local-set-key "\C-c\C-n" 'term-char-mode))
-(ad-activate 'term-line-mode)
-;; disable cua and transient mark modes in term-char-mode
-(defadvice term-char-mode (after term-char-mode-fixes ())
-  (set (make-local-variable 'truncate-lines) nil)
-  (set (make-local-variable 'cua-mode) nil)
-  (set (make-local-variable 'transient-mark-mode) nil))
-(ad-activate 'term-char-mode)
-
-
-;; Tramp
 (use-package tramp
   :defer 30
   :ensure t
@@ -1577,9 +1404,6 @@
   :config (require 'lsp-jsonnet)
   :ensure t)
 
-;; local lisp code
-(add-to-list 'load-path (locate-user-emacs-file "lisp"))
-
 (use-package sudo-save
   :if (not (eq system-type 'windows-nt)))
 
@@ -1587,6 +1411,17 @@
   :commands term
   :defer t
   :config
+  ;; enable cua and transient mark modes in term-line-mode
+  (advice-add #'term-line-mode :after (lambda (&rest args)
+					(set (make-local-variable 'truncate-lines) nil)
+					(set (make-local-variable 'cua-mode) nil)
+					(set (make-local-variable 'transient-mark-mode) t)
+					(local-set-key "\C-c\C-n" #'term-char-mode)))
+  ;; disable cua and transient mark modes in term-char-mode
+  (advice-add #'term-char-mode :after (lambda (&rest args)
+					(set (make-local-variable 'truncate-lines) nil)
+					(set (make-local-variable 'cua-mode) nil)
+					(set (make-local-variable 'transient-mark-mode) nil))) 
   (advice-add #'term :after (lambda (&rest args)
                               (let ((b (get-buffer "*terminal*")))
                                 (when b
@@ -1599,7 +1434,6 @@
                                      (slot . 1))))))))
 
 (use-package redo+
-  :demand t
   :bind (("C--" . redo)))
 
 (use-package symon
@@ -1698,10 +1532,9 @@
 
 (use-package filladapt
   :ensure t
-  :config (add-hook 'c-mode-common-hook
-                    (lambda ()
-                      (when (featurep 'filladapt)
-                        (c-setup-filladapt)))))
+  :hook ((c-mode-common . (lambda ()
+			    (when (featurep 'filladapt)
+                              (c-setup-filladapt))))))
 
 (use-package flycheck
   :ensure t
@@ -1709,26 +1542,16 @@
               ("M-n" . flycheck-next-error)
               ("M-p" . flycheck-prev-error)))
 
-;; (if (not (eq system-type 'windows-nt))
-;;     (progn
-;;       (add-to-list 'load-path (locate-user-emacs-file "emacs-secondmate/emacs"))
-;;       (use-package secondmate
-;;         :defer t
-;;         :bind (("C-c M-/" . secondmate))
-;;         :commands secondmate
-;;         :config (setq secondmate-url "https://lively-kernel.org/swacopilot"))))
-
 (use-package exec-path-from-shell
   :ensure t
-  :demand t
-  :if (memq window-system '(mac ns x pgtk))
-  :config (exec-path-from-shell-initialize))
-
-(if (eq system-type 'windows-nt)
-    (let ((path (string-trim (shell-command-to-string "powershell.exe -Command \"echo $Env:PATH\""))))
-      (setenv "PATH" path)
-      (setq exec-path (append (parse-colon-path path) (list exec-directory)))
-      (setq-default eshell-path-env path)))
+  :defer 3
+  :config
+  (if (eq system-type 'windows-nt)
+      (let ((path (string-trim (shell-command-to-string "powershell.exe -Command \"echo $Env:PATH\""))))
+	(setenv "PATH" path)
+	(setq exec-path (append (parse-colon-path path) (list exec-directory)))
+	(setq-default eshell-path-env path))
+    (exec-path-from-shell-initialize)))
 
 (use-package rustic
   :ensure t
@@ -1746,11 +1569,11 @@
 
 (use-package adaptive-wrap
   :ensure t
+  :commands adaptive-wrap-prefix-mode
   :defer t)
 
 (use-package emojify
   :ensure t
-  :demand t
   :if (display-graphic-p)
   :commands emojify-insert-emoji
   :config (progn
@@ -1787,52 +1610,8 @@
             (setq emojify-emoji-styles '(unicode))))
 
 (use-package re-builder
+  :commands re-builder
   :config (setq reb-re-syntax 'string))
-
-(use-package github-explorer
-  :defer t
-  :ensure t)
-
-(if (and nil (not (eq system-type 'windows-nt)))
-    (progn
-      (use-package quelpa
-        :ensure t
-        :defer t
-        :commands copilot-mode
-        :config (progn
-                  (quelpa
-                   '(copilot
-                     :fetcher git
-                     :url "https://github.com/zerolfx/copilot.el"
-                     :branch "main"
-                     :files ("dist" "*.el")))
-                  (setq copilot-idle-delay 1
-                        copilot-log-max 100)
-                  (require 'copilot)
-
-                  ;; Based on function from https://robert.kra.hn/posts/2023-02-22-copilot-emacs-setup/
-                  (defun copilot-complete-or-accept ()
-                    "Command that either triggers a completion or accepts one if one is available."
-                    (interactive)
-                    (if (copilot--overlay-visible)
-                        (progn
-                          (copilot-accept-completion))
-                      (copilot-complete)))
-                  (define-key copilot-mode-map (kbd "C-<return>") #'copilot-complete-or-accept)))
-
-      (use-package llm
-        :if (not (eq system-type 'windows-nt))
-        :pin gnu
-        :ensure t)
-
-      (use-package ellama
-        :if (not (eq system-type 'windows-nt))
-        :ensure t
-        :pin gnu
-        :after llm
-        :init
-        (setopt ellama-language "English")
-        (require 'llm-ollama))))
 
 (use-package aider
   :ensure t
@@ -2108,12 +1887,6 @@
   :commands my-git-merges-jira-html
   :if (file-exists-p "~/dev/gists/orcl.el"))
 
-(use-package gptel-quick
-  :vc (:url "https://github.com/karthink/gptel-quick")
-  :ensure t
-  :after gptel
-  :bind (("C-x a e" . gptel-quick)))
-
 (use-package impatient-mode
   :commands impatient-mode
   :ensure t)
@@ -2149,112 +1922,6 @@
            (not (getenv "WAYLAND_DISPLAY")))
   :hook (after-init . global-clipetty-mode))
 
-;; (add-to-list 'load-path (locate-user-emacs-file "jsonnet-language-server/editor/emacs"))
-;; (require 'jsonnet-language-server)
-
-(defun my/webkit-visit-alternate ()
-  (interactive)
-  (let ((old-val webkit-browse-url-force-new))
-    (setq webkit-browse-url-force-new nil)
-    (call-interactively 'webkit)
-    (setq webkit-browse-url-force-new old-val)))
-
-(defun my/webkit-reload-with-proxy ()
-  (interactive)
-  (if (and url-proxy-services
-           (local-variable-p 'my/webkit-proxy)
-           (buffer-local-value 'my/webkit-proxy (current-buffer)))
-      (progn
-        (webkit--proxy-set-default webkit--id)
-        (setq-local my/webkit-proxy nil))
-    (progn
-      (setq-local my/webkit-proxy (cdar url-proxy-services))
-      (webkit--proxy-set-uri webkit--id (format "http://%s" (cdar url-proxy-services)))))
-  (run-with-timer 2 nil (lambda (id) (webkit--reload id)) webkit--id))
-
-(setq treesit-language-source-alist
-   '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-     (cmake "https://github.com/uyha/tree-sitter-cmake")
-     (css "https://github.com/tree-sitter/tree-sitter-css")
-     (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-     (go "https://github.com/tree-sitter/tree-sitter-go")
-     (html "https://github.com/tree-sitter/tree-sitter-html")
-     (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
-     (json "https://github.com/tree-sitter/tree-sitter-json")
-     (make "https://github.com/alemuller/tree-sitter-make")
-     (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-     (python "https://github.com/tree-sitter/tree-sitter-python")
-     (toml "https://github.com/tree-sitter/tree-sitter-toml")
-     (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
-     (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-     (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
-
-(defun webkit ()
-  (interactive)
-  (add-to-list 'load-path (locate-user-emacs-file "emacs-webkit"))
-
-  ;; If you don't care so much about privacy and want to give your data to google
-  (setq webkit-search-prefix "https://google.com/search?q=")
-
-  ;; Specify a different set of characters use in the link hints
-  ;; For example the following are more convienent if you use dvorak
-  (setq webkit-ace-chars "1234567890")
-
-  ;; If you want history saved in a different place or
-  ;; Set to `nil' to if you don't want history saved to file (will stay in memory)
-  ;; (setq webkit-history-file "~/path/to/webkit-history")
-
-  ;; If you want cookies saved in a different place or
-  ;; Set to `nil' to if you don't want cookies saved
-  ;; (setq webkit-cookie-file "~/path/to/cookies")
-
-  ;; See the above explination in the Background section
-  ;; This must be set before webkit.el is loaded so certain hooks aren't installed
-  ;; (setq webkit-own-window t)
-
-  ;; Set webkit as the default browse-url browser
-  ;; (setq browse-url-browser-function 'webkit-browse-url)
-
-  ;; Force webkit to always open a new session instead of reusing a current one
-  (setq webkit-browse-url-force-new t)
-
-  ;; Globally disable javascript
-  ;; (add-hook 'webkit-new-hook #'webkit-enable-javascript)
-
-  ;; Override the "loading:" mode line indicator with an icon from `all-the-icons.el'
-  ;; You could also use a unicode icon like ↺
-  (defun webkit--display-progress (progress)
-    (setq webkit--progress-formatted
-          (if (equal progress 100.0)
-              ""
-            (format "%s%.0f%%  " (all-the-icons-faicon "spinner") progress)))
-    (force-mode-line-update))
-
-  ;; Set action to be taken on a download request. Predefined actions are
-  ;; `webkit-download-default', `webkit-download-save', and `webkit-download-open'
-  ;; where the save function saves to the download directory, the open function
-  ;; opens in a temp buffer and the default function interactively prompts.
-  (setq webkit-download-action-alist '(("\\.pdf\\'" . webkit-download-open)
-                                       ("\\.png\\'" . webkit-download-save)
-                                       (".*" . webkit-download-default)))
-
-  ;; Globally use a proxy
-  ;; (add-hook 'webkit-new-hook (lambda () (webkit-set-proxy "socks://localhost:8000")))
-
-  ;; Globally use the simple dark mode
-  ;; (setq webkit-dark-mode t)
-
-  (require 'org)
-  (require 'ol)
-  (require 'webkit)
-  (require 'webkit-ace) ;; If you want link hinting
-  ;; (require 'webkit-dark) ;; If you want to use the simple dark mode
-
-  (define-key webkit-mode-map (kbd "C-x C-v") #'my/webkit-visit-alternate)
-  (define-key webkit-mode-map (kbd "C-x r p") #'my/webkit-reload-with-proxy)
-
-  (call-interactively 'webkit))
-
 (use-package auto-dim-other-buffers
   :ensure t
   :defer 5
@@ -2274,3 +1941,5 @@
     (my/adjust-auto-dim-colors)
     (advice-add #'load-theme :after #'my/adjust-auto-dim-colors))
   (auto-dim-other-buffers-mode t))
+
+;; (use-package-report)
