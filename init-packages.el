@@ -1956,11 +1956,14 @@
 (use-package multi-vterm
   :after vterm
   :ensure t
-  :commands multi-vterm
+  :commands (multi-vterm multi-vterm-dedicated-toggle)
   :if (not (eq system-type 'windows-nt))
-  :bind (:map vterm-mode-map
+  :bind (("<f12>" . multi-vterm-dedicated-toggle)
+         :map vterm-mode-map
               ("C-S-<right>" . multi-vterm-next)
               ("C-S-<left>" . multi-vterm-prev)
-              ("C-x c" . multi-vterm)))
+              ("C-x c" . multi-vterm)
+              ("<f12>" . multi-vterm-dedicated-toggle))
+  :config (setq multi-vterm-dedicated-window-height-percent 40))
 
 ;; (use-package-report)
