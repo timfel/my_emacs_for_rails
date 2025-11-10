@@ -16,6 +16,8 @@
    (package-install 'use-package)
    (require 'use-package)))
 
+(use-package use-package-ensure-system-package)
+
 (unless (package-installed-p 'vc-use-package)
   (package-vc-install "https://github.com/slotThe/vc-use-package"))
 
@@ -58,9 +60,11 @@
               isearch-yank-flag t)
 	(isearch-search-and-update)))))
 
-(use-package python
+(use-package python-mode
+  :ensure-system-package python
   :mode ("\\.py$" "\\.pyi$" "\\.pyx$")
   :hook ((python-mode . turn-on-font-lock)
+         (python-mode . timfel/friendly-whitespace)
 	 (python-mode . (lambda ()
 			  (imenu-add-to-menubar "IMENU")
 			  (setq ac-sources
