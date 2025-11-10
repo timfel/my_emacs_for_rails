@@ -1939,4 +1939,9 @@
     (advice-add #'load-theme :after #'my/adjust-auto-dim-colors))
   (auto-dim-other-buffers-mode t))
 
+(use-package emacs-ci
+  :commands ci-dashboard
+  :load-path "~/.emacs.d/lisp/ci-dashboard"
+  :if (file-exists-p "~/.emacs.d/lisp/ci-dashboard/emacs-ci.el"))
+
 ;; (use-package-report)
