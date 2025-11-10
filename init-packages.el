@@ -61,7 +61,7 @@
 	(isearch-search-and-update)))))
 
 (use-package python-mode
-  :ensure-system-package python
+  :ensure python
   :mode ("\\.py$" "\\.pyi$" "\\.pyx$")
   :hook ((python-mode . turn-on-font-lock)
          (python-mode . timfel/friendly-whitespace)
@@ -1947,5 +1947,20 @@
   :commands ci-dashboard
   :load-path "~/.emacs.d/lisp/ci-dashboard"
   :if (file-exists-p "~/.emacs.d/lisp/ci-dashboard/emacs-ci.el"))
+
+(use-package vterm
+  :commands (vterm vterm-other-window)
+  :if (not (eq system-type 'windows-nt))
+  :ensure t)
+
+(use-package multi-vterm
+  :after vterm
+  :ensure t
+  :commands multi-vterm
+  :if (not (eq system-type 'windows-nt))
+  :bind (:map vterm-mode-map
+              ("C-S-<right>" . multi-vterm-next)
+              ("C-S-<left>" . multi-vterm-prev)
+              ("C-x c" . multi-vterm)))
 
 ;; (use-package-report)
