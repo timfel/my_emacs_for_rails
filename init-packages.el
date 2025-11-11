@@ -1925,6 +1925,7 @@
 
 (use-package auto-dim-other-buffers
   :ensure t
+  :disabled
   :defer 5
   :config
   (require 'color)
@@ -1948,22 +1949,29 @@
   :load-path "~/.emacs.d/lisp/ci-dashboard"
   :if (file-exists-p "~/.emacs.d/lisp/ci-dashboard/emacs-ci.el"))
 
-(use-package vterm
-  :commands (vterm vterm-other-window)
-  :if (not (eq system-type 'windows-nt))
-  :ensure t)
+(use-package proced
+  :ensure t
+  :bind (("<f8>". proced)
+         :map proced-mode-map
+         ("<f8>" . quit-window)))
 
 (use-package multi-vterm
-  :after vterm
   :ensure t
   :commands (multi-vterm multi-vterm-dedicated-toggle)
   :if (not (eq system-type 'windows-nt))
   :bind (("<f12>" . multi-vterm-dedicated-toggle)
          :map vterm-mode-map
-              ("C-S-<right>" . multi-vterm-next)
-              ("C-S-<left>" . multi-vterm-prev)
-              ("C-x c" . multi-vterm)
-              ("<f12>" . multi-vterm-dedicated-toggle))
+         ("C-x C-f" . (lambda ()
+                        (interactive)
+                        (when vterm--process
+                          (let* ((pid (process-id vterm--process))
+                                 (dir (file-truename (format "/proc/%d/cwd/" pid))))
+                            (setq default-directory dir)))
+                        (call-interactively (keymap-lookup (current-global-map) "C-x C-f"))))
+         ("C-S-<right>" . multi-vterm-next)
+         ("C-S-<left>" . multi-vterm-prev)
+         ("C-x c" . multi-vterm)
+         ("<f12>" . multi-vterm-dedicated-toggle))
   :config (setq multi-vterm-dedicated-window-height-percent 40))
 
 ;; (use-package-report)
