@@ -1953,7 +1953,9 @@
   :ensure t
   :bind (("<f8>". proced)
          :map proced-mode-map
-         ("<f8>" . quit-window)))
+         ("<f8>" . quit-window))
+  :config
+  (setq proced-enable-color-flag t))
 
 (use-package multi-vterm
   :ensure t
