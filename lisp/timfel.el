@@ -19,6 +19,8 @@
 ;; These are just various utility functions that I picked up over the
 ;; years and that I find useful in my Emacs usage.
 
+(require 'dash)
+
 (defun timfel/friendly-whitespace ()
   "Add to the buffer-local write-contents-functions remove tabs and delete
 trailing whitespace from files"
@@ -129,7 +131,12 @@ Non-interactive arguments are Begin End Regexp"
 
 (defun timfel/update-proxies-from-wpad ()
   (interactive)
-  (let (wpad)
+  (let* (wpad
+         (no_proxy "localhost,127.0.0.1,*.oraclecorp.com,oraclecorp.com,*.oraclecloud.com,oraclecloud.com")
+         (no-proxy (--> no_proxy
+                        (regexp-quote it)
+                        (string-replace "\\*" ".*" it)
+                        (string-replace "," "\\|" it))))
     (if (not (or url-proxy-services
                  (not (setq wpad (shell-command-to-string "curl -s wpad")))
                  (not (string-match "PROXY\s\\([^; \n\t]+\\)" wpad))))
@@ -141,14 +148,20 @@ Non-interactive arguments are Begin End Regexp"
             (setenv "http_proxy" wpad_with_protocol)
             (setenv "https_proxy" wpad_with_protocol)
             (setenv "HTTP_PROXY" wpad_with_protocol)
-            (setenv "HTTPS_PROXY" wpad_with_protocol))
+            (setenv "HTTPS_PROXY" wpad_with_protocol)
+            (setenv "no_proxy" no_proxy)
+            (setenv "NO_PROXY" no_proxy)
+            )
           (let* ((m (string-match "\\([^:]+\\):\\([0-9]+\\)$" wpad))
                  (host (if m (match-string-no-properties 1 wpad) wpad))
                  (port (if m (match-string-no-properties 2 wpad) 443))
                  (http (if m wpad (concat wpad ":80")))
                  (https (if m wpad (concat wpad ":443"))))
             (setq
-             url-proxy-services (list (cons "http" http) (cons "https" https))
+             url-proxy-services (list
+                                 (cons "http" http)
+                                 (cons "https" https)
+                                 (cons "no_proxy" no-proxy))
              copilot-network-proxy `(:host ,host :port ,(string-to-number port)))
             (setenv "GRADLE_OPTS" (format "-Dhttp.proxyHost=%s -Dhttp.proxyPort=%s -Dhttps.proxyHost=%s -Dhttps.proxyPort=%s" host port host port))
             (setenv "MAVEN_OPTS" (format "-Dhttp.proxyHost=%s -Dhttp.proxyPort=%s -Dhttps.proxyHost=%s -Dhttps.proxyPort=%s" host port host port)))
@@ -157,8 +170,10 @@ Non-interactive arguments are Begin End Regexp"
         (setq url-proxy-services nil)
         (setenv "http_proxy" nil)
         (setenv "https_proxy" nil)
+        (setenv "no_proxy" nil)
         (setenv "HTTP_PROXY" nil)
         (setenv "HTTPS_PROXY" nil)
+        (setenv "NO_PROXY" nil)
         (setenv "MAVEN_OPTS" nil)
         (setenv "GRADLE_OPTS" nil)
         (message "Proxies disabled"))))
