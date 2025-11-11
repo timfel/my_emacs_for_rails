@@ -1980,4 +1980,28 @@
          ("<f12>" . multi-vterm-dedicated-toggle))
   :config (setq multi-vterm-dedicated-window-height-percent 40))
 
+(use-package jira
+  :ensure t
+  :commands jira
+  :config
+  (defun timfel/jira-issues ()
+    ;; some jira instance fails to get some basic data, make sure fields and
+    ;; statuses are there
+    (interactive)
+    (condition-case nil
+        (jira-api-get-basic-data)
+      (error nil))
+    (jira-api-get-statuses)
+    (jira-api-get-fields)
+    (funcall-interactively #'jira-issues))
+  (fset 'jira #'timfel/jira-issues)
+  (add-to-list 'transient-values
+               '(jira-issues-menu "--myself" "--resolution=Unresolved"))
+  :custom
+  (jira-issues-max-results 70)
+  (jira-token-is-personal-access-token t)
+  (jira-users-max-results 50)
+  (jira-api-version 2)
+  (jira-debug nil))
+
 ;; (use-package-report)
