@@ -169,7 +169,7 @@
   (setenv "PATH" (string-join exec-path path-separator)))
 
 (when-let* ((texlive "/usr/local/texlive/2014/bin/x86_64-linux/")
-	    _ (file-exists-p texlive))
+	    (_ (file-exists-p texlive)))
   (add-to-list 'exec-path texlive)
   (setenv "PATH" (concat texlive ":" (getenv "PATH"))))
 
