@@ -1889,7 +1889,19 @@
 
 (use-package orcl
   :load-path "~/dev/gists/"
-  :commands my-git-merges-jira-html
+  :commands (timfel/git-merges-jira-html jira)
+  :config
+  (require 'jira)
+  (defun jira ()
+    ;; some jira instance fails to get some basic data, make sure fields and
+    ;; statuses are there
+    (interactive)
+    (condition-case nil
+        (jira-api-get-basic-data)
+      (error nil))
+    (jira-api-get-statuses)
+    (jira-api-get-fields)
+    (funcall-interactively #'jira-issues))
   :if (file-exists-p "~/dev/gists/orcl.el"))
 
 (use-package impatient-mode
@@ -1982,19 +1994,8 @@
 
 (use-package jira
   :ensure t
-  :commands jira
+  :defer t
   :config
-  (defun timfel/jira-issues ()
-    ;; some jira instance fails to get some basic data, make sure fields and
-    ;; statuses are there
-    (interactive)
-    (condition-case nil
-        (jira-api-get-basic-data)
-      (error nil))
-    (jira-api-get-statuses)
-    (jira-api-get-fields)
-    (funcall-interactively #'jira-issues))
-  (fset 'jira #'timfel/jira-issues)
   (add-to-list 'transient-values
                '(jira-issues-menu "--myself" "--resolution=Unresolved"))
   :custom
