@@ -66,7 +66,6 @@
   :hook ((python-mode . turn-on-font-lock)
          (python-mode . timfel/friendly-whitespace)
 	 (python-mode . (lambda ()
-			  (imenu-add-to-menubar "IMENU")
 			  (setq ac-sources
 				'(ac-source-python
 				  ac-source-semantic
