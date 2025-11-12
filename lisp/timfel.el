@@ -43,24 +43,20 @@ trailing whitespace from files"
       (insert (format "%4d %c\n" i i))))
   (beginning-of-buffer))
 
-(defun timfel/kill-all-but-active-buffers (&optional list)
-  "For each buffer in LIST, kill it silently if unmodified. Otherwise ask.
-LIST defaults to all existing live buffers."
+(defun timfel/kill-all-but-active-buffers ()
+  "For each buffer, kill it silently if unmodified, not currently visible,
+not read-only, and it's name does not start with '*'"
   (interactive)
-  (if (null list) (setq list (buffer-list)))
-  (dolist (buffer list)
-    (let ((name (buffer-name buffer)))
-      (if (and (not (string-equal (buffer-name) name)) ;; Don't kill the active buffer
-               (not (seq-some
-                (lambda (x) (string-match-p x name))
-                '("^$" "\\*Messages\\*" "\\*Buffer List\\*" "\\*buffer-selection\\*"
-                  "\\*Shell Command Output\\*" "\\*scratch\\*" "ECB" "magit")))
-               (/= (aref name 0) ? ))
-          (if (buffer-modified-p buffer)
-              (if (yes-or-no-p
-                   (format "Buffer %s has been edited. Kill? " name))
-                  (kill-buffer buffer))
-            (kill-buffer buffer))))))
+  (let ((cnt 0))
+    (dolist (buf (buffer-list))
+      (with-current-buffer buf
+        (unless (or (buffer-modified-p buf)
+                    (get-buffer-window buf 'visible)
+                    buffer-read-only
+                    (string-match-p "\\*" (buffer-name buf)))
+          (kill-buffer buf)
+          (setq cnt (1+ cnt)))))
+    (message (format "Killed %d buffers." cnt))))
 
 (defun timfel/uniquify-all-lines-region (start end)
   "Find duplicate lines in region START to END keeping first occurrence."
