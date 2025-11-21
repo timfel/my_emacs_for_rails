@@ -1040,6 +1040,17 @@
 						    (eq (caadr c-syntactic-context) 'block-close)))
 					      0
 					    16)))))))
+  :config
+  (defun my/c-update-modeline (oldfun)
+    ;; cc-mode assumes mode-line is a plain string at all times, see e.g.
+    ;; https://lists.gnu.org/archive/html/bug-gnu-emacs/2018-07/msg00339.html
+    ;;
+    ;; The problem is that this is simply not always true with LSP and MMM in the
+    ;; mix, so we get issues. I just advice the c-update-modeline function to
+    ;; make mode-name a plain string
+    (let ((mode-name (substring-no-properties (format-mode-line mode-name))))
+      (funcall oldfun)))
+  (advice-add #'c-update-modeline :around #'my/c-update-modeline)
   :bind (:map java-mode-map
 	      ("C-S-o" . lsp-java-organize-imports)))
 
