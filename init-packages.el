@@ -1989,7 +1989,12 @@
          ("C-S-<left>" . multi-vterm-prev)
          ("C-x c" . multi-vterm)
          ("<f12>" . multi-vterm-dedicated-toggle))
-  :config (setq multi-vterm-dedicated-window-height-percent 40))
+  :config (setq multi-vterm-dedicated-window-height-percent 40
+                vterm-max-scrollback 40000))
+
+(use-package transpose-frame
+  :commands (transpose-frame flip-frame flop-frame rotate-frame rotate-frame-clockwise)
+  :ensure t)
 
 (use-package jira
   :ensure t
