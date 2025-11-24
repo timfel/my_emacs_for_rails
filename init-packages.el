@@ -1155,13 +1155,6 @@
              lsp-java-import-gradle-enabled nil
              lsp-java-completion-import-order ["java" "javax" "org" "com"]
              lsp-java-import-order ["java" "javax" "org" "com"])
-            (if (not (eq system-type 'windows-nt))
-                (setq lsp-java-configuration-runtimes '[(:name "JavaSE-21"
-                                                               :path (expand-file-name "~/.sdkman/candidates/java/21.0.1-oracle")
-                                                               :default nil)
-                                                        (:name "JavaSE-25"
-                                                               :path (expand-file-name "~/.sdkman/candidates/java/25-graal/")
-                                                               :default t)]))
 
             (defun my/lsp-find-session-folder-with-mx (oldfun session file-name)
               (or (funcall oldfun session file-name)
@@ -1170,9 +1163,6 @@
                              "/mxbuild/\\(jdk[0-9]+/\\)?" "/"
                              file-name))))
             (advice-add #'lsp-find-session-folder :around #'my/lsp-find-session-folder-with-mx)
-
-            (setq lsp-java-imports-gradle-wrapper-checksums
-                  [(:sha256 "504b38a11c466aecb2f5c0b0d8ce0ed7ffa810bf70b9b7a599c570051be8fb4e" :allowed t)])
 
             (setq dap-java-default-debug-port 8000)
             (with-eval-after-load 'lsp-treemacs
