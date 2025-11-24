@@ -1091,18 +1091,19 @@
   :config (progn
             (require 'mmm-auto)
             (setq mmm-global-mode 'maybe)
-
+            (string-match "[*/]+" "ss*")
             (defun polyglot-mode-match (front)
-              (if (string-match ".+\"\\([^\"]+\\)\", \"\"\"" front)
-                  (let ((sym (intern-soft (concat (match-string-no-properties 1 front) "-mode"))))
-                    (if (fboundp sym)
-                        sym
-                      'text-mode))
-                'text-mode))
+              (if (string-match "\"\\([[:word:]]+\\)\",[[:space:]]*\n?[[:space:]]*\"\"\"" front)
+                  (let ((sym (intern-soft (concat (downcase (match-string-no-properties 1 front)) "-mode"))))
+                    (if (fboundp sym) sym 'text-mode))
+                (if (string-match "//[[:space:]]*language=\\([[:word:]]+\\)[[:space:]]*\n.+\"\"\"" front)
+                    (let ((sym (intern-soft (concat (downcase (match-string-no-properties 1 front)) "-mode"))))
+                      (if (fboundp sym) sym 'text-mode))
+                'text-mode)))
             (mmm-add-classes
              '((java-text-block
                 :match-submode polyglot-mode-match
-                :front ".+\"\"\"$"
+                :front ".+\n.+\"\"\"$"
                 :back ".*\"\"\".*"
                 :face mmm-code-submode-face)))
             (mmm-add-classes
