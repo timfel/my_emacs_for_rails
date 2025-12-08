@@ -7,7 +7,7 @@
       use-package-verbose t)
 
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-;; (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
+(add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
 
 (condition-case nil
     (require 'use-package)
@@ -1410,6 +1410,15 @@
 
 (use-package sudo-save
   :if (not (eq system-type 'windows-nt)))
+
+(use-package term-keys
+  :ensure t
+  :if (not (display-graphic-p))
+  :config
+  (term-keys-mode t))
+  ;; (require 'term-keys-windows-terminal)
+  ;; (with-temp-file "~/windows-terminal.json"
+  ;;   (insert (term-keys/windows-terminal-json))))
 
 (use-package term
   :commands term

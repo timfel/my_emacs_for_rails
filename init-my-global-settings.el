@@ -101,18 +101,22 @@
 (if (not (display-graphic-p))
     (progn
       (xterm-mouse-mode 1)
-      (global-set-key (kbd "M-[ 1 ; 3 a") 'timfel/move-line-up)
-      (global-set-key (kbd "M-[ 1 ; 3 b") 'timfel/move-line-down)
-      (global-set-key (kbd "M-[ 1 ; 2 a") (kbd "S-<up>"))
-      (global-set-key (kbd "M-[ 1 ; 2 b") (kbd "S-<down>"))
-      (global-set-key (kbd "M-[ 1 ; 5 a") (kbd "C-<up>"))
-      (global-set-key (kbd "M-[ 1 ; 5 b") (kbd "C-<down>"))
-      (global-set-key (kbd "M-[ 1 ; 5 d") (kbd "C-<left>"))
-      (global-set-key (kbd "M-[ 1 ; 5 c") (kbd "C-<right>")))
+      (if term-keys-mode
+          (progn
+            (global-set-key (kbd "M-]") 'forward-list) ;; "M-[" makes problems in Windows terminal + term-keys-mode
+            (global-set-key (kbd "C-M-]") 'backward-list)
+        (progn
+          (global-set-key (kbd "M-[ 1 ; 3 a") 'timfel/move-line-up)
+          (global-set-key (kbd "M-[ 1 ; 3 b") 'timfel/move-line-down)
+          (global-set-key (kbd "M-[ 1 ; 2 a") (kbd "S-<up>"))
+          (global-set-key (kbd "M-[ 1 ; 2 b") (kbd "S-<down>"))
+          (global-set-key (kbd "M-[ 1 ; 5 a") (kbd "C-<up>"))
+          (global-set-key (kbd "M-[ 1 ; 5 b") (kbd "C-<down>"))
+          (global-set-key (kbd "M-[ 1 ; 5 d") (kbd "C-<left>"))
+          (global-set-key (kbd "M-[ 1 ; 5 c") (kbd "C-<right>")))))
   (progn
     (global-set-key (kbd "M-]") 'forward-list)
     (global-set-key (kbd "M-[") 'backward-list)))
-
 
 (if (display-graphic-p)
     (run-with-idle-timer 0 nil
