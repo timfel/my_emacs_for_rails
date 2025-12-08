@@ -1985,9 +1985,22 @@
 
 (use-package multi-vterm
   :ensure t
-  :commands (multi-vterm multi-vterm-dedicated-toggle)
+  :commands (multi-vterm)
   :if (not (eq system-type 'windows-nt))
-  :bind (("<f12>" . multi-vterm-dedicated-toggle)
+  :bind (("<f12>" . (lambda ()
+                      (interactive)
+                      (select-window
+                       (split-window
+	                (selected-window)
+	                (- (multi-vterm-current-window-height) (multi-vterm-dedicated-calc-window-height))))
+                      (let ((buf (seq-find (lambda (b)
+                                             (let ((n (buffer-name b)))
+                                               (and n (string-prefix-p "*vterminal" n))))
+                                           (buffer-list))))
+                        (if buf
+                            (switch-to-buffer buf)
+                          (multi-vterm)
+                          (add-hook 'kill-buffer-hook #'delete-window)))))
          :map vterm-mode-map
          ("C-x C-f" . (lambda ()
                         (interactive)
@@ -1996,10 +2009,10 @@
                                  (dir (file-truename (format "/proc/%d/cwd/" pid))))
                             (setq default-directory dir)))
                         (call-interactively (keymap-lookup (current-global-map) "C-x C-f"))))
-         ("C-S-<right>" . multi-vterm-next)
-         ("C-S-<left>" . multi-vterm-prev)
+         ("C-x <right>" . multi-vterm-next)
+         ("C-x <left>" . multi-vterm-prev)
          ("C-x c" . multi-vterm)
-         ("<f12>" . multi-vterm-dedicated-toggle))
+         ("<f12>" . delete-window))
   :config (setq multi-vterm-dedicated-window-height-percent 40
                 vterm-max-scrollback 40000))
 
