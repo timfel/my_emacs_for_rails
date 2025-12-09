@@ -104,7 +104,7 @@
       (if term-keys-mode
           (progn
             (global-set-key (kbd "M-]") 'forward-list) ;; "M-[" makes problems in Windows terminal + term-keys-mode
-            (global-set-key (kbd "C-M-]") 'backward-list)
+            (global-set-key (kbd "C-M-]") 'backward-list))
         (progn
           (global-set-key (kbd "M-[ 1 ; 3 a") 'timfel/move-line-up)
           (global-set-key (kbd "M-[ 1 ; 3 b") 'timfel/move-line-down)

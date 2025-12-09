@@ -1989,6 +1989,7 @@
   :if (not (eq system-type 'windows-nt))
   :bind (("<f12>" . (lambda ()
                       (interactive)
+                      (require 'multi-vterm)
                       (select-window
                        (split-window
 	                (selected-window)
@@ -2000,7 +2001,7 @@
                         (if buf
                             (switch-to-buffer buf)
                           (multi-vterm)
-                          (add-hook 'kill-buffer-hook #'delete-window)))))
+                          (add-hook 'kill-buffer-hook #'delete-window 0 t)))))
          :map vterm-mode-map
          ("C-x C-f" . (lambda ()
                         (interactive)
