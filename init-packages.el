@@ -1416,9 +1416,6 @@
   :if (not (display-graphic-p))
   :config
   (term-keys-mode t))
-  ;; (require 'term-keys-windows-terminal)
-  ;; (with-temp-file "~/windows-terminal.json"
-  ;;   (insert (term-keys/windows-terminal-json))))
 
 (use-package term
   :commands term
