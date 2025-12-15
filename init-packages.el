@@ -1091,7 +1091,6 @@
   :config (progn
             (require 'mmm-auto)
             (setq mmm-global-mode 'maybe)
-            (string-match "[*/]+" "ss*")
             (defun polyglot-mode-match (front)
               (if (string-match "\"\\([[:word:]]+\\)\",[[:space:]]*\n?[[:space:]]*\"\"\"" front)
                   (let ((sym (intern-soft (concat (downcase (match-string-no-properties 1 front)) "-mode"))))
@@ -1112,8 +1111,20 @@
                 :front "<script>"
                 :back "</script>"
                 :face mmm-code-submode-face)))
+            (defun github-code-match (front)
+              (if (string-match "```\\([[:word:]]+\\)" front)
+                  (let ((sym (intern-soft (concat (downcase (match-string-no-properties 1 front)) "-mode"))))
+                    (if (fboundp sym) sym 'fundamental-mode))
+                'fundamental-mode))
+            (mmm-add-classes
+             '((md-github-code-block
+                :match-submode github-code-match
+                :front "```[a-z]+"
+                :back "```"
+                :face mmm-code-submode-face)))
             (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)
-            (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-javascript-block)))
+            (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-javascript-block)
+            (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-github-code-block)))
 
 (use-package koopa-mode
   :if (eq system-type 'windows-nt)
