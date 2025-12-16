@@ -981,10 +981,10 @@
                   lsp-diagnostic-clean-after-change nil
                   lsp-eldoc-render-all t
                   lsp-ui-peek-always-show t
-                  lsp-ui-doc-enable t
+                  lsp-ui-doc-enable (display-graphic-p)
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
-                  lsp-ui-doc-use-webkit (not (eq system-type 'windows-nt))
+                  lsp-ui-doc-use-webkit (and (display-graphic-p) (not (eq system-type 'windows-nt)))
                   lsp-ui-doc-show-with-cursor t
                   lsp-ui-sideline-enable (not (eq system-type 'windows-nt))
                   lsp-ui-sideline-show-symbol nil
