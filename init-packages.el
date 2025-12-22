@@ -23,7 +23,11 @@
 
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
 
+(use-package dash
+  :ensure t)
+
 (use-package timfel
+  :after dash
   :demand t)
 
 (use-package ht
@@ -366,6 +370,7 @@
 
 (use-package helm
   :ensure t
+  :after fuzzy
   :config
   (setq helm-buffers-maybe-switch-to-tab nil)
   (require 'fuzzy)
