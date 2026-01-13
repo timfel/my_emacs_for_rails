@@ -166,6 +166,9 @@
 	    (shell-command-to-string "wl-paste -n | tr -d \r")))
 	(setq interprogram-cut-function 'wl-copy
 	      interprogram-paste-function 'wl-paste))))
+    ;; (progn
+    ;;       (set-terminal-parameter nil 'xterm--get-selection t)
+    ;;       (set-terminal-parameter nil 'xterm--set-selection t)))))
 
 (when-let* ((nvm "~/.nvm/versions/node/")
 	  (_ (file-exists-p nvm)))
