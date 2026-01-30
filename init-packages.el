@@ -1945,27 +1945,6 @@
            (not (getenv "WAYLAND_DISPLAY")))
   :hook (after-init . global-clipetty-mode))
 
-(use-package auto-dim-other-buffers
-  :ensure t
-  :disabled
-  :defer 5
-  :config
-  (require 'color)
-  (cl-labels ((my/adjust-auto-dim-colors (&rest args)
-                (custom-set-faces
-                 `(auto-dim-other-buffers
-                   ((t (:background
-                        ,(let* ((r (/ (string-to-number (substring (face-attribute 'default :background) 1 3) 16) 255.0))
-                                (g (/ (string-to-number (substring (face-attribute 'default :background) 3 5) 16) 255.0))
-                                (b (/ (string-to-number (substring (face-attribute 'default :background) 5 7) 16) 255.0))
-                                (hsl (color-rgb-to-hsl r g b))
-                                (lighter (apply #'color-lighten-hsl `(,@hsl 10)))
-                                (darker (apply #'color-darken-hsl `(,@hsl 6))))
-                           (apply #'color-rgb-to-hex `(,@(apply #'color-hsl-to-rgb (if (< 0.5 (caddr hsl)) darker lighter)) 2))))))))))
-    (my/adjust-auto-dim-colors)
-    (advice-add #'load-theme :after #'my/adjust-auto-dim-colors))
-  (auto-dim-other-buffers-mode t))
-
 (use-package emacs-ci
   :commands ci-dashboard
   :load-path "~/.emacs.d/lisp/ci-dashboard"
