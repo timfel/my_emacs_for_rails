@@ -371,10 +371,15 @@
 (use-package helm
   :ensure t
   :after fuzzy
+  :defer t
   :config
-  (setq helm-buffers-maybe-switch-to-tab nil)
-  (require 'fuzzy)
-  :bind (("C-." . helm-semantic-or-imenu)))
+  (setq helm-buffers-maybe-switch-to-tab nil))
+
+(use-package imenu
+  :bind (("C-." . imenu)))
+
+(use-package icomplete
+  :config (fido-mode))
 
 (use-package project
   :bind (("C-t" . project-find-file))
