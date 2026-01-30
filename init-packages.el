@@ -1617,14 +1617,6 @@
   :commands re-builder
   :config (setq reb-re-syntax 'string))
 
-(use-package aider
-  :ensure t
-  :if (executable-find "aider")
-  :commands aider-run-aider
-  :bind (("C-c C-a" . aider-transient-menu))
-  :config
-  (require 'aider-helm))
-
 (use-package gptel
   :ensure t
   :commands (gptel gptel-request)
