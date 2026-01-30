@@ -7,7 +7,7 @@
       use-package-verbose t)
 
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-;; (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
+(add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
 
 (condition-case nil
     (require 'use-package)
@@ -23,7 +23,11 @@
 
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
 
+(use-package dash
+  :ensure t)
+
 (use-package timfel
+  :after dash
   :demand t)
 
 (use-package ht
@@ -366,6 +370,7 @@
 
 (use-package helm
   :ensure t
+  :after fuzzy
   :config
   (setq helm-buffers-maybe-switch-to-tab nil)
   (require 'fuzzy)
@@ -973,10 +978,10 @@
                   lsp-diagnostic-clean-after-change nil
                   lsp-eldoc-render-all t
                   lsp-ui-peek-always-show t
-                  lsp-ui-doc-enable t
+                  lsp-ui-doc-enable (display-graphic-p)
                   lsp-ui-doc-max-height 30
                   lsp-ui-doc-position 'top
-                  lsp-ui-doc-use-webkit (not (eq system-type 'windows-nt))
+                  lsp-ui-doc-use-webkit (and (display-graphic-p) (not (eq system-type 'windows-nt)))
                   lsp-ui-doc-show-with-cursor t
                   lsp-ui-sideline-enable (not (eq system-type 'windows-nt))
                   lsp-ui-sideline-show-symbol nil
@@ -1088,7 +1093,6 @@
   :config (progn
             (require 'mmm-auto)
             (setq mmm-global-mode 'maybe)
-            (string-match "[*/]+" "ss*")
             (defun polyglot-mode-match (front)
               (if (string-match "\"\\([[:word:]]+\\)\",[[:space:]]*\n?[[:space:]]*\"\"\"" front)
                   (let ((sym (intern-soft (concat (downcase (match-string-no-properties 1 front)) "-mode"))))
@@ -1109,8 +1113,20 @@
                 :front "<script>"
                 :back "</script>"
                 :face mmm-code-submode-face)))
+            (defun github-code-match (front)
+              (if (string-match "```\\([[:word:]]+\\)" front)
+                  (let ((sym (intern-soft (concat (downcase (match-string-no-properties 1 front)) "-mode"))))
+                    (if (fboundp sym) sym 'fundamental-mode))
+                'fundamental-mode))
+            (mmm-add-classes
+             '((md-github-code-block
+                :match-submode github-code-match
+                :front "```[a-z]+"
+                :back "```"
+                :face mmm-code-submode-face)))
             (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)
-            (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-javascript-block)))
+            (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-javascript-block)
+            (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-github-code-block)))
 
 (use-package koopa-mode
   :if (eq system-type 'windows-nt)
@@ -1407,6 +1423,12 @@
 
 (use-package sudo-save
   :if (not (eq system-type 'windows-nt)))
+
+(use-package term-keys
+  :ensure t
+  :if (not (display-graphic-p))
+  :config
+  (term-keys-mode t))
 
 (use-package term
   :commands term
@@ -1949,9 +1971,23 @@
 
 (use-package multi-vterm
   :ensure t
-  :commands (multi-vterm multi-vterm-dedicated-toggle)
+  :commands (multi-vterm)
   :if (not (eq system-type 'windows-nt))
-  :bind (("<f12>" . multi-vterm-dedicated-toggle)
+  :bind (("<f12>" . (lambda ()
+                      (interactive)
+                      (require 'multi-vterm)
+                      (select-window
+                       (split-window
+	                (selected-window)
+	                (- (multi-vterm-current-window-height) (multi-vterm-dedicated-calc-window-height))))
+                      (let ((buf (seq-find (lambda (b)
+                                             (let ((n (buffer-name b)))
+                                               (and n (string-prefix-p "*vterminal" n))))
+                                           (buffer-list))))
+                        (if buf
+                            (switch-to-buffer buf)
+                          (multi-vterm)
+                          (add-hook 'kill-buffer-hook #'delete-window 0 t)))))
          :map vterm-mode-map
          ("C-x C-f" . (lambda ()
                         (interactive)
@@ -1960,10 +1996,10 @@
                                  (dir (file-truename (format "/proc/%d/cwd/" pid))))
                             (setq default-directory dir)))
                         (call-interactively (keymap-lookup (current-global-map) "C-x C-f"))))
-         ("C-S-<right>" . multi-vterm-next)
-         ("C-S-<left>" . multi-vterm-prev)
+         ("C-x <right>" . multi-vterm-next)
+         ("C-x <left>" . multi-vterm-prev)
          ("C-x c" . multi-vterm)
-         ("<f12>" . multi-vterm-dedicated-toggle))
+         ("<f12>" . delete-window))
   :config (setq multi-vterm-dedicated-window-height-percent 40
                 vterm-max-scrollback 40000))
 
