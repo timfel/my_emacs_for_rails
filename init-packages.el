@@ -371,14 +371,11 @@
   (require 'fuzzy)
   :bind (("C-." . helm-semantic-or-imenu)))
 
-(use-package helm-etags-plus
-  :disabled
-  :ensure t
-  :bind (("M-." . helm-etags-plus-select)))
-
-(use-package helm-projectile
-  :ensure t
-  :bind (("C-t" . helm-projectile-find-file)))
+(use-package project
+  :bind (("C-t" . project-find-file))
+  :config
+  (add-to-list 'grep-find-ignored-directories "mxbuild")
+  (add-to-list 'grep-find-ignored-directories "site-packages"))
 
 ;; Auto completion
 (use-package yasnippet
