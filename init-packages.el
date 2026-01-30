@@ -1999,6 +1999,22 @@
   :config (setq multi-vterm-dedicated-window-height-percent 40
                 vterm-max-scrollback 40000))
 
+(use-package eshell
+  :if (eq system-type 'windows-nt)
+  :after exec-path-from-shell
+  :bind (("<f12>" . (lambda ()
+                      (interactive)
+                      (let ((b (get-buffer-create "*eshell*")))
+                        (if-let ((w (get-window-with-predicate (lambda (w) (eq b (window-buffer w))))))
+                            (delete-window w)
+                          (let ((w (split-window (selected-window)
+                                                 (let ((edges (window-edges)))
+                                                   (round (* 0.7 (- (nth 3 edges) (nth 1 edges))))))))
+                            (select-window w)
+                            (set-window-buffer w b)
+                            (with-current-buffer b
+                              (unless (derived-mode-p 'eshell-mode) (eshell-mode))))))))))
+
 (use-package transpose-frame
   :commands (transpose-frame flip-frame flop-frame rotate-frame rotate-frame-clockwise)
   :ensure t)
