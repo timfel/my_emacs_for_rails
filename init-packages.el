@@ -380,7 +380,8 @@
 
 (use-package icomplete
   :config
-  (add-to-list 'completion-styles 'flex))
+  (add-to-list 'completion-category-overrides '(project-file (styles initials)))
+  (add-to-list 'completion-category-overrides '(imenu (styles flex))))
 
 (use-package grep
   :config
