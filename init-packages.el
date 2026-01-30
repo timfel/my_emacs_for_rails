@@ -1881,15 +1881,20 @@
                 (push (cdr pair) funcs))))
           funcs)))
 
+(setq gist-location
+      (if (eq system-type 'windows-nt)
+          "D:/gists"
+        "~/dev/gists/"))
+
 (use-package oca
-  :load-path "~/dev/gists/"
+  :load-path gist-location
   :after (gptel)
   :commands oca-key
-  :if (file-exists-p "~/dev/gists/oca.el")
+  :if (file-exists-p (concat gist-location "/oca.el"))
   :demand t)
 
 (use-package orcl
-  :load-path "~/dev/gists/"
+  :load-path gist-location
   :commands (timfel/git-merges-jira-html jira)
   :config
   (require 'jira)
@@ -1903,7 +1908,7 @@
     (jira-api-get-statuses)
     (jira-api-get-fields)
     (funcall-interactively #'jira-issues))
-  :if (file-exists-p "~/dev/gists/orcl.el"))
+  :if (file-exists-p (concat gist-location "/orcl.el")))
 
 (use-package impatient-mode
   :commands impatient-mode
