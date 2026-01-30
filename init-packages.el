@@ -1579,7 +1579,7 @@
   :defer 3
   :config
   (if (eq system-type 'windows-nt)
-      (let ((path (string-trim (shell-command-to-string "powershell.exe -Command \"echo $Env:PATH\""))))
+      (let ((path (string-trim (shell-command-to-string "powershell.exe -Command \"Write-Host $MyPath -NoNewline ; Write-Host ';' -NoNewline ; Write-Host $Env:PATH -NoNewline\""))))
 	(setenv "PATH" path)
 	(setq exec-path (append (parse-colon-path path) (list exec-directory)))
 	(setq-default eshell-path-env path))
