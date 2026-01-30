@@ -379,13 +379,16 @@
   :bind (("C-." . imenu)))
 
 (use-package icomplete
-  :config (fido-mode))
+  :config
+  (add-to-list 'completion-styles 'flex))
 
-(use-package project
-  :bind (("C-t" . project-find-file))
+(use-package grep
   :config
   (add-to-list 'grep-find-ignored-directories "mxbuild")
   (add-to-list 'grep-find-ignored-directories "site-packages"))
+
+(use-package project
+  :bind (("C-t" . project-find-file)))
 
 ;; Auto completion
 (use-package yasnippet
