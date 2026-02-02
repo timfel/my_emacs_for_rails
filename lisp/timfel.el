@@ -128,7 +128,7 @@ Non-interactive arguments are Begin End Regexp"
 (defun timfel/update-proxies-from-wpad ()
   (interactive)
   (let* (wpad
-         (no_proxy "localhost,127.0.0.1,*.oraclecorp.com,oraclecorp.com,*.oraclecloud.com,oraclecloud.com")
+         (no_proxy "localhost,127.0.0.1,*.oraclecorp.com,oraclecorp.com,*.oraclecloud.com,oraclecloud.com,*.us.oracle.com")
          (no-proxy (--> no_proxy
                         (regexp-quote it)
                         (string-replace "\\*" ".*" it)
