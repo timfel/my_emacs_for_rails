@@ -379,7 +379,7 @@
 
 (use-package icomplete
   :config
-  (add-to-list 'completion-category-overrides '(project-file (styles initials)))
+  (add-to-list 'completion-category-overrides '(project-file (styles initials flex)))
   (add-to-list 'completion-category-overrides '(imenu (styles flex))))
 
 (use-package grep
@@ -1158,19 +1158,14 @@
                                                                          "com.oracle.graal.python.nodes.SpecialMethodNames"
                                                                          "com.oracle.graal.python.nodes.SpecialAttributeNames"
                                                                          "com.oracle.graal.python.nodes.ErrorMessages")))
-            (if (not (eq system-type 'windows-nt))
-                (setq
-                 lsp-java-java-path "/home/tim/.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java")
-              (setq
-               lsp-java-java-path (expand-file-name "~/../../.mx/jdks/labsjdk-ce-21-jvmci-23.1-b33/bin/java.exe")))
             (setq
              lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/snapshots/jdt-language-server-latest.tar.gz"
              lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true")
              lsp-java-content-provider-preferred "fernflower"
              lsp-java-save-actions-organize-imports t
              lsp-java-format-on-type-enabled nil
-             lsp-java-format-comments-enabled nil
-             lsp-java-format-enabled nil
+             lsp-java-format-comments-enabled t
+             lsp-java-format-enabled t
              lsp-java-autobuild-enabled nil
              lsp-java-inhibit-message t
              lsp-java-import-gradle-enabled nil
@@ -1344,7 +1339,7 @@
   :config 
   (defun my/load-default-theme ()
     (if-let ((theme (cond ((eq window-system 'w32) 'eclipse)
-			  ((eq window-system nil) nil)
+			  ((eq window-system nil) 'eclipse)
 			  (t 'eclipse))))
 	(load-theme theme t)))
   (advice-add #'load-theme :before (lambda (&rest args)
