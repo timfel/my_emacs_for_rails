@@ -155,7 +155,7 @@
 (setq cloud-storage
       (cl-case system-type
             (windows-nt "//nx89384.your-storageshare.de@SSL/DavWWWRoot/remote.php/dav/files/timfelgentreff/")
-            (t (expand-file-name "~/CloudDrive")))
+            (t (expand-file-name "~/CloudDrive"))))
 
 (use-package org
   :commands org-mode
@@ -173,8 +173,8 @@
 
             (setq org-log-done 'time)
             (require 'org-tempo)
-            (let* ((todos (expand-file-name "todo.org" cloud-storage))
-                   (notes (expand-file-name "notes.org" cloud-storage)))
+            (let* ((todos (expand-file-name "SyncFolder/todo.org" cloud-storage))
+                   (notes (expand-file-name "SyncFolder/notes.org" cloud-storage)))
               (setq
                org-return-follows-link t
                org-file-apps '((auto-mode . emacs)
