@@ -1924,8 +1924,15 @@
     (condition-case nil
         (jira-api-get-basic-data)
       (error nil))
-    (jira-api-get-statuses)
+
+    (jira-api-get-users)
     (jira-api-get-fields)
+    (jira-api-get-statuses)
+    (jira-api-get-resolutions)
+    ;; (jira-api-get-filters :force t)
+    (jira-api-get-projects)
+    ;; (jira-api-get-account-id)
+
     (funcall-interactively #'jira-issues))
   :if (file-exists-p (concat gist-location "/orcl.el")))
 
