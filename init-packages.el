@@ -371,19 +371,25 @@
 (use-package helm
   :ensure t
   :after fuzzy
+  :defer t
   :config
-  (setq helm-buffers-maybe-switch-to-tab nil)
-  (require 'fuzzy)
-  :bind (("C-." . helm-semantic-or-imenu)))
+  (setq helm-buffers-maybe-switch-to-tab nil))
 
-(use-package helm-etags-plus
-  :disabled
-  :ensure t
-  :bind (("M-." . helm-etags-plus-select)))
+(use-package imenu
+  :bind (("C-." . imenu)))
 
-(use-package helm-projectile
-  :ensure t
-  :bind (("C-t" . helm-projectile-find-file)))
+(use-package icomplete
+  :config
+  (add-to-list 'completion-category-overrides '(project-file (styles initials)))
+  (add-to-list 'completion-category-overrides '(imenu (styles flex))))
+
+(use-package grep
+  :config
+  (add-to-list 'grep-find-ignored-directories "mxbuild")
+  (add-to-list 'grep-find-ignored-directories "site-packages"))
+
+(use-package project
+  :bind (("C-t" . project-find-file)))
 
 ;; Auto completion
 (use-package yasnippet
@@ -1568,7 +1574,7 @@
   :defer 3
   :config
   (if (eq system-type 'windows-nt)
-      (let ((path (string-trim (shell-command-to-string "powershell.exe -Command \"echo $Env:PATH\""))))
+      (let ((path (string-trim (shell-command-to-string "powershell.exe -Command \"Write-Host $MyPath -NoNewline ; Write-Host ';' -NoNewline ; Write-Host $Env:PATH -NoNewline\""))))
 	(setenv "PATH" path)
 	(setq exec-path (append (parse-colon-path path) (list exec-directory)))
 	(setq-default eshell-path-env path))
@@ -1633,14 +1639,6 @@
 (use-package re-builder
   :commands re-builder
   :config (setq reb-re-syntax 'string))
-
-(use-package aider
-  :ensure t
-  :if (executable-find "aider")
-  :commands aider-run-aider
-  :bind (("C-c C-a" . aider-transient-menu))
-  :config
-  (require 'aider-helm))
 
 (use-package gptel
   :ensure t
@@ -1898,15 +1896,20 @@
                 (push (cdr pair) funcs))))
           funcs)))
 
+(setq gist-location
+      (if (eq system-type 'windows-nt)
+          "D:/gists"
+        "~/dev/gists/"))
+
 (use-package oca
-  :load-path "~/dev/gists/"
+  :load-path gist-location
   :after (gptel)
   :commands oca-key
-  :if (file-exists-p "~/dev/gists/oca.el")
+  :if (file-exists-p (concat gist-location "/oca.el"))
   :demand t)
 
 (use-package orcl
-  :load-path "~/dev/gists/"
+  :load-path gist-location
   :commands (timfel/git-merges-jira-html jira)
   :config
   (require 'jira)
@@ -1920,7 +1923,7 @@
     (jira-api-get-statuses)
     (jira-api-get-fields)
     (funcall-interactively #'jira-issues))
-  :if (file-exists-p "~/dev/gists/orcl.el"))
+  :if (file-exists-p (concat gist-location "/orcl.el")))
 
 (use-package impatient-mode
   :commands impatient-mode
@@ -1956,27 +1959,6 @@
            (eq system-type 'gnu/linux)
            (not (getenv "WAYLAND_DISPLAY")))
   :hook (after-init . global-clipetty-mode))
-
-(use-package auto-dim-other-buffers
-  :ensure t
-  :disabled
-  :defer 5
-  :config
-  (require 'color)
-  (cl-labels ((my/adjust-auto-dim-colors (&rest args)
-                (custom-set-faces
-                 `(auto-dim-other-buffers
-                   ((t (:background
-                        ,(let* ((r (/ (string-to-number (substring (face-attribute 'default :background) 1 3) 16) 255.0))
-                                (g (/ (string-to-number (substring (face-attribute 'default :background) 3 5) 16) 255.0))
-                                (b (/ (string-to-number (substring (face-attribute 'default :background) 5 7) 16) 255.0))
-                                (hsl (color-rgb-to-hsl r g b))
-                                (lighter (apply #'color-lighten-hsl `(,@hsl 10)))
-                                (darker (apply #'color-darken-hsl `(,@hsl 6))))
-                           (apply #'color-rgb-to-hex `(,@(apply #'color-hsl-to-rgb (if (< 0.5 (caddr hsl)) darker lighter)) 2))))))))))
-    (my/adjust-auto-dim-colors)
-    (advice-add #'load-theme :after #'my/adjust-auto-dim-colors))
-  (auto-dim-other-buffers-mode t))
 
 (use-package emacs-ci
   :commands ci-dashboard
@@ -2024,6 +2006,22 @@
          ("<f12>" . delete-window))
   :config (setq multi-vterm-dedicated-window-height-percent 40
                 vterm-max-scrollback 40000))
+
+(use-package eshell
+  :if (eq system-type 'windows-nt)
+  :after exec-path-from-shell
+  :bind (("<f12>" . (lambda ()
+                      (interactive)
+                      (let ((b (get-buffer-create "*eshell*")))
+                        (if-let ((w (get-window-with-predicate (lambda (w) (eq b (window-buffer w))))))
+                            (delete-window w)
+                          (let ((w (split-window (selected-window)
+                                                 (let ((edges (window-edges)))
+                                                   (round (* 0.7 (- (nth 3 edges) (nth 1 edges))))))))
+                            (select-window w)
+                            (set-window-buffer w b)
+                            (with-current-buffer b
+                              (unless (derived-mode-p 'eshell-mode) (eshell-mode))))))))))
 
 (use-package transpose-frame
   :commands (transpose-frame flip-frame flop-frame rotate-frame rotate-frame-clockwise)
