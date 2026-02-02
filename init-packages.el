@@ -714,8 +714,7 @@
   :config (progn
             (require 'desktop)
 
-            (if (eq system-type 'windows-nt)
-                (setq treemacs-git-mode nil))
+            (setq treemacs-git-mode nil)
 
             ;; Sessions
             (defun my/treemacs-desktop-hook ()
@@ -1896,9 +1895,9 @@
           funcs)))
 
 (setq gist-location
-      (if (eq system-type 'windows-nt)
-          "D:/gists"
-        "~/dev/gists/"))
+      (cl-case system-type
+        (windows-nt "D:/gists")
+        (t (expand-file-name "~/dev/gists/"))))
 
 (use-package oca
   :load-path gist-location
