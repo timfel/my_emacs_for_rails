@@ -152,6 +152,11 @@
                 (while (and (setq state (apply 'ruby-parse-partial end state))
                             (nth 2 state) (>= (nth 2 state) 0) (< (point) end)))))))
 
+(setq cloud-storage
+      (cl-case system-type
+            (windows-nt "//nx89384.your-storageshare.de@SSL/DavWWWRoot/remote.php/dav/files/timfelgentreff/")
+            (t (expand-file-name "~/CloudDrive")))
+
 (use-package org
   :commands org-mode
   :mode (("\\.org$" . org-mode))
@@ -168,11 +173,8 @@
 
             (setq org-log-done 'time)
             (require 'org-tempo)
-            (let* ((home (expand-file-name (if (eq system-type 'windows-nt)
-                                               (if (file-exists-p "D:") "D:" (getenv "USERPROFILE"))
-                                             (getenv "HOME"))))
-                   (todos (expand-file-name "OneDrive/todo.org" home))
-                   (notes (expand-file-name "OneDrive/notes.org" home)))
+            (let* ((todos (expand-file-name "todo.org" cloud-storage))
+                   (notes (expand-file-name "notes.org" cloud-storage)))
               (setq
                org-return-follows-link t
                org-file-apps '((auto-mode . emacs)
@@ -239,10 +241,7 @@
                                                         (executable-find "python3")
                                                         (expand-file-name "~/dotfiles/bin/wslscr.py %s"))
                                               (expand-file-name "~/bin/wslscr.py %s")))
-            (set-default 'org-download-image-dir
-                         (if (eq system-type 'windows-nt)
-                             (expand-file-name "~/../../OneDrive/Screenshots/")
-                           (expand-file-name "~/OneDrive/Screenshots/")))))
+            (set-default 'org-download-image-dir (expand-file-name "Screenshots/" cloud-storage))))
 
 (use-package hide-mode-line
   :ensure t
