@@ -1841,7 +1841,7 @@
                                          (goto-char (point-min)) ;; not necessary, point is in the midst of comments to start
                                          ;; return the megillah
                                          (list
-                                          (intern (f-base prompt-file)) ; gptel-directives key
+                                          (intern (file-name-directory prompt-file)) ; gptel-directives key
                                           prompt-description
                                           (buffer-substring-no-properties (point-min) (point-max)) ))))
                                    prompt-files)))
