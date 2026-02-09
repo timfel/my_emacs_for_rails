@@ -1572,10 +1572,23 @@
   :defer 3
   :config
   (if (eq system-type 'windows-nt)
-      (let ((path (string-trim (shell-command-to-string "powershell.exe -Command \"Write-Host $MyPath -NoNewline ; Write-Host ';' -NoNewline ; Write-Host $Env:PATH -NoNewline\""))))
-	(setenv "PATH" path)
-	(setq exec-path (append (parse-colon-path path) (list exec-directory)))
-	(setq-default eshell-path-env path))
+      (let* ((env-before (split-string (shell-command-to-string "powershell.exe -NoProfile -Command \"Get-ChildItem Env:* | ForEach-Object { \\\"$($_.Name)=$($_.Value)\\\" }\"") "\n" t))
+             (env-before-alist (mapcar (lambda (s) (split-string s "=" t)) env-before))
+             (output (shell-command-to-string "powershell.exe -NoProfile -Command \". $PROFILE; Write-Host $MyPath -NoNewline ; Write-Host ';' -NoNewline ; Write-Host $Env:PATH -NoNewline ; Write-Host '[ENV]' -NoNewline ; Get-ChildItem Env:* | ForEach-Object { \\\"$($_.Name)=$($_.Value)\\\" }\""))
+             (parts (split-string output "\\[ENV\\]" t))
+             (path-part (string-trim (car parts)))
+             (env-after (split-string (cadr parts) "\n" t))
+             (env-after-alist (mapcar (lambda (s) (split-string s "=" t)) env-after)))
+        ;; Set PATH-related env vars
+        (setenv "PATH" path-part)
+        (setq exec-path (append (parse-colon-path path-part) (list exec-directory)))
+        (setq-default eshell-path-env path-part)
+        ;; Set all other environment variables that changed
+        (dolist (pair env-after-alist)
+          (let ((var (car pair))
+                (val (mapconcat #'identity (cdr pair) "=")))
+            (unless (string= val (or (cadr (assoc var env-before-alist)) ""))
+              (setenv var val)))))
     (exec-path-from-shell-initialize)))
 
 (use-package rustic
