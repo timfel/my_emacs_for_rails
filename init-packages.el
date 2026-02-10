@@ -390,6 +390,11 @@
 (use-package project
   :bind (("C-t" . project-find-file)))
 
+(use-package code-workspace
+  :load-path "~/.emacs.d/lisp/"
+  :after project
+  :demand t)
+
 ;; Auto completion
 (use-package yasnippet
   :ensure t
