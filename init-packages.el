@@ -392,7 +392,7 @@
   (add-to-list 'grep-find-ignored-directories "site-packages"))
 
 (use-package project
-  :bind (("C-t" . project-find-file)))
+  :bind (("C-t" . project-or-external-find-file)))
 
 (use-package code-workspace
   :load-path "~/.emacs.d/lisp/"
