@@ -375,7 +375,11 @@
   (setq helm-buffers-maybe-switch-to-tab nil))
 
 (use-package imenu
-  :bind (("C-." . imenu)))
+  :bind (("C-." . (lambda ()
+                    (interactive)
+                    (imenu--cleanup)
+                    (imenu--menubar-select imenu--rescan-item)
+                    (imenu (imenu-choose-buffer-index))))))
 
 (use-package icomplete
   :config
