@@ -19,7 +19,7 @@
 ;; These are just various utility functions that I picked up over the
 ;; years and that I find useful in my Emacs usage.
 
-(require 'dash)
+(require 'subr-x)
 
 (defun timfel/friendly-whitespace ()
   "Add to the buffer-local write-contents-functions remove tabs and delete
@@ -128,11 +128,12 @@ Non-interactive arguments are Begin End Regexp"
 (defun timfel/update-proxies-from-wpad ()
   (interactive)
   (let* (wpad
-         (no_proxy "localhost,127.0.0.1,*.oraclecorp.com,oraclecorp.com,*.oraclecloud.com,oraclecloud.com,*.us.oracle.com")
-         (no-proxy (--> no_proxy
-                        (regexp-quote it)
-                        (string-replace "\\*" ".*" it)
-                        (string-replace "," "\\|" it))))
+         (no-proxy-env "localhost,127.0.0.1,*.oraclecorp.com,oraclecorp.com,*.oraclecloud.com,oraclecloud.com,*.us.oracle.com")
+         (no-proxy
+          (let ((s (regexp-quote no-proxy-env)))
+            (setq s (string-replace "\\*" ".*" s))
+            (setq s (string-replace "," "\\|" s))
+            s)))
     (if (not (or url-proxy-services
                  (not (setq wpad (shell-command-to-string "curl -s wpad")))
                  (not (string-match "PROXY\s\\([^; \n\t]+\\)" wpad))))
@@ -145,8 +146,8 @@ Non-interactive arguments are Begin End Regexp"
             (setenv "https_proxy" wpad_with_protocol)
             (setenv "HTTP_PROXY" wpad_with_protocol)
             (setenv "HTTPS_PROXY" wpad_with_protocol)
-            (setenv "no_proxy" no_proxy)
-            (setenv "NO_PROXY" no_proxy)
+            (setenv "no_proxy" no-proxy)
+            (setenv "NO_PROXY" no-proxy)
             )
           (let* ((m (string-match "\\([^:]+\\):\\([0-9]+\\)$" wpad))
                  (host (if m (match-string-no-properties 1 wpad) wpad))
@@ -157,8 +158,7 @@ Non-interactive arguments are Begin End Regexp"
              url-proxy-services (list
                                  (cons "http" http)
                                  (cons "https" https)
-                                 (cons "no_proxy" no-proxy))
-             copilot-network-proxy `(:host ,host :port ,(string-to-number port)))
+                                 (cons "no_proxy" no-proxy)))
             (setenv "GRADLE_OPTS" (format "-Dhttp.proxyHost=%s -Dhttp.proxyPort=%s -Dhttps.proxyHost=%s -Dhttps.proxyPort=%s" host port host port))
             (setenv "MAVEN_OPTS" (format "-Dhttp.proxyHost=%s -Dhttp.proxyPort=%s -Dhttps.proxyHost=%s -Dhttps.proxyPort=%s" host port host port)))
           (message "Proxies set: %s" url-proxy-services))
@@ -214,7 +214,7 @@ VC root"
        '())
       (seq-mapcat (lambda (elt) (timfel/my/lsp/find-eclipse-projects-recursively (concat (file-name-as-directory directory) elt)))
                   (seq-filter (lambda (elt) (and (file-directory-p (concat (file-name-as-directory directory) elt))
-                                                 (not (f-symlink-p (concat (file-name-as-directory directory) elt)))
+                                                 (not (file-symlink-p (concat (file-name-as-directory directory) elt)))
                                                  (not (string-prefix-p "." elt))
                                                  (not (string-prefix-p "mxbuild" elt)))) current-directory-list)))))
 
