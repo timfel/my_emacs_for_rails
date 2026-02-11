@@ -1,7 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 (package-initialize)
 ;; (setq use-package-compute-statistics t)
-(require 'compile)
 
 (setq warning-minimum-level :error
       use-package-verbose t)
@@ -21,18 +20,9 @@
 (unless (package-installed-p 'vc-use-package)
   (package-vc-install "https://github.com/slotThe/vc-use-package"))
 
-(add-to-list 'load-path (locate-user-emacs-file "lisp"))
-
-(use-package dash
-  :ensure t)
-
 (use-package timfel
-  :after dash
+  :load-path "~/.emacs.d/lisp"
   :demand t)
-
-(use-package ht
-  :defer t
-  :ensure t)
 
 (use-package isearch
   :bind (("C-S-s" . timfel/isearch-word-at-point)
@@ -94,6 +84,7 @@
         (next-error-found buffer (current-buffer))))))
 
 (use-package hippie-exp
+  :bind (([remap dabbrev-expand] . hippie-expand))
   :config
   (defun timfel/try-complete-abbrev (old)
     (if (expand-abbrev) t nil))
@@ -381,29 +372,56 @@
                     (imenu--menubar-select imenu--rescan-item)
                     (imenu (imenu-choose-buffer-index))))))
 
-(use-package icomplete
+(use-package eldoc
+  :custom (eldoc-documentation-strategy #'eldoc-documentation-compose)
   :config
+  (remove-hook 'eldoc-display-functions #'eldoc-display-in-buffer)
+  (remove-hook 'eldoc-display-functions #'eldoc-display-in-buffer-at-point)
+  (add-hook 'eldoc-display-functions #'eldoc-display-in-echo-area))
+
+(use-package icomplete
+  :disabled ;; Interesting experiment to replace company mode
+  :custom
+  (icomplete-in-buffer t)
+  (icomplete-hide-common-prefix t)
+  :bind (:map icomplete-minibuffer-map
+              ("RET" . #'icomplete-force-complete-and-exit)
+              ("TAB" . #'icomplete-force-complete-and-exit)
+              ("?" . #'my-icomplete-eldoc-for-selected-candidate)
+              ("C-h" . #'icomplete-force-complete-and-exit)
+              ("<up>" . #'icomplete-forward-completions)
+              ("<down>" . #'icomplete-backward-completions))
+  :config
+  (setq completion-ignore-case t)
+  (icomplete-mode t)
+  ;; I don't like it in the minibuffer
+  (remove-hook 'minibuffer-setup-hook #'icomplete-minibuffer-setup)
+  ;; i like completion to be local
+  (advice-add 'completion-at-point :after #'minibuffer-hide-completions)
+  ;; show completions vertically in the right column
+  (advice-add 'icomplete-completions :before
+              (lambda (&rest r)
+                (setq icomplete-separator
+                      (concat
+                       "\n"
+                       (make-string (current-column) ? )))))
   (add-to-list 'completion-category-overrides '(project-file (styles initials flex)))
   (add-to-list 'completion-category-overrides '(imenu (styles flex))))
 
 (use-package grep
   :config
   (add-to-list 'grep-find-ignored-directories "mxbuild")
+  (add-to-list 'grep-find-ignored-directories ".venv")
+  (add-to-list 'grep-find-ignored-directories "eln-cache")
   (add-to-list 'grep-find-ignored-directories "site-packages"))
 
 (use-package project
   :bind (("C-t" . project-or-external-find-file)))
 
 (use-package code-workspace
-  :load-path "~/.emacs.d/lisp/"
+  :load-path "~/.emacs.d/lisp"
   :after project
   :demand t)
-
-;; Auto completion
-(use-package yasnippet
-  :ensure t
-  :hook ((lsp-mode . yas-minor-mode)
-         (python-mode . yas-minor-mode)))
 
 (use-package company
   :ensure t
@@ -419,6 +437,16 @@
   :after company
   :if (window-system)
   :hook (company-mode . company-box-mode))
+
+(use-package completion-preview
+  :disabled ;; part of the experiment to get rid of company-mode
+  :bind (("M-?" . completion-at-point)
+         :map completion-preview-active-mode-map
+         ("M-n" . completion-preview-next-candidate)
+         ("M-p" . completion-preview-next-candidate))
+  :custom (completion-preview-idle-delay (if (eq system-type 'windows-nt) 10 0.2))
+  :config
+  (global-completion-preview-mode))
 
 (use-package diff
   :after vc
@@ -1359,19 +1387,12 @@
   :defer t
   :ensure t
   :commands ispell
-  :bind (("<f8>" . fd-switch-dictionary))
   :config (progn
             (add-to-list 'ispell-dictionary-alist
                          '("de"
                            "[a-zA-Z\304\326\334\344\366\337\374]"
                            "[^a-zA-Z\304\326\334\344\366\337\374]"
                            "[']" t ("-C" "-d" "de_DE") "~latin1" iso-8859-15))
-            (defun fd-switch-dictionary()
-              (interactive)
-              (let* ((dic ispell-current-dictionary)
-                     (change (if (string= dic "de") "english" "de")))
-                (ispell-change-dictionary change)
-                (message "Dictionary switched from %s to %s" dic change)))
             (setq ispell-program-name "aspell"
                   ispell-list-command "list"
                   ispell-extra-args '("--sug-mode=fast"))))
@@ -1497,6 +1518,7 @@
   :ensure t)
 
 (use-package cmake-mode
+  :ensure t
   :mode ("CMakeLists\\.txt$" "\\.cmake$")
   :commands cmake-mode)
 
