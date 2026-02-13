@@ -353,11 +353,8 @@
   (setq helm-buffers-maybe-switch-to-tab nil))
 
 (use-package imenu
-  :bind (("C-." . (lambda ()
-                    (interactive)
-                    (imenu--cleanup)
-                    (imenu--menubar-select imenu--rescan-item)
-                    (imenu (imenu-choose-buffer-index))))))
+  :custom (imenu-auto-rescan t)
+  :bind (("C-." . imenu)))
 
 (use-package eldoc
   :custom (eldoc-documentation-strategy #'eldoc-documentation-compose)
@@ -973,14 +970,11 @@
   :commands lsp-ui-mode
   :after lsp-mode
   :bind (:map lsp-mode-map
-         ("C-." . helm-semantic-or-imenu)
          ("C-S-t" . helm-lsp-workspace-symbol)
          ("C-," . lsp-execute-code-action)
          ("C-c f" . flycheck-list-errors)
          :map lsp-ui-mode-map
          ("C-c e" . lsp-treemacs-errors-list)
-         ("M-," . xref-pop-marker-stack)
-         ("M-." . lsp-ui-peek-find-definitions)
          ("C-M-." . lsp-ui-peek-find-references))
   :config (progn
             ;; performance tips from readme
@@ -1405,11 +1399,10 @@
                           :test #'equal))))
 
 (use-package ido
-  :commands (ido-find-file ido-switch-buffer)
-  :bind (("C-x C-f" . ido-find-file)
-         ("C-x b" . ido-switch-buffer))
   :ensure t
-  :config (ido-mode t))
+  :config
+  (ido-mode t)
+  (ido-everywhere t))
 
 (use-package erefactor
   :defer t
