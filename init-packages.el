@@ -345,19 +345,6 @@
                                     (setq visual-fill-column-center-text nil)
                                     (visual-line-mode 0)))))
 
-(use-package projectile
-  :ensure t
-  :defer t
-  :config (progn
-            (setq
-             projectile-indexing-method 'alien
-             projectile-sort-order 'access-time
-             projectile-enable-caching nil)
-            (add-to-list 'projectile-globally-ignored-directories "^mxbuild$")
-            (add-to-list 'projectile-globally-ignored-directories "^eln-cache$")
-            (add-to-list 'projectile-globally-ignored-directories "^eevenv$")
-            (add-to-list 'projectile-globally-ignored-directories "*site-packages")))
-
 (use-package helm
   :ensure t
   :after fuzzy
