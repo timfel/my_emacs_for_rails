@@ -38,8 +38,6 @@
  '(frame-background-mode 'light)
  '(nxml-child-indent 4)
  '(nxml-outline-child-indent 4)
- '(oca-host
-   "code-internal.aiservice.ca-montreal-1.oci.oraclecloud.com/20250519/app/litellm")
  '(proced-auto-update-interval 2)
  '(safe-local-variable-values
    '((eval progn (setenv "MX_BUILD_SHALLOW_DEPENDENCY_CHECKS" "true")
