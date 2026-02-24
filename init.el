@@ -45,7 +45,7 @@
   (confirm-kill-emacs 'yes-or-no-p)
   (visible-bell nil)
   (ring-bell-function #'ignore)
-  (delete-by-moving-to-trash t)
+  (delete-by-moving-to-trash (eq system-type 'android))
   (make-backup-files nil)
   (query-replace-highlight t)
   (search-highlight t)
@@ -61,6 +61,9 @@
   (use-short-answers t)
   (fill-column 79)
   (buffer-file-coding-system 'utf-8-unix)
+  (tool-bar-position 'bottom)
+  (tool-bar-always-show-default t)
+  (tool-bar-button-margin 16)
 
   :config
   (if (file-exists-p custom-file)
@@ -70,6 +73,7 @@
   (blink-cursor-mode 0)
   (tool-bar-mode (if (eq system-type 'android) 1 0))
   (menu-bar-mode (if (eq system-type 'android) 1 0))
+  (modifier-bar-mode (if (eq system-type 'android) 1 0))
   (scroll-bar-mode 0)
   (column-number-mode t)
   (windmove-default-keybindings)
@@ -1316,7 +1320,9 @@
 			     (if (memq window-system '(x pgtk))
 			         (set-face-attribute 'default nil :font "DejaVu Sans Mono-10")
 			       (if (eq window-system 'w32)
-				   (set-face-attribute 'default nil :family "Consolas" :height 105))))))
+				   (set-face-attribute 'default nil :family "Consolas" :height 105)
+                                 (if (eq system-type 'android)
+                                     (set-face-attribute 'default nil :family "Droid Sans Mono" :height 120)))))))
 
   (when (eq system-type 'gnu/linux)
     (if (or (eq window-system 'pgtk)
