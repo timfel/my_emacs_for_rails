@@ -216,7 +216,9 @@
   (org-download-image-dir (expand-file-name "Screenshots/" timfel/cloud-storage)))
 
 (use-package imenu
-  :custom (imenu-auto-rescan t)
+  :custom
+  (imenu-auto-rescan t)
+  (imenu-flatten 'group)
   :bind (("C-." . imenu)))
 
 (use-package eldoc
