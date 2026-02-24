@@ -678,11 +678,11 @@
   (gptel-model 'gemma3n:latest)
   (gptel-include-tool-results t)
   (gptel-include-reasoning t)
-  (gptel-backend (gptel-make-ollama "Ollama"
-                   :host "localhost:11434"
-                   :stream t
-                   :models '(gemma3n:latest gemma3n-tools)))
   :config
+  (setq gptel-backend (gptel-make-ollama "Ollama"
+                        :host "localhost:11434"
+                        :stream t
+                        :models '(gemma3n:latest gemma3n-tools)))
   (setq
    cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
    cashpw/gptel-mode-line--indicator-responding "↓GPTEL↓ "
@@ -898,31 +898,31 @@
           (llm-tool-collection-get-category "filesystem"))
   (mapcar (apply-partially #'apply #'gptel-make-tool)
           (llm-tool-collection-get-category "buffers"))
+  (setq gptel-tools (let ((funcs nil)
+                          (names (list
+                                  "get_recently_edited_filenames"
+                                  "search_in_project"
+                                  "set_file_content"
+                                  "read_webpage"
+                                  "search_web"
+                                  "change_directory"
+                                  "get_current_directory"
+                                  "execute_command"
+                                  "view_buffer"
+                                  "read_file"
+                                  "list_directory"
+                                  "list_buffers"
+                                  "create_file"
+                                  "patch_file"
+                                  "create_directory")))
+                      (dolist (category gptel--known-tools)
+                        (dolist (pair (cdr category))
+                          (when (member (car pair) names)
+                            (push (cdr pair) funcs))))
+                      funcs))
   :custom
   (gptel-use-tools t)
-  (gptel-confirm-tool-calls 'auto)
-  (gptel-tools (let ((funcs nil)
-                     (names (list
-                             "get_recently_edited_filenames"
-                             "search_in_project"
-                             "set_file_content"
-                             "read_webpage"
-                             "search_web"
-                             "change_directory"
-                             "get_current_directory"
-                             "execute_command"
-                             "view_buffer"
-                             "read_file"
-                             "list_directory"
-                             "list_buffers"
-                             "create_file"
-                             "patch_file"
-                             "create_directory")))
-                 (dolist (category gptel--known-tools)
-                   (dolist (pair (cdr category))
-                     (when (member (car pair) names)
-                       (push (cdr pair) funcs))))
-                 funcs)))
+  (gptel-confirm-tool-calls 'auto))
 
 (use-package xt-mouse
   :if (eq window-system nil)
