@@ -1020,6 +1020,7 @@
   :bind (:map lsp-mode-map
          ("C-," . lsp-execute-code-action)
          ("C-S-t" . lsp-ido-workspace-symbol))
+  :hook ((lsp-mode . flymake-mode))
   :custom
   (lsp-print-io nil)
   (lsp-headerline-arrow ">")
@@ -1208,12 +1209,6 @@
   :ensure t
   :after lsp-mode
   :custom
-  (lsp-java-completion-favorite-static-members (vconcat lsp-java-completion-favorite-static-members
-                                                        '("com.oracle.graal.python.builtins.PythonBuiltinClassType"
-                                                          "com.oracle.graal.python.nodes.BuiltinNames"
-                                                          "com.oracle.graal.python.nodes.SpecialMethodNames"
-                                                          "com.oracle.graal.python.nodes.SpecialAttributeNames"
-                                                          "com.oracle.graal.python.nodes.ErrorMessages")))
   (lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/snapshots/jdt-language-server-latest.tar.gz")
   (lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true"))
   (lsp-java-content-provider-preferred "fernflower")
@@ -1258,14 +1253,14 @@
                  (-flatten)
                  (-uniq)
                  (-map #'lsp-workspace-shutdown))
-            (setq lsp--session nil))
-          (setq
-           lsp-java-workspace-dir wsuserdir
-           lsp-java-workspace-cache-dir (expand-file-name "cache/" lsp-java-workspace-dir)
-           lsp-session-file (expand-path ".lsp-session-v1" wsuserdir))
-          (message (format "Setting Eclipse workspace to %s, session to %s" lsp-java-workspace-dir lsp-session-file))
-          (message (format "You may have to adapt %s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs to give the default VM the name that mx told you" lsp-java-workspace-dir))
-          (find-file-noselect (format "%s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs" lsp-java-workspace-dir)))))
+            (setq lsp--session nil)
+            (setq
+             lsp-java-workspace-dir wsuserdir
+             lsp-java-workspace-cache-dir (expand-file-name "cache/" lsp-java-workspace-dir)
+             lsp-session-file (expand-file-name ".lsp-session-v1" wsuserdir))
+            (message (format "Setting Eclipse workspace to %s, session to %s" lsp-java-workspace-dir lsp-session-file))
+            (message (format "You may have to adapt %s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs to give the default VM the name that mx told you" lsp-java-workspace-dir))
+            (find-file-noselect (format "%s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs" lsp-java-workspace-dir))))))
   (advice-add #'lsp :before #'my/setup-java-workspace-dir)
 
   (add-hook 'java-mode-hook (lambda () (if (lsp-find-workspace 'jdtls nil) (lsp)))))
