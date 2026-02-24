@@ -1,1 +1,5 @@
 (setenv "LSP_USE_PLISTS" "true")
+(when (eq system-type 'android)
+  (let ((termuxpath "/data/data/com.termux/files/usr/bin"))
+    (setenv "PATH" (concat (getenv "PATH") ":"  termuxpath))
+    (add-to-list 'exec-path termuxpath t)))
