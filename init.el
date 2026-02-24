@@ -17,6 +17,7 @@
 (require 'use-package)
 
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
+(add-to-list 'load-path (locate-user-emacs-file "lisp/ci-dashboard"))
 
 (use-package emacs
   :bind (([f11] . toggle-frame-fullscreen)
@@ -929,7 +930,6 @@
   :config (run-with-idle-timer 0.1 nil #'xterm-mouse-mode +1))
 
 (use-package emacs-ci
-  :if (file-exists-p (locate-user-emacs-file "lisp/ci-dashboard/emacs-ci.el"))
   :commands ci-dashboard)
 
 (use-package proced
@@ -1223,7 +1223,7 @@
 
 (use-package lsp-java
   :ensure t
-  :after lsp-mode
+  :after (lsp-mode treemacs)
   :custom
   (lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/snapshots/jdt-language-server-latest.tar.gz")
   (lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true"))
