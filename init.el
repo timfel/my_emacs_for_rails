@@ -1021,6 +1021,10 @@
   :bind (("C-c f" . flymake-show-buffer-diagnostics)
          ("C-c e" . flymake-show-project-diagnostics)))
 
+(use-package eglot
+  :bind (("C-," . eglot-code-actions)
+         ("C-S-t" . xref-find-apropos)))
+
 (use-package lsp-mode
   :preface (setq lsp-use-plists t)
   :ensure t
