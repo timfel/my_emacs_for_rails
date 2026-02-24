@@ -901,7 +901,7 @@
 (use-package oca
   :after (gptel)
   :load-path timfel/gist-location
-  :commands oca-key
+  :commands (oca-key oca-codex-login)
   :demand t)
 
 (use-package orcl
