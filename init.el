@@ -110,7 +110,9 @@
               (mkdir (file-name-directory lsp-clients-emmy-lua-jar-path) t)
               (url-copy-file
                "https://github.com/EmmyLua/EmmyLua-LanguageServer/releases/download/0.5.16/EmmyLua-LS-all.jar"
-               lsp-clients-emmy-lua-jar-path)))
+               lsp-clients-emmy-lua-jar-path))
+            (with-eval-after-load 'eglot
+              (add-to-list 'eglot-server-programs `(lua-mode . ,`("java" "-cp" ,lsp-clients-emmy-lua-jar-path "com.tang.vscode.MainKt")))))
   :mode ("\\.lua$"))
 
 (use-package json-mode
