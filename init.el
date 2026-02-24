@@ -81,9 +81,7 @@
   (put 'dired-find-alternate-file 'disabled nil)
   (setq-default indent-tabs-mode nil))
 
-(use-package timfel
-  :config
-  (add-to-list 'load-path timfel/gist-location))
+(use-package timfel)
 
 (use-package isearch
   :bind (("C-S-s" . isearch-forward-thing-at-point)
@@ -901,15 +899,15 @@
                  funcs)))
 
 (use-package oca
-  :if (file-exists-p (concat timfel/gist-location "/oca.el"))
   :after (gptel)
+  :load-path timfel/gist-location
   :commands oca-key
   :demand t)
 
 (use-package orcl
-  :if (file-exists-p (concat timfel/gist-location "/orcl.el"))
   :commands (timfel/git-merges-jira-html jira)
-  :after jira
+  :load-path timfel/gist-location
+  :after (jira)
   :config
   (defun jira ()
     ;; some jira instance fails to get some basic data, make sure fields and
