@@ -1,11 +1,19 @@
 ;;; -*- lexical-binding: t -*-
-(package-initialize)
+(require 'package)
 ;; (setq use-package-compute-statistics t)
 (setq warning-minimum-level :error
       gc-cons-threshold most-positive-fixnum
       use-package-verbose t)
-(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
+(setq package-archive-priorities
+      '(("melpa-stable" . 10)
+	("nongnu" . 5)
+	("gnu" . 5)
+	("melpa" . 1)
+	("cselpa" . 0)))
+(package-initialize)
 (require 'use-package)
 
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
