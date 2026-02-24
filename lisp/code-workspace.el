@@ -197,7 +197,7 @@ This is a troubleshooting helper for `project-try-code-workspace'."
               (target (code-workspace--target-path-for-dir dir))
               (chosen (code-workspace--choose-best target cands vc-root))
               (folders (plist-get chosen :folders))
-              (root (car folders)))
+              (root (seq-find (lambda (f) (string-prefix-p vc-root f t)) folders (car folders))))
     (list 'code-workspace
           (list :workspace-file (plist-get chosen :workspace-file)
                 :folders folders
