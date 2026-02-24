@@ -1029,6 +1029,11 @@
   :bind (("C-," . eglot-code-actions)
          ("C-S-t" . xref-find-apropos)))
 
+(use-package yasnippet
+  :ensure t
+  :after (lsp-mode)
+  :hook ((lsp-mode . yas-minor-mode)))
+
 (use-package lsp-mode
   :preface (setq lsp-use-plists t)
   :ensure t
