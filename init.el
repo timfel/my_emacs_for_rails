@@ -81,7 +81,16 @@
   (put 'dired-find-alternate-file 'disabled nil)
   (setq-default indent-tabs-mode nil))
 
-(use-package timfel)
+(use-package timfel
+  :config
+  (when (file-exists-p timfel/gist-location)
+    (let ((oca (expand-file-name "oca.el" timfel/gist-location)))
+      (with-eval-after-load 'gptel (load oca))
+      (autoload 'oca-key oca nil t)
+      (autoload 'oca-codex-login oca nil t))
+    (let ((orcl (expand-file-name "orcl.el" timfel/gist-location)))
+      (autoload 'timfel/git-merges-jira-html orcl nil t)
+      (autoload 'jira orcl nil t))))
 
 (use-package isearch
   :bind (("C-S-s" . isearch-forward-thing-at-point)
@@ -898,35 +907,6 @@
                        (push (cdr pair) funcs))))
                  funcs)))
 
-(use-package oca
-  :after (gptel)
-  :load-path timfel/gist-location
-  :commands (oca-key oca-codex-login)
-  :demand t)
-
-(use-package orcl
-  :commands (timfel/git-merges-jira-html jira)
-  :load-path timfel/gist-location
-  :after (jira)
-  :config
-  (defun jira ()
-    ;; some jira instance fails to get some basic data, make sure fields and
-    ;; statuses are there
-    (interactive)
-    (condition-case nil
-        (jira-api-get-basic-data)
-      (error nil))
-
-    (jira-api-get-users)
-    (jira-api-get-fields)
-    (jira-api-get-statuses)
-    (jira-api-get-resolutions)
-    ;; (jira-api-get-filters :force t)
-    (jira-api-get-projects)
-    ;; (jira-api-get-account-id)
-
-    (funcall-interactively #'jira-issues)))
-
 (use-package xt-mouse
   :if (eq window-system nil)
   :commands xterm-mouse-mode
@@ -950,7 +930,6 @@
   :unless (eq system-type 'windows-nt)
   :bind (("<f12>" . (lambda ()
                       (interactive)
-                      (require 'multi-vterm)
                       (select-window
                        (split-window
 	                (selected-window)
