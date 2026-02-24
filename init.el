@@ -81,7 +81,9 @@
   (put 'dired-find-alternate-file 'disabled nil)
   (setq-default indent-tabs-mode nil))
 
-(use-package timfel)
+(use-package timfel
+  :config
+  (add-to-list 'load-path timfel/gist-location))
 
 (use-package isearch
   :bind (("C-S-s" . isearch-forward-thing-at-point)
@@ -351,7 +353,7 @@
                         (shell-command cmd)))))))
 
 (use-package magit
-  :if (not (eq system-type 'windows-nt))
+  :unless (eq system-type 'windows-nt)
   :bind ("C-x C-z" . magit-status)
   :ensure t
   :custom
@@ -374,7 +376,7 @@
 
 (use-package doom-modeline
   ;; remember to run (all-the-icons-install-fonts) manually some time
-  :if (not (eq system-type 'windows-nt))
+  :unless (eq system-type 'windows-nt)
   :after all-the-icons
   :ensure t
   :hook (after-init . doom-modeline-mode)
@@ -419,7 +421,7 @@
   (treemacs-width-is-initially-locked t))
 
 (use-package treemacs-nerd-icons
-  :if (not (display-graphic-p))
+  :unless (display-graphic-p)
   :after treemacs
   :ensure t
   :config
@@ -534,11 +536,11 @@
   :mode ("\\.jsonnet$"))
 
 (use-package sudo-save
-  :if (not (eq system-type 'windows-nt)))
+  :unless (eq system-type 'windows-nt))
 
 (use-package term-keys
   :ensure t
-  :if (not (display-graphic-p))
+  :unless (display-graphic-p)
   :config
   (term-keys-mode t))
 
@@ -900,14 +902,12 @@
 
 (use-package oca
   :if (file-exists-p (concat timfel/gist-location "/oca.el"))
-  :load-path timfel/gist-location
   :after (gptel)
   :commands oca-key
   :demand t)
 
 (use-package orcl
   :if (file-exists-p (concat timfel/gist-location "/orcl.el"))
-  :load-path timfel/gist-location
   :commands (timfel/git-merges-jira-html jira)
   :after jira
   :config
@@ -949,7 +949,7 @@
 (use-package multi-vterm
   :ensure t
   :commands (multi-vterm)
-  :if (not (eq system-type 'windows-nt))
+  :unless (eq system-type 'windows-nt)
   :bind (("<f12>" . (lambda ()
                       (interactive)
                       (require 'multi-vterm)
