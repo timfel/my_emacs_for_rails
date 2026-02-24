@@ -1327,7 +1327,7 @@
 
   (when-let* ((nvm "~/.nvm/versions/node/")
 	      (_ (file-exists-p nvm)))
-    (add-to-list 'exec-path (f-join nvm (car (sort (directory-files nvm) #'string-greaterp)) "bin"))
+    (add-to-list 'exec-path (string-join (list nvm (car (sort (directory-files nvm) #'string-greaterp)) "bin") "/"))
     (setenv "PATH" (string-join exec-path path-separator)))
 
   (when-let* ((jdk21 (expand-file-name "~/.mx/jdks/labsjdk-ce-21/"))
