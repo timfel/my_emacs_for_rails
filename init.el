@@ -1224,6 +1224,7 @@
 (use-package lsp-java
   :ensure t
   :after (lsp-mode treemacs)
+  :mode ("\\.java.*\\.class" . java-mode)
   :custom
   (lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/snapshots/jdt-language-server-latest.tar.gz")
   (lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true"))
