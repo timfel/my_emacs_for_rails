@@ -1029,7 +1029,6 @@
   :hook ((lsp-mode . flymake-mode))
   :custom
   (lsp-print-io nil)
-  (lsp-headerline-arrow ">")
   (lsp-lens-enable t)
   (lsp-completion-enable-additional-text-edit t)
   (lsp-enable-snippet t)
@@ -1054,6 +1053,7 @@
   (lsp-modeline-diagnostics-enable t)
   (lsp-modeline-code-actions-enable nil)
   :config
+  (setq lsp-headerline-arrow ">")
   (defun lsp-goto-next-diagnostic ()
     "Get lsp-diagnostics, it returns a hash mapping file names to a list of
 	 	hashes, each of which is a diagnostic. Search in the file names for the
@@ -1279,7 +1279,7 @@
   (dap-auto-configure-features '(sessions locals tooltip))
   (dap-print-io nil)
   (dap-auto-show-output t)
-  :hook (dap-mode . (lambda () (dap-auto-configure-mode t))))
+  (dap-auto-configure-mode t))
 
 (use-package dap-node
   :after dap-mode
