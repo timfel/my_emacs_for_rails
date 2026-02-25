@@ -376,16 +376,17 @@
   (magit-auto-revert-mode))
 
 (use-package all-the-icons
+  :unless (eq system-type 'windows-nt)
   :ensure t)
 
 (use-package all-the-icons-completion
+  :unless (eq system-type 'windows-nt)
   :after all-the-icons
-  :if (display-graphic-p)
   :ensure t)
 
 (use-package all-the-icons-dired
+  :unless (eq system-type 'windows-nt)
   :after all-the-icons
-  :if (display-graphic-p)
   :ensure t)
 
 (use-package doom-modeline
@@ -1296,13 +1297,14 @@
 
 (use-package dap-mode
   :ensure t
-  :commands dap-debug
+  :commands (dap-debug)
+  :config
+  (dap-auto-configure-mode t)
   :custom
   (dap-stack-trace-limit 40)
   (dap-auto-configure-features '(sessions locals tooltip))
   (dap-print-io nil)
-  (dap-auto-show-output t)
-  (dap-auto-configure-mode t))
+  (dap-auto-show-output t))
 
 (use-package dap-node
   :after dap-mode
