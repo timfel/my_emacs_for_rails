@@ -196,14 +196,11 @@
                        (?C . (:foreground "OliveDrab"))))
   (org-agenda-window-setup 'current-window)
   (org-clock-idle-time 15)
-  (org-agenda-files (list
-                     (expand-file-name "SyncFolder/todo.org" timfel/cloud-storage)
-                     (expand-file-name "SyncFolder/notes.org" timfel/cloud-storage)))
-  (org-capture-templates
-   (list
-    (list "n" "note" 'entr
-          (list 'file+olp+datetree (expand-file-name "SyncFolder/notes.org" timfel/cloud-storage))
-          "* %?\nEntered on %U\n"))))
+  (org-agenda-files (list (expand-file-name "SyncFolder/todo.org" timfel/cloud-storage)
+                          (expand-file-name "SyncFolder/notes.org" timfel/cloud-storage)))
+  (org-capture-templates `(("n" "note" entry
+                             (file+olp+datetree ,(expand-file-name "SyncFolder/notes.org" timfel/cloud-storage))
+                             "* %?\nEntered on %U\n"))))
 
 (use-package ox-gfm
   :ensure t
