@@ -411,6 +411,7 @@
   (history-length 10)
   (desktop-restore-eager 5)
   (desktop-auto-save-timeout 15)
+  (desktop-restore-frameset nil)
   (desktop-buffers-not-to-save (concat "\\("
                                        "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
                                        "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
@@ -1271,6 +1272,9 @@
                  (-uniq)
                  (-map #'lsp-workspace-shutdown))
             (setq lsp--session nil)
+            (add-to-list 'desktop-globals-to-save 'lsp-java-workspace-dir)
+            (add-to-list 'desktop-globals-to-save 'lsp-java-workspace-cache-dir)
+            (add-to-list 'desktop-globals-to-save 'lsp-session-file)
             (setq
              lsp-java-workspace-dir wsuserdir
              lsp-java-workspace-cache-dir (expand-file-name "cache/" lsp-java-workspace-dir)
