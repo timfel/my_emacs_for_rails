@@ -49,7 +49,7 @@
 
   :custom
   (browse-url-generic-program (or (executable-find "wslview") "xdg-open"))
-  (browse-url-browser-function 'browse-url-generic)
+  (browse-url-browser-function (if (eq system-type 'windows-nt) 'browse-url-default-browser 'browse-url-generic))
   (custom-file (locate-user-emacs-file "emacs-custom.el"))
   (confirm-kill-emacs 'yes-or-no-p)
   (visible-bell nil)
