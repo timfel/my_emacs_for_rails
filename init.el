@@ -943,23 +943,18 @@
   :config
   (setq proced-enable-color-flag t))
 
-(use-package multi-vterm
+(use-package vterm
   :ensure t
-  :commands (multi-vterm)
+  :commands (vterm)
   :unless (eq system-type 'windows-nt)
   :bind (("<f12>" . (lambda ()
                       (interactive)
                       (select-window
-                       (split-window
-	                (selected-window)
-	                (- (multi-vterm-current-window-height) (multi-vterm-dedicated-calc-window-height))))
-                      (let ((buf (seq-find (lambda (b)
-                                             (let ((n (buffer-name b)))
-                                               (and n (string-prefix-p "*vterminal" n))))
-                                           (buffer-list))))
+                       (split-window (selected-window) -18))
+                      (let ((buf (seq-find (lambda (b) (string-prefix-p "*vterm" (or (buffer-name b) ""))) (buffer-list))))
                         (if buf
                             (switch-to-buffer buf)
-                          (multi-vterm)
+                          (vterm t)
                           (add-hook 'kill-buffer-hook #'delete-window 0 t)))))
          :map vterm-mode-map
          ("C-x C-f" . (lambda ()
@@ -969,12 +964,23 @@
                                  (dir (file-truename (format "/proc/%d/cwd/" pid))))
                             (setq default-directory dir)))
                         (call-interactively (keymap-lookup (current-global-map) "C-x C-f"))))
-         ("C-x <right>" . multi-vterm-next)
-         ("C-x <left>" . multi-vterm-prev)
-         ("C-x c" . multi-vterm)
+         ("C-x <left>" . (lambda () (interactive)
+                           (let* ((bl (seq-sort (lambda (a b) (string-lessp (buffer-name a) (buffer-name b))) (buffer-list)))
+                                  (before (seq-take-while (lambda (b) (not (eq b (current-buffer)))) bl))
+                                  (after (seq-difference bl before)))
+                             (switch-to-buffer
+                              (seq-find (lambda (b) (string-prefix-p "*vterm" (or (buffer-name b) ""))) (seq-reverse before)
+                                        (seq-find (lambda (b) (string-prefix-p "*vterm" (or (buffer-name b) ""))) (seq-reverse after)))))))
+         ("C-x <right>" . (lambda () (interactive)
+                            (let* ((bl (seq-sort (lambda (a b) (string-lessp (buffer-name a) (buffer-name b))) (buffer-list)))
+                                   (before (seq-concatenate 'list (seq-take-while (lambda (b) (not (eq b (current-buffer)))) bl) (list (current-buffer))))
+                                   (after (seq-difference bl before)))
+                              (switch-to-buffer
+                               (seq-find (lambda (b) (string-prefix-p "*vterm" (or (buffer-name b) ""))) after
+                                         (seq-find (lambda (b) (string-prefix-p "*vterm" (or (buffer-name b) ""))) before))))))
+         ("C-x c" . (lambda () (interactive) (vterm t)))
          ("<f12>" . delete-window))
   :custom
-  (multi-vterm-dedicated-window-height-percent 40)
   (vterm-max-scrollback 40000))
 
 (use-package eshell
