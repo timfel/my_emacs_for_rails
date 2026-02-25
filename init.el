@@ -92,10 +92,12 @@
 
 (use-package timfel
   :config
+  (let ((oca (expand-file-name "oca.el" timfel/gist-location)))
+    (autoload 'oca-key oca nil t)
+    (autoload 'oca-codex-login oca nil t))
   (let ((orcl (expand-file-name "orcl.el" timfel/gist-location)))
-    (when (file-exists-p orcl)
-      (autoload 'timfel/git-merges-jira-html orcl nil t)
-      (autoload 'jira orcl nil t))))
+    (autoload 'timfel/git-merges-jira-html orcl nil t)
+    (autoload 'jira orcl nil t)))
 
 (use-package isearch
   :bind (("C-S-s" . isearch-forward-thing-at-point)
@@ -676,10 +678,6 @@
   (gptel-model 'gemma3n:latest)
   (gptel-include-tool-results t)
   (gptel-include-reasoning t)
-  :init
-  (let ((oca (expand-file-name "oca.el" timfel/gist-location)))
-    (autoload 'oca-key oca nil t)
-    (autoload 'oca-codex-login oca nil t))
   :config
   (setq gptel-backend (gptel-make-ollama "Ollama"
                         :host "localhost:11434"
