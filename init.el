@@ -248,7 +248,7 @@
   (icomplete-hide-common-prefix t)
   :bind (:map icomplete-minibuffer-map
               ("RET" . #'icomplete-force-complete-and-exit)
-              ("TAB" . #'icomplete-force-complete-and-exit)
+              ("TAB" . #'icomplete-force-complete)
               ("<left>" . #'icomplete-forward-completions)
               ("<right>" . #'icomplete-backward-completions))
   :config
@@ -257,7 +257,7 @@
   ;; I don't like it in the minibuffer
   (remove-hook 'minibuffer-setup-hook #'icomplete-minibuffer-setup)
   ;; i like completion to be local
-  (advice-add 'completion-at-point :after #'minibuffer-hide-completions)
+  (advice-add 'completion-at-point :after (lambda (&rest args) (unless (minibuffer-window-active-p (get-buffer-window)) (minibuffer-hide-completions))))
   (add-to-list 'completion-category-overrides '(project-file (styles initials flex)))
   (add-to-list 'completion-category-overrides '(imenu (styles flex))))
 
