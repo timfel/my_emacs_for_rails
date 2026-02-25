@@ -92,12 +92,8 @@
 
 (use-package timfel
   :config
-  (when (file-exists-p timfel/gist-location)
-    (let ((oca (expand-file-name "oca.el" timfel/gist-location)))
-      (with-eval-after-load 'gptel (load oca))
-      (autoload 'oca-key oca nil t)
-      (autoload 'oca-codex-login oca nil t))
-    (let ((orcl (expand-file-name "orcl.el" timfel/gist-location)))
+  (let ((orcl (expand-file-name "orcl.el" timfel/gist-location)))
+    (when (file-exists-p orcl)
       (autoload 'timfel/git-merges-jira-html orcl nil t)
       (autoload 'jira orcl nil t))))
 
@@ -679,11 +675,17 @@
   (gptel-model 'gemma3n:latest)
   (gptel-include-tool-results t)
   (gptel-include-reasoning t)
+  :init
+  (let ((oca (expand-file-name "oca.el" timfel/gist-location)))
+    (autoload 'oca-key oca nil t)
+    (autoload 'oca-codex-login oca nil t))
   :config
   (setq gptel-backend (gptel-make-ollama "Ollama"
                         :host "localhost:11434"
                         :stream t
                         :models '(gemma3n:latest gemma3n-tools)))
+  (let ((oca (expand-file-name "oca.el" timfel/gist-location)))
+    (if (file-exists-p oca) (load oca)))
   (setq
    cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
    cashpw/gptel-mode-line--indicator-responding "↓GPTEL↓ "
