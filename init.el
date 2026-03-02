@@ -1369,3 +1369,9 @@
 
   ;; 100 MiB
   (setq gc-cons-threshold (* 1024 1024 100)))
+
+(use-package agent-shell
+  :ensure t
+  :config
+  (setq
+   agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :api-key #'oca-key)))
