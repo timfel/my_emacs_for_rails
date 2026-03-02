@@ -202,6 +202,9 @@
                              (file+olp+datetree ,(expand-file-name "SyncFolder/notes.org" timfel/cloud-storage))
                              "* %?\nEntered on %U\n"))))
 
+(use-package org-tempo
+  :after org)
+
 (use-package ox-gfm
   :ensure t
   :after org)
