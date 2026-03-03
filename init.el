@@ -1322,6 +1322,10 @@
   (setq
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :api-key #'oca-key)))
 
+(use-package request ;; has not had a release in ages, but bugfixes on master
+  :ensure t
+  :pin melpa)
+
 (use-package jira
   :ensure t
   :config
