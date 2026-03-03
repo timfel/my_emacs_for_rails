@@ -1316,6 +1316,24 @@
                  :program ""
                  :name "Node Attach 9229")))
 
+(use-package agent-shell
+  :ensure t
+  :config
+  (setq
+   agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :api-key #'oca-key)))
+
+(use-package jira
+  :ensure t
+  :config
+  (add-to-list 'transient-values
+               '(jira-issues-menu "--myself" "--resolution=Unresolved"))
+  :custom
+  (jira-issues-max-results 70)
+  (jira-token-is-personal-access-token t)
+  (jira-users-max-results 50)
+  (jira-api-version 2)
+  (jira-debug nil))
+
 (use-package custom
   :config
   (if (display-graphic-p)
@@ -1367,21 +1385,3 @@
 
   ;; 100 MiB
   (setq gc-cons-threshold (* 1024 1024 100)))
-
-(use-package agent-shell
-  :ensure t
-  :config
-  (setq
-   agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :api-key #'oca-key)))
-
-(use-package jira
-  :ensure t
-  :config
-  (add-to-list 'transient-values
-               '(jira-issues-menu "--myself" "--resolution=Unresolved"))
-  :custom
-  (jira-issues-max-results 70)
-  (jira-token-is-personal-access-token t)
-  (jira-users-max-results 50)
-  (jira-api-version 2)
-  (jira-debug nil))
