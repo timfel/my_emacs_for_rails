@@ -1,4 +1,11 @@
 ;;; code-workspace.el --- Project support for VS Code workspaces  -*- lexical-binding: t -*-
+;;;
+;;; Commentary:
+;;;
+;;;   A project.el plugin that looks for VSCode workspaces to determine
+;;;   external project roots in addition to the vc-root.
+;;;
+;;; Code:
 
 (require 'project)
 (require 'json)
@@ -196,12 +203,11 @@ This is a troubleshooting helper for `project-try-code-workspace'."
               (cands (code-workspace--cached-candidates vc-root))
               (target (code-workspace--target-path-for-dir dir))
               (chosen (code-workspace--choose-best target cands vc-root))
-              (folders (plist-get chosen :folders))
-              (root (seq-find (lambda (f) (string-prefix-p vc-root f t)) folders (car folders))))
+              (folders (plist-get chosen :folders)))
     (list 'code-workspace
           (list :workspace-file (plist-get chosen :workspace-file)
                 :folders folders
-                :root root))))
+                :root vc-root))))
 
 (add-hook 'project-find-functions #'project-try-code-workspace)
 
@@ -209,7 +215,7 @@ This is a troubleshooting helper for `project-try-code-workspace'."
   (plist-get (nth 1 project) :root))
 
 (cl-defmethod project-external-roots ((project (head code-workspace)))
-  (cdr (plist-get (nth 1 project) :folders)))
+  (plist-get (nth 1 project) :folders))
 
 (cl-defmethod project-name ((project (head code-workspace)))
   (file-name-nondirectory (plist-get (nth 1 project) :workspace-file)))

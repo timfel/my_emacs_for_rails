@@ -274,7 +274,6 @@
   :bind (("C-t" . project-or-external-find-file)))
 
 (use-package code-workspace
-  :disabled
   :after project)
 
 (use-package company
