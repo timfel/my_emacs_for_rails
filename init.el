@@ -947,13 +947,15 @@
   :unless (eq system-type 'windows-nt)
   :bind (("<f12>" . (lambda ()
                       (interactive)
-                      (select-window
-                       (split-window (selected-window) -18))
-                      (let ((buf (seq-find (lambda (b) (string-prefix-p "*vterm" (or (buffer-name b) ""))) (buffer-list))))
-                        (if buf
-                            (switch-to-buffer buf)
-                          (vterm t)
-                          (add-hook 'kill-buffer-hook #'delete-window 0 t)))))
+                      (if-let ((w (get-window-with-predicate (lambda (w) (string-prefix-p "*vterm" (buffer-name (window-buffer w)))))))
+                          (select-window w)
+                        (select-window
+                         (split-window (selected-window) -18))
+                        (let ((buf (seq-find (lambda (b) (string-prefix-p "*vterm" (or (buffer-name b) ""))) (buffer-list))))
+                          (if buf
+                              (switch-to-buffer buf)
+                            (vterm t)
+                            (add-hook 'kill-buffer-hook #'delete-window 0 t))))))
          :map vterm-mode-map
          ("C-x C-f" . (lambda ()
                         (interactive)
