@@ -927,7 +927,6 @@
 
 (use-package xt-mouse
   :if (eq window-system nil)
-  :commands xterm-mouse-mode
   :config (run-with-idle-timer 0.1 nil #'xterm-mouse-mode +1))
 
 (use-package emacs-ci
