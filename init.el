@@ -1306,7 +1306,8 @@
   (dap-auto-configure-mode t)
   :custom
   (dap-stack-trace-limit 40)
-  (dap-auto-configure-features '(sessions tooltip))
+  (dap-auto-configure-features '(sessions locals tooltip))
+  (dap-ui-locals-expand-depth nil)
   (dap-print-io nil)
   (dap-auto-show-output t))
 
