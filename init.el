@@ -256,7 +256,7 @@
   (remove-hook 'minibuffer-setup-hook #'icomplete-minibuffer-setup)
   ;; i like completion to be local
   (advice-add 'completion-at-point :after (lambda (&rest args) (unless (minibuffer-window-active-p (get-buffer-window)) (minibuffer-hide-completions))))
-  (add-to-list 'completion-category-overrides '(project-file (styles initials flex)))
+  (add-to-list 'completion-category-overrides '(project-file (styles substring)))
   (add-to-list 'completion-category-overrides '(imenu (styles flex))))
 
 (use-package grep
@@ -1328,6 +1328,8 @@
   :ensure t
   :config
   (setq
+   agent-shell-session-strategy 'new
+   agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-key)
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :api-key #'oca-key)))
 
 (use-package request ;; has not had a release in ages, but bugfixes on master
