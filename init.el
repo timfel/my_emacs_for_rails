@@ -265,13 +265,16 @@
     (grep-apply-setting 'grep-find-template
 			"findstr /S /N /D:. /C:<R> <F>")
     (setq find-name-arg nil))
+  (add-to-list 'grep-find-ignored-files ".venv")
   (add-to-list 'grep-find-ignored-directories "mxbuild")
   (add-to-list 'grep-find-ignored-directories ".venv")
   (add-to-list 'grep-find-ignored-directories "eln-cache")
   (add-to-list 'grep-find-ignored-directories "site-packages"))
 
 (use-package project
-  :bind (("C-t" . project-or-external-find-file)))
+  :bind (("C-t" . project-or-external-find-file))
+  :config
+  (add-to-list 'vc-directory-exclusion-list ".venv"))
 
 (use-package code-workspace
   :after project)

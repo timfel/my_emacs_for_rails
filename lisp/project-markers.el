@@ -27,6 +27,7 @@
   (when-let ((root (locate-dominating-file path #'project-markers--project-root-p)))
     (cons 'transient (expand-file-name root))))
 
+;;;###autoload
 (add-to-list 'project-find-functions #'project-markers-find-root)
 
 (provide 'project-markers)
