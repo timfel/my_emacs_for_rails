@@ -276,6 +276,9 @@
 (use-package code-workspace
   :after project)
 
+(use-package project-markers
+  :after project)
+
 (use-package company
   :ensure t
   :bind (("M-?" . company-complete))
