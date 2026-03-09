@@ -25,3 +25,5 @@ bookmarks
 .aider*
 emacs-custom.el
 /.agent-shell/
+agent/history
+request/curl-cookie-jar
