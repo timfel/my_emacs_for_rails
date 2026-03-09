@@ -1335,7 +1335,9 @@
   :ensure t
   :config
   (setq
+   agent-shell-header-style 'text
    agent-shell-session-strategy 'new
+   agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-key)
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :api-key #'oca-key)))
 
