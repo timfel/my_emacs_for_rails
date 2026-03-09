@@ -50,6 +50,7 @@
   :custom
   (browse-url-generic-program (or (executable-find "wslview") "xdg-open"))
   (browse-url-browser-function (if (eq system-type 'windows-nt) 'browse-url-default-browser 'browse-url-generic))
+  (diff-command (if (eq system-type 'windows-nt) (if (executable-find "delta") "delta" "diff") "diff"))
   (custom-file (locate-user-emacs-file "emacs-custom.el"))
   (confirm-kill-emacs 'yes-or-no-p)
   (visible-bell nil)
