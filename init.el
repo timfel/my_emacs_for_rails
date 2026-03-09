@@ -642,33 +642,6 @@
   :ensure t
   :if (display-graphic-p)
   :commands emojify-insert-emoji
-  :config
-  (set-fontset-font
-   t
-   'emoji
-   (cond
-    ((member "Apple Color Emoji" (font-family-list)) "Apple Color Emoji")
-    ((member "Noto Color Emoji" (font-family-list)) "Noto Color Emoji")
-    ((member "Noto Emoji" (font-family-list)) "Noto Emoji")
-    ((member "Segoe UI Emoji" (font-family-list)) "Segoe UI Emoji")  ; 🧗
-    ((member "Symbola" (font-family-list)) "Symbola")))
-  (set-fontset-font
-   t
-   'symbol
-   (cond
-    ((member "Segoe UI Symbol" (font-family-list)) "Segoe UI Symbol")
-    ((member "Apple Symbols" (font-family-list)) "Apple Symbols")
-    ((member "Symbola" (font-family-list)) "Symbola")))
-  
-  ;; (add-hook 'java-mode-hook
-  ;;           (lambda ()
-  ;;             (setq prettify-symbols-alist
-  ;;                   '(("@SuppressWarnings(\"unused\")" . ?🤷)))
-  ;;             (prettify-symbols-mode 1)))
-
-  ;; nice on windows...
-  (if (eq system-type 'windows-nt)
-      (set-fontset-font t '(#x1F300 . #x1F5FF) "Segoe UI Symbol"))  ; 🔁, Miscellaneous Symbols and Pictographs
   :custom
   (emojify-display-style 'unicode)
   (emojify-emoji-styles '(unicode)))
@@ -1333,6 +1306,7 @@
 
 (use-package agent-shell
   :ensure t
+  :commands agent-shell
   :config
   (setq
    agent-shell-header-style 'text
@@ -1343,10 +1317,12 @@
 
 (use-package request ;; has not had a release in ages, but bugfixes on master
   :ensure t
+  :defer t
   :pin melpa)
 
 (use-package jira
   :ensure t
+  :commands (jira-api-get-basic-data jira-api-get-users jira-issues)
   :config
   (add-to-list 'transient-values
                '(jira-issues-menu "--myself" "--resolution=Unresolved"))
@@ -1359,6 +1335,26 @@
 
 (use-package custom
   :config
+  :config
+  (set-fontset-font
+   t
+   'emoji
+   (cond
+    ((member "Apple Color Emoji" (font-family-list)) "Apple Color Emoji")
+    ((member "Noto Color Emoji" (font-family-list)) "Noto Color Emoji")
+    ((member "Noto Emoji" (font-family-list)) "Noto Emoji")
+    ((member "Segoe UI Emoji" (font-family-list)) "Segoe UI Emoji")  ; 🧗
+    ((member "Symbola" (font-family-list)) "Symbola")))
+  (set-fontset-font
+   t
+   'symbol
+   (cond
+    ((member "Segoe UI Symbol" (font-family-list)) "Segoe UI Symbol")
+    ((member "Apple Symbols" (font-family-list)) "Apple Symbols")
+    ((member "Symbola" (font-family-list)) "Symbola")))
+  (if (eq system-type 'windows-nt)
+      (set-fontset-font t '(#x1F300 . #x1F5FF) "Segoe UI Symbol"))  ; 🔁, Miscellaneous Symbols and Pictographs
+
   (if (display-graphic-p)
       (run-with-idle-timer 0 nil
 			   (lambda ()
