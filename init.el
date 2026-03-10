@@ -604,26 +604,22 @@
 (use-package exec-path-from-shell
   :ensure t
   :defer 3
+  :unless (eq system-type 'windows-nt)
   :config
-  (if (eq system-type 'windows-nt)
-      (let* ((env-before (split-string (shell-command-to-string "powershell.exe -NoProfile -Command \"Get-ChildItem Env:* | ForEach-Object { \\\"$($_.Name)=$($_.Value)\\\" }\"") "\n" t))
-             (env-before-alist (mapcar (lambda (s) (split-string s "=" t)) env-before))
-             (output (shell-command-to-string "powershell.exe -NoProfile -Command \". $PROFILE; Write-Host $MyPath -NoNewline ; Write-Host ';' -NoNewline ; Write-Host $Env:PATH -NoNewline ; Write-Host '[ENV]' -NoNewline ; Get-ChildItem Env:* | ForEach-Object { \\\"$($_.Name)=$($_.Value)\\\" }\""))
-             (parts (split-string output "\\[ENV\\]" t))
-             (path-part (string-trim (car parts)))
-             (env-after (split-string (cadr parts) "\n" t))
-             (env-after-alist (mapcar (lambda (s) (split-string s "=" t)) env-after)))
-        ;; Set PATH-related env vars
-        (setenv "PATH" path-part)
-        (setq exec-path (append (parse-colon-path path-part) (list exec-directory)))
-        (setq-default eshell-path-env path-part)
-        ;; Set all other environment variables that changed
-        (dolist (pair env-after-alist)
-          (let ((var (car pair))
-                (val (mapconcat #'identity (cdr pair) "=")))
-            (unless (string= val (or (cadr (assoc var env-before-alist)) ""))
-              (setenv var val)))))
-    (exec-path-from-shell-initialize)))
+  (exec-path-from-shell-initialize))
+
+(use-package exec-path-from-windows-powershell
+  :defer 3
+  :if (eq system-type 'windows-nt)
+  :config
+  (exec-path-from-windows-powershell-initialize))
+
+(use-package exec-path-from-shell
+  :ensure t
+  :defer 3
+  :unless (eq system-type 'windows-nt)
+  :config
+  (exec-path-from-shell-initialize))
 
 (use-package rustic
   :ensure t
@@ -642,33 +638,6 @@
   :ensure t
   :if (display-graphic-p)
   :commands emojify-insert-emoji
-  :config
-  (set-fontset-font
-   t
-   'emoji
-   (cond
-    ((member "Apple Color Emoji" (font-family-list)) "Apple Color Emoji")
-    ((member "Noto Color Emoji" (font-family-list)) "Noto Color Emoji")
-    ((member "Noto Emoji" (font-family-list)) "Noto Emoji")
-    ((member "Segoe UI Emoji" (font-family-list)) "Segoe UI Emoji")  ; 🧗
-    ((member "Symbola" (font-family-list)) "Symbola")))
-  (set-fontset-font
-   t
-   'symbol
-   (cond
-    ((member "Segoe UI Symbol" (font-family-list)) "Segoe UI Symbol")
-    ((member "Apple Symbols" (font-family-list)) "Apple Symbols")
-    ((member "Symbola" (font-family-list)) "Symbola")))
-  
-  ;; (add-hook 'java-mode-hook
-  ;;           (lambda ()
-  ;;             (setq prettify-symbols-alist
-  ;;                   '(("@SuppressWarnings(\"unused\")" . ?🤷)))
-  ;;             (prettify-symbols-mode 1)))
-
-  ;; nice on windows...
-  (if (eq system-type 'windows-nt)
-      (set-fontset-font t '(#x1F300 . #x1F5FF) "Segoe UI Symbol"))  ; 🔁, Miscellaneous Symbols and Pictographs
   :custom
   (emojify-display-style 'unicode)
   (emojify-emoji-styles '(unicode)))
@@ -1333,6 +1302,7 @@
 
 (use-package agent-shell
   :ensure t
+  :commands agent-shell
   :custom
   (agent-shell-header-style 'text)
   (agent-shell-session-strategy 'new)
@@ -1395,10 +1365,12 @@
 
 (use-package request ;; has not had a release in ages, but bugfixes on master
   :ensure t
+  :defer t
   :pin melpa)
 
 (use-package jira
   :ensure t
+  :commands (jira-api-get-basic-data jira-api-get-users jira-issues)
   :config
   (add-to-list 'transient-values
                '(jira-issues-menu "--myself" "--resolution=Unresolved"))
@@ -1411,6 +1383,26 @@
 
 (use-package custom
   :config
+  :config
+  (set-fontset-font
+   t
+   'emoji
+   (cond
+    ((member "Apple Color Emoji" (font-family-list)) "Apple Color Emoji")
+    ((member "Noto Color Emoji" (font-family-list)) "Noto Color Emoji")
+    ((member "Noto Emoji" (font-family-list)) "Noto Emoji")
+    ((member "Segoe UI Emoji" (font-family-list)) "Segoe UI Emoji")  ; 🧗
+    ((member "Symbola" (font-family-list)) "Symbola")))
+  (set-fontset-font
+   t
+   'symbol
+   (cond
+    ((member "Segoe UI Symbol" (font-family-list)) "Segoe UI Symbol")
+    ((member "Apple Symbols" (font-family-list)) "Apple Symbols")
+    ((member "Symbola" (font-family-list)) "Symbola")))
+  (if (eq system-type 'windows-nt)
+      (set-fontset-font t '(#x1F300 . #x1F5FF) "Segoe UI Symbol"))  ; 🔁, Miscellaneous Symbols and Pictographs
+
   (if (display-graphic-p)
       (run-with-idle-timer 0 nil
 			   (lambda ()
