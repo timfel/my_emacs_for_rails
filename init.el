@@ -1333,13 +1333,65 @@
 
 (use-package agent-shell
   :ensure t
+  :custom
+  (agent-shell-header-style 'text)
+  (agent-shell-session-strategy 'new)
+  (agent-shell-highlight-blocks t)
+  (agent-shell-prefer-viewport-interaction nil)
+  (agent-shell-preferred-agent-config 'codex)
+  (agent-shell-show-config-icons nil)
+  (agent-shell-show-usage-at-turn-end t)
+  (agent-shell-command-prefix
+   (lambda (buffer)
+     (if (executable-find "bwrap")
+         (let* ((potential-root (project-root
+                                 (project-current t (condition-case nil
+                                                        (file-name-parent-directory (buffer-file-name buffer))
+                                                      (error default-directory)))))
+                (p (read-directory-name "Workspace: " potential-root))
+                (tmpdir (format "/tmp/bcodex-session/%s" (format-time-string "%Y-%m-%d-%H-%M-%S")))
+                ;; I p is a git worktree, we need to find out and also bind the main checkout location
+                (gitdir (ignore-errors
+                          (string-trim (shell-command-to-string (format "cd %s && git rev-parse --git-common-dir" (shell-quote-argument p))))))
+                (common-root (if (and gitdir (not (string-empty-p gitdir)))
+                                 (file-name-directory (directory-file-name (expand-file-name gitdir p)))
+                               p)))
+           (make-directory tmpdir t)
+           `("bwrap" "--die-with-parent" "--new-session"
+             "--ro-bind" "/" "/"
+             "--bind" ,p ,p
+             "--bind" ,common-root ,common-root
+             "--bind" ,(expand-file-name "~/.codex") ,(expand-file-name "~/.codex")
+             "--bind" ,(expand-file-name "~/.opencode") ,(expand-file-name "~/.opencode")
+             "--bind" ,(expand-file-name "~/.config/opencode") ,(expand-file-name "~/.config/opencode")
+             "--proc" "/proc"
+             "--dev" "/dev"
+             "--tmpfs" "/tmp"
+             "--bind" ,tmpdir ,tmpdir
+             "--chdir" ,p
+             "--setenv" "HTTP_PROXY" ,(getenv "HTTP_PROXY")
+             "--setenv" "HTTPS_PROXY" ,(getenv "HTTPS_PROXY")
+             "--setenv" "NO_PROXY" ,(getenv "NO_PROXY")
+             "--setenv" "HOME" ,(getenv "HOME")
+             "--setenv" "TMPDIR" ,tmpdir
+             "--setenv" "XDG_CACHE_INNER" ,(expand-file-name ".agent-shell/xdgcache" p)
+             "--setenv" "XDG_STATE_INNER"  ,(expand-file-name ".agent-shell/xdgstate" p)
+             "--setenv" "XDG_RUNTIME_INNER"  ,(expand-file-name ".agent-shell/xdgruntime" p)
+             "--"))
+       nil)))
   :config
   (setq
-   agent-shell-header-style 'text
-   agent-shell-session-strategy 'new
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-key)
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :api-key #'oca-key)))
+
+(use-package agent-shell-workspace
+  :vc (:url "https://github.com/gveres/agent-shell-workspace")
+  :ensure t
+  :after agent-shell
+  :hook ((agent-shell-mode . (lambda ()
+                               "In this buffer, bind F5 to agent-shell-workspace-toggle"
+                               (local-set-key (kbd "<f5>") #'agent-shell-workspace-toggle)))))
 
 (use-package request ;; has not had a release in ages, but bugfixes on master
   :ensure t
