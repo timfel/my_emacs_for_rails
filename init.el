@@ -422,7 +422,6 @@
                                        "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
                                        "\\)$"))
   :config
-  (desktop-save-mode 1)
   (add-to-list 'desktop-globals-to-save 'file-name-history)
   (add-to-list 'desktop-modes-not-to-save 'dired-mode)
   (add-to-list 'desktop-modes-not-to-save 'Info-mode)
@@ -1306,7 +1305,7 @@
   :custom
   (agent-shell-header-style 'text)
   (agent-shell-session-strategy 'new)
-  (agent-shell-highlight-blocks t)
+  (agent-shell-highlight-blocks nil)
   (agent-shell-prefer-viewport-interaction nil)
   (agent-shell-preferred-agent-config 'codex)
   (agent-shell-show-config-icons nil)
@@ -1314,11 +1313,11 @@
   (agent-shell-command-prefix
    (lambda (buffer)
      (if (executable-find "bwrap")
-         (let* ((potential-root (project-root
+         (let* ((potential-root (file-name-as-directory (project-root
                                  (project-current t (condition-case nil
                                                         (file-name-parent-directory (buffer-file-name buffer))
-                                                      (error default-directory)))))
-                (p (read-directory-name "Workspace: " potential-root))
+                                                      (error default-directory))))))
+                (p (read-directory-name "Workspace: " potential-root nil t))
                 (tmpdir (format "/tmp/bcodex-session/%s" (format-time-string "%Y-%m-%d-%H-%M-%S")))
                 ;; I p is a git worktree, we need to find out and also bind the main checkout location
                 (gitdir (ignore-errors
@@ -1330,7 +1329,8 @@
            `("bwrap" "--die-with-parent" "--new-session"
              "--ro-bind" "/" "/"
              "--bind" ,p ,p
-             "--bind" ,common-root ,common-root
+             "--bind" ,(expand-file-name "~/dev/mx") ,(expand-file-name "~/dev/mx")
+             "--bind" ,(expand-file-name "~/.eclipse") ,(expand-file-name "~/.eclipse")
              "--bind" ,(expand-file-name "~/.codex") ,(expand-file-name "~/.codex")
              "--bind" ,(expand-file-name "~/.opencode") ,(expand-file-name "~/.opencode")
              "--bind" ,(expand-file-name "~/.config/opencode") ,(expand-file-name "~/.config/opencode")
@@ -1355,13 +1355,27 @@
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-key)
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :api-key #'oca-key)))
 
-(use-package agent-shell-workspace
-  :vc (:url "https://github.com/gveres/agent-shell-workspace")
+(use-package agent-shell-attention
+  :vc (:url "https://github.com/ultronozm/agent-shell-attention.el" :rev :newest)
   :ensure t
-  :after agent-shell
-  :hook ((agent-shell-mode . (lambda ()
-                               "In this buffer, bind F5 to agent-shell-workspace-toggle"
-                               (local-set-key (kbd "<f5>") #'agent-shell-workspace-toggle)))))
+  :after (agent-shell)
+  :config
+  (agent-shell-attention-mode 1)
+  :custom
+  (agent-shell-attention-show-zeros t)
+  (agent-shell-attention-render-function #'agent-shell-attention-render-active)
+  (agent-shell-attention-notify-function
+   (lambda (_buffer title body)
+     (knockknock-notify
+      :title title
+      :message body
+      :icon "nf-cod-bot"
+      :duration 5))))
+
+(use-package knockknock
+  :vc (:url "https://github.com/konrad1977/knockknock" :rev :newest)
+  :ensure t
+  :commands (knockknock-notify))
 
 (use-package request ;; has not had a release in ages, but bugfixes on master
   :ensure t
