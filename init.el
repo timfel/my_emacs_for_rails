@@ -1333,12 +1333,28 @@
                           (string-trim (shell-command-to-string (format "cd %s && git rev-parse --git-common-dir" (shell-quote-argument p))))))
                 (common-root (if (and gitdir (not (string-empty-p gitdir)))
                                  (file-name-directory (directory-file-name (expand-file-name gitdir p)))
-                               p)))
+                               p))
+                ;; if a sibling of the current dir is "graal", we need to also bind this one as read/write and also check if it's a worktree
+                (graal-dir (expand-file-name "../graal" p))
+                (extra-dir-to-bind (if (file-directory-p graal-dir) graal-dir p))
+                (graal-common-root (if (file-directory-p graal-dir)
+                                       (let ((gdir (ignore-errors
+                                                     (string-trim (shell-command-to-string
+                                                                   (format "cd %s && git rev-parse --git-common-dir"
+                                                                           (shell-quote-argument graal-dir)))))))
+                                         (if (and gdir (not (string-empty-p gdir)))
+                                             (file-name-directory (directory-file-name (expand-file-name gdir graal-dir)))
+                                           graal-dir))
+                                     extra-dir-to-bind)))
            (make-directory tmpdir t)
            `("bwrap" "--die-with-parent" "--new-session"
              "--ro-bind" "/" "/"
              "--bind" ,p ,p
+             "--bind" ,common-root ,common-root
+             "--bind" ,extra-dir-to-bind ,extra-dir-to-bind
+             "--bind" ,graal-common-root ,graal-common-root
              "--bind" ,(expand-file-name "~/dev/mx") ,(expand-file-name "~/dev/mx")
+             "--bind" ,(expand-file-name "~/.cache") ,(expand-file-name "~/.cache")
              "--bind" ,(expand-file-name "~/.eclipse") ,(expand-file-name "~/.eclipse")
              "--bind" ,(expand-file-name "~/.codex") ,(expand-file-name "~/.codex")
              "--bind" ,(expand-file-name "~/.opencode") ,(expand-file-name "~/.opencode")
@@ -1346,6 +1362,7 @@
              "--proc" "/proc"
              "--dev" "/dev"
              "--tmpfs" "/tmp"
+             "--tmpfs" ,timfel/cloud-storage
              "--bind" ,tmpdir ,tmpdir
              "--chdir" ,p
              "--setenv" "HTTP_PROXY" ,(getenv "HTTP_PROXY")
