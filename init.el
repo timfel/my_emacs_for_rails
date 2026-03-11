@@ -967,7 +967,7 @@
 
 (use-package eshell
   :if (eq system-type 'windows-nt)
-  :after exec-path-from-shell
+  :after exec-path-from-windows-powershell
   :bind (("<f12>" . (lambda ()
                       (interactive)
                       (let ((b (get-buffer-create "*eshell*")))
