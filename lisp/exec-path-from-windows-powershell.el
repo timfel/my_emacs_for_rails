@@ -76,7 +76,6 @@ Uses a temp .ps1 file to avoid Windows command-line length limits."
   "PowerShell script to print all env vars after profile loads."
   (concat
    "$ErrorActionPreference='Stop';"
-   "& $function:Prompt;"
    ;; Enumerate environment via .NET to avoid Env: provider duplicate-key bug.
    "[System.Environment]::GetEnvironmentVariables()"
    " | ForEach-Object { \"$($_.Key)=$($_.Value)\" }"))
