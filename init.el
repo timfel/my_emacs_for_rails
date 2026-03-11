@@ -95,6 +95,8 @@
   :config
   (let ((oca (expand-file-name "oca.el" timfel/gist-location)))
     (autoload 'oca-key oca nil t)
+    (autoload 'oca-update-opencode-config oca nil t)
+    (autoload 'oca-update-codex-config oca nil t)
     (autoload 'oca-codex-login oca nil t))
   (let ((orcl (expand-file-name "orcl.el" timfel/gist-location)))
     (autoload 'timfel/git-merges-jira-html orcl nil t)
@@ -974,7 +976,7 @@
 
 (use-package eshell
   :if (eq system-type 'windows-nt)
-  :after exec-path-from-shell
+  :after exec-path-from-windows-powershell
   :bind (("<f12>" . (lambda ()
                       (interactive)
                       (let ((b (get-buffer-create "*eshell*")))

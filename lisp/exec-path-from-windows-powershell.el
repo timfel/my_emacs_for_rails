@@ -35,20 +35,24 @@
   (concat "'" (replace-regexp-in-string "'" "''" s t t) "'"))
 
 (defun exec-path-from-windows-powershell--call-powershell (ps-script)
-  "Run PowerShell with PS-SCRIPT and return stdout."
-  (let ((exe exec-path-from-windows-powershell-powershell-exe)
-        (args (append
-               (list "-ExecutionPolicy" "Bypass" "-NonInteractive")
-               (unless exec-path-from-windows-powershell-load-profile (list "-NoProfile"))
-               (list "-Command" ps-script)))
-        ;; Important on Windows:
-        (coding-system-for-read 'utf-8)
-        (coding-system-for-write 'utf-8))
-    (with-temp-buffer
-      (let ((exit (apply #'call-process exe nil (current-buffer) nil args)))
-        (unless (eq exit 0)
-          (error "PowerShell failed (exit %s): %s" exit (buffer-string)))
-        (buffer-string)))))
+  "Run PowerShell with PS-SCRIPT and return stdout.
+Uses a temp .ps1 file to avoid Windows command-line length limits."
+  (let* ((exe exec-path-from-windows-powershell-powershell-exe)
+         (coding-system-for-read 'utf-8)
+         (coding-system-for-write 'utf-8)
+         (temp-ps1 (make-temp-file "emacs-env-" nil ".ps1" ps-script))
+         (args (append
+                (list "-ExecutionPolicy" "Bypass" "-NonInteractive")
+                (unless exec-path-from-windows-powershell-load-profile
+                  (list "-NoProfile"))
+                (list "-File" temp-ps1))))
+    (unwind-protect
+        (with-temp-buffer
+          (let ((exit (apply #'call-process exe nil (current-buffer) nil args)))
+            (unless (eq exit 0)
+              (error "PowerShell failed (exit %s): %s" exit (buffer-string)))
+            (buffer-string)))
+      (ignore-errors (delete-file temp-ps1)))))
 
 (defun exec-path-from-windows-powershell--parse-env-block (text)
   "Parse TEXT of the form KEY=VALUE per line into an alist."
@@ -70,11 +74,31 @@
 
 (defun exec-path-from-windows-powershell--ps-script-base-env ()
   "PowerShell script to print all env vars after profile loads."
-  ;; Output as KEY=VALUE lines (simple + fast; avoid JSON escaping issues)
   (concat
    "$ErrorActionPreference='Stop';"
-   "& $function:Prompt;"
-   "Get-ChildItem Env:* | ForEach-Object { \"$($_.Name)=$($_.Value)\" }"))
+   ;; Enumerate environment via .NET to avoid Env: provider duplicate-key bug.
+   "[System.Environment]::GetEnvironmentVariables()"
+   " | ForEach-Object { \"$($_.Key)=$($_.Value)\" }"))
+
+(defun exec-path-from-windows-powershell--ps-script-vsdev-env ()
+  (let ((arch exec-path-from-windows-powershell-vs-arch)
+        (host exec-path-from-windows-powershell-vs-host-arch))
+    (concat
+     "$ErrorActionPreference='Stop';"
+     "$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\\Installer\\vswhere.exe';"
+     "if (-not (Test-Path $vswhere)) { throw \"vswhere not found: $vswhere\" };"
+     "$install = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath;"
+     "if (-not $install) { throw 'No suitable Visual Studio/BuildTools installation found.' };"
+     "$vsdev = Join-Path $install 'Common7\\Tools\\VsDevCmd.bat';"
+     "$vcvars = Join-Path $install 'VC\\Auxiliary\\Build\\vcvarsall.bat';"
+     "$cmdLine = $null;"
+     "if (Test-Path $vsdev) {"
+     "  $cmdLine = ('call \"' + $vsdev + '\" -no_logo -arch=" arch " -host_arch=" host "');"
+     "} elseif (Test-Path $vcvars) {"
+     "  $cmdLine = ('call \"' + $vcvars + '\" " arch "');"
+     "} else { throw \"Neither VsDevCmd.bat nor vcvarsall.bat found under: $install\" };"
+     "$cmd = 'chcp 65001>nul & ' + $cmdLine + ' & set';"
+     "& cmd.exe /d /s /c $cmd")))
 
 (defun exec-path-from-windows-powershell--ps-script-vsdev-env ()
   (let ((arch exec-path-from-windows-powershell-vs-arch)
