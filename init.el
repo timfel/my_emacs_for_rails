@@ -1391,7 +1391,7 @@
                                      <break time='120ms'/>
                                      %s
                                    </speak>
-                                   \", 0)" "title" "body"))))
+                                   \", 0)" title body))))
      (knockknock-notify
       :title title
       :message body
