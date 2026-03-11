@@ -100,6 +100,13 @@
     (autoload 'timfel/git-merges-jira-html orcl nil t)
     (autoload 'jira orcl nil t)))
 
+(use-package wsl-interop
+  :commands (wsl-p
+             wsl-powershell-command wsl-powershell-command-to-string
+             wsl-cmd-command wsl-cmd-command-to-string
+             wsl-powershell-async-command wsl-powershell-start-process
+             wsl-cmd-async-command wsl-cmd-start-process))
+
 (use-package isearch
   :bind (("C-S-s" . isearch-forward-thing-at-point)
 	 :map isearch-mode-map
