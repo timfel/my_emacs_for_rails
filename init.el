@@ -1373,6 +1373,10 @@
   (agent-shell-attention-render-function #'agent-shell-attention-render-active)
   (agent-shell-attention-notify-function
    (lambda (_buffer title body)
+     (if (wsl-p)
+         (wsl-powershell-start-process
+          "say" nil
+          (format "(New-Object -ComObject SAPI.SpVoice).Speak(\"From Emacs: %s: %s\")" title body)))
      (knockknock-notify
       :title title
       :message body
