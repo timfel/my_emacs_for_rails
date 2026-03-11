@@ -1375,10 +1375,23 @@
   (agent-shell-attention-render-function #'agent-shell-attention-render-active)
   (agent-shell-attention-notify-function
    (lambda (_buffer title body)
-     (if (wsl-p)
+     (if (or (eq system-type 'windows-nt) (wsl-p))
          (wsl-powershell-start-process
           "say" nil
-          (format "(New-Object -ComObject SAPI.SpVoice).Speak(\"From Emacs: %s: %s\")" title body)))
+          (string-replace "\n" ""
+                          (format "$sp = New-Object -ComObject SAPI.SpVoice;
+                                   $sp.Volume = 100;
+                                   $sp.Rate   = 2;
+                                   $sp.Speak(\"
+                                   <speak>
+                                     <emph><pitch middle='+10'>E</pitch></emph>
+                                     <emph><pitch middle='+16'>macs!</pitch></emph>
+                                     <break time='120ms'/>
+                                     <pitch middle='+4'><rate speed='+1'>%s</rate></pitch>
+                                     <break time='120ms'/>
+                                     %s
+                                   </speak>
+                                   \", 0)" "title" "body"))))
      (knockknock-notify
       :title title
       :message body
