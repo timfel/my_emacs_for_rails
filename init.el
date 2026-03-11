@@ -1388,6 +1388,8 @@
 (use-package knockknock
   :vc (:url "https://github.com/konrad1977/knockknock" :rev :newest)
   :ensure t
+  :custom
+  (knockknock-darken-background-percent 30)
   :commands (knockknock-notify))
 
 (use-package request ;; has not had a release in ages, but bugfixes on master
