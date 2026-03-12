@@ -50,7 +50,19 @@
   :custom
   (browse-url-generic-program (or (executable-find "wslview") "xdg-open"))
   (browse-url-browser-function (if (eq system-type 'windows-nt) 'browse-url-default-browser 'browse-url-generic))
-  (diff-command (if (eq system-type 'windows-nt) (if (executable-find "delta") "delta" "diff") "diff"))
+  (diff-command (if (eq system-type 'windows-nt)
+                    (or (executable-find "diff.exe")
+                        (if-let* ((git (executable-find "git.exe"))
+                                  (gitdir (file-name-directory git)))
+                            (catch 'found
+                              (dolist (candidate '("../../usr/bin/diff.exe"
+                                                   "../../mingw64/bin/diff.exe"
+                                                   "../usr/bin/diff.exe"
+                                                   "../mingw64/bin/diff.exe"))
+                                (let ((c (expand-file-name candidate gitdir)))
+                                  (when (file-executable-p c)
+                                    (throw 'found c)))))))
+                  "diff"))
   (custom-file (locate-user-emacs-file "emacs-custom.el"))
   (confirm-kill-emacs 'yes-or-no-p)
   (visible-bell nil)
