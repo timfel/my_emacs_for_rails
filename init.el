@@ -1319,6 +1319,7 @@
   (agent-shell-preferred-agent-config 'codex)
   (agent-shell-show-config-icons nil)
   (agent-shell-show-usage-at-turn-end t)
+  (agent-shell-session-strategy 'prompt)
   (agent-shell-command-prefix
    (lambda (buffer)
      (if (executable-find "bwrap")
@@ -1355,6 +1356,7 @@
              "--bind" ,graal-common-root ,graal-common-root
              "--bind" ,(expand-file-name "~/dev/mx") ,(expand-file-name "~/dev/mx")
              "--bind" ,(expand-file-name "~/.cache") ,(expand-file-name "~/.cache")
+             "--bind" ,(expand-file-name "~/.mx") ,(expand-file-name "~/.mx")
              "--bind" ,(expand-file-name "~/.eclipse") ,(expand-file-name "~/.eclipse")
              "--bind" ,(expand-file-name "~/.codex") ,(expand-file-name "~/.codex")
              "--bind" ,(expand-file-name "~/.opencode") ,(expand-file-name "~/.opencode")
