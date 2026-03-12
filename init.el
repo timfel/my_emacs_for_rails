@@ -1335,17 +1335,16 @@
   (agent-shell-command-prefix
    (lambda (buffer)
      (if (executable-find "bwrap")
-         (let* ((p default-directory)
-                (tmpdir (format "/tmp/bcodex-session/%s" (format-time-string "%Y-%m-%d-%H-%M-%S")))
-                ;; I p is a git worktree, we need to find out and also bind the main checkout location
+         (let* ((tmpdir (format "/tmp/bcodex-session/%s" (format-time-string "%Y-%m-%d-%H-%M-%S")))
+                ;; I cwd is a git worktree, we need to find out and also bind the main checkout location
                 (gitdir (ignore-errors
                           (string-trim (shell-command-to-string (format "cd %s && git rev-parse --git-common-dir" (shell-quote-argument p))))))
                 (common-root (if (and gitdir (not (string-empty-p gitdir)))
                                  (file-name-directory (directory-file-name (expand-file-name gitdir p)))
-                               p))
+                               default-directory))
                 ;; if a sibling of the current dir is "graal", we need to also bind this one as read/write and also check if it's a worktree
-                (graal-dir (expand-file-name "../graal" p))
-                (extra-dir-to-bind (if (file-directory-p graal-dir) graal-dir p))
+                (graal-dir (expand-file-name "../graal"))
+                (extra-dir-to-bind (if (file-directory-p graal-dir) graal-dir default-directory))
                 (graal-common-root (if (file-directory-p graal-dir)
                                        (let ((gdir (ignore-errors
                                                      (string-trim (shell-command-to-string
@@ -1358,7 +1357,7 @@
            (make-directory tmpdir t)
            `("bwrap" "--die-with-parent" "--new-session"
              "--ro-bind" "/" "/"
-             "--bind" ,p ,p
+             "--bind" ,default-directory ,default-directory
              "--bind" ,common-root ,common-root
              "--bind" ,extra-dir-to-bind ,extra-dir-to-bind
              "--bind" ,graal-common-root ,graal-common-root
@@ -1374,15 +1373,15 @@
              "--tmpfs" "/tmp"
              "--tmpfs" ,timfel/cloud-storage
              "--bind" ,tmpdir ,tmpdir
-             "--chdir" ,p
+             "--chdir" ,default-directory
              "--setenv" "HTTP_PROXY" ,(getenv "HTTP_PROXY")
              "--setenv" "HTTPS_PROXY" ,(getenv "HTTPS_PROXY")
              "--setenv" "NO_PROXY" ,(getenv "NO_PROXY")
              "--setenv" "HOME" ,(getenv "HOME")
              "--setenv" "TMPDIR" ,tmpdir
-             "--setenv" "XDG_CACHE_INNER" ,(expand-file-name ".agent-shell/xdgcache" p)
-             "--setenv" "XDG_STATE_INNER"  ,(expand-file-name ".agent-shell/xdgstate" p)
-             "--setenv" "XDG_RUNTIME_INNER"  ,(expand-file-name ".agent-shell/xdgruntime" p)
+             "--setenv" "XDG_CACHE_INNER" ,(expand-file-name ".agent-shell/xdgcache")
+             "--setenv" "XDG_STATE_INNER"  ,(expand-file-name ".agent-shell/xdgstate")
+             "--setenv" "XDG_RUNTIME_INNER"  ,(expand-file-name ".agent-shell/xdgruntime")
              "--"))
        nil)))
   :config
@@ -1408,15 +1407,6 @@
                        (copy-file src dst t t t)
                      (error nil)))))))))))
 
-  (advice-add #'agent-shell :around
-              (lambda (oldfun &rest r)
-                (let* ((potential-root (file-name-as-directory
-                                        (project-root
-                                         (project-current t (condition-case nil
-                                                                (file-name-parent-directory (buffer-file-name buffer))
-                                                              (error default-directory))))))
-                       (default-directory (read-directory-name "Workspace: " potential-root nil t)))
-                  (funcall oldfun r))))
   (setq
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-key)
