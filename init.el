@@ -50,7 +50,19 @@
   :custom
   (browse-url-generic-program (or (executable-find "wslview") "xdg-open"))
   (browse-url-browser-function (if (eq system-type 'windows-nt) 'browse-url-default-browser 'browse-url-generic))
-  (diff-command (if (eq system-type 'windows-nt) (if (executable-find "delta") "delta" "diff") "diff"))
+  (diff-command (if (eq system-type 'windows-nt)
+                    (or (executable-find "diff.exe")
+                        (if-let* ((git (executable-find "git.exe"))
+                                  (gitdir (file-name-directory git)))
+                            (catch 'found
+                              (dolist (candidate '("../../usr/bin/diff.exe"
+                                                   "../../mingw64/bin/diff.exe"
+                                                   "../usr/bin/diff.exe"
+                                                   "../mingw64/bin/diff.exe"))
+                                (let ((c (expand-file-name candidate gitdir)))
+                                  (when (file-executable-p c)
+                                    (throw 'found c)))))))
+                  "diff"))
   (custom-file (locate-user-emacs-file "emacs-custom.el"))
   (confirm-kill-emacs 'yes-or-no-p)
   (visible-bell nil)
@@ -1378,6 +1390,27 @@
              "--"))
        nil)))
   :config
+  ;; If any .agents/skills from this repo do not exist in $HOME/.agents/skills/ (Unix) or $Env:USERPROFILE/.agents/skills (Windows)
+  ;; then symlink them there
+  (let* ((repo-root (locate-user-emacs-file ""))
+         (skills-src-dir (expand-file-name ".agents/skills" repo-root))
+         (skills-dst-dir (expand-file-name ".agents/skills" (or (getenv "USERPROFILE") "~"))))
+    (when (file-directory-p skills-src-dir)
+      (dolist (src (directory-files-recursively skills-src-dir ".*" t))
+        (unless (file-directory-p src)
+          (let* ((rel (file-relative-name src skills-src-dir))
+                 (dst (expand-file-name rel skills-dst-dir)))
+            (let ((src (expand-file-name src))
+                  (dst (expand-file-name dst)))
+              (when (and (file-exists-p src)
+                         (not (file-exists-p dst)))
+                (make-directory (file-name-directory dst) t)
+                (condition-case _
+                    (make-symbolic-link src dst t)
+                  (error
+                   (condition-case _
+                       (copy-file src dst t t t)
+                     (error nil)))))))))))
   (setq
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-key)
@@ -1403,10 +1436,10 @@
                                    $sp.Rate   = 2;
                                    $sp.Speak(\"
                                    <speak>
-                                     <emph><pitch middle='+10'>E</pitch></emph>
+                                     <emph><pitch middle='+10'>Check Your E</pitch></emph>
                                      <emph><pitch middle='+16'>macs!</pitch></emph>
                                      <break time='120ms'/>
-                                     <pitch middle='+4'><rate speed='+1'>%s</rate></pitch>
+                                     <pitch middle='+4'>%s</pitch>
                                      <break time='120ms'/>
                                      %s
                                    </speak>
