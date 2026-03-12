@@ -1413,10 +1413,10 @@
                                    $sp.Rate   = 2;
                                    $sp.Speak(\"
                                    <speak>
-                                     <emph><pitch middle='+10'>E</pitch></emph>
+                                     <emph><pitch middle='+10'>Check Your E</pitch></emph>
                                      <emph><pitch middle='+16'>macs!</pitch></emph>
                                      <break time='120ms'/>
-                                     <pitch middle='+4'><rate speed='+1'>%s</rate></pitch>
+                                     <pitch middle='+4'>%s</pitch>
                                      <break time='120ms'/>
                                      %s
                                    </speak>
