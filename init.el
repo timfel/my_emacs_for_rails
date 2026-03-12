@@ -1335,11 +1335,7 @@
   (agent-shell-command-prefix
    (lambda (buffer)
      (if (executable-find "bwrap")
-         (let* ((potential-root (file-name-as-directory (project-root
-                                 (project-current t (condition-case nil
-                                                        (file-name-parent-directory (buffer-file-name buffer))
-                                                      (error default-directory))))))
-                (p (read-directory-name "Workspace: " potential-root nil t))
+         (let* ((p default-directory)
                 (tmpdir (format "/tmp/bcodex-session/%s" (format-time-string "%Y-%m-%d-%H-%M-%S")))
                 ;; I p is a git worktree, we need to find out and also bind the main checkout location
                 (gitdir (ignore-errors
@@ -1411,6 +1407,16 @@
                    (condition-case _
                        (copy-file src dst t t t)
                      (error nil)))))))))))
+
+  (advice-add #'agent-shell :around
+              (lambda (oldfun &rest r)
+                (let* ((potential-root (file-name-as-directory
+                                        (project-root
+                                         (project-current t (condition-case nil
+                                                                (file-name-parent-directory (buffer-file-name buffer))
+                                                              (error default-directory))))))
+                       (default-directory (read-directory-name "Workspace: " potential-root nil t)))
+                  (funcall oldfun r))))
   (setq
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-key)
