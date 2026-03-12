@@ -1388,6 +1388,27 @@
              "--"))
        nil)))
   :config
+  ;; If any .agents/skills from this repo do not exist in $HOME/.agents/skills/ (Unix) or $Env:USERPROFILE/.agents/skills (Windows)
+  ;; then symlink them there
+  (let* ((repo-root (locate-user-emacs-file ""))
+         (skills-src-dir (expand-file-name ".agents/skills" repo-root))
+         (skills-dst-dir (expand-file-name ".agents/skills" (or (getenv "USERPROFILE") "~"))))
+    (when (file-directory-p skills-src-dir)
+      (dolist (src (directory-files-recursively skills-src-dir ".*" t))
+        (unless (file-directory-p src)
+          (let* ((rel (file-relative-name src skills-src-dir))
+                 (dst (expand-file-name rel skills-dst-dir)))
+            (let ((src (expand-file-name src))
+                  (dst (expand-file-name dst)))
+              (when (and (file-exists-p src)
+                         (not (file-exists-p dst)))
+                (make-directory (file-name-directory dst) t)
+                (condition-case _
+                    (make-symbolic-link src dst t)
+                  (error
+                   (condition-case _
+                       (copy-file src dst t t t)
+                     (error nil)))))))))))
   (setq
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-key)
