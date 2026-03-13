@@ -98,6 +98,14 @@ The return value is a list of `(KEY . SUMMARY)' pairs for issues with label
     "with validation if feasible.")
    issue-id issue-title))
 
+(defun timfel/jira--read-project-root ()
+  "Prompt for the project root to use for agent worktree creation."
+  (let* ((recent-root (timfel/determine-recent-project-root))
+         (initial-directory (or recent-root default-directory)))
+    (expand-file-name
+     (read-directory-name "Project root for agent worktrees: "
+                          initial-directory nil t))))
+
 (defun timfel/jira-periodic-issues--marked-issues ()
   "Return explicitly marked periodic Jira issues as `(KEY . SUMMARY)' pairs."
   (let (issues)
@@ -143,8 +151,7 @@ nothing."
   (let ((issues (timfel/jira-periodic-issues--marked-issues)))
     (if (null issues)
         (message "No Jira issues are marked")
-      (let ((project-root (or (timfel/determine-recent-project-root)
-                              (user-error "No recent project root found for agent worktree creation"))))
+      (let ((project-root (timfel/jira--read-project-root)))
         (timfel/agent-shell-fan-out-worktrees
          (mapcar (lambda (issue)
                    (cons (car issue)
@@ -163,8 +170,7 @@ If no issues are marked in `*Jira Issues*', emit a message and do nothing."
   (let ((issue-ids (timfel/jira--explicitly-marked-issue-ids)))
     (if (null issue-ids)
         (message "No Jira issues are marked")
-      (let ((project-root (or (timfel/determine-recent-project-root)
-                              (user-error "No recent project root found for agent worktree creation"))))
+      (let ((project-root (timfel/jira--read-project-root)))
         (timfel/agent-shell-fan-out-worktrees
          (mapcar (lambda (issue-id)
                    (let ((issue-title (or (gethash issue-id jira-issues-key-summary-map)
