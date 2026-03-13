@@ -111,11 +111,14 @@
     (autoload 'oca-update-codex-config oca nil t)
     (autoload 'oca-codex-login oca nil t))
   (let ((orcl (expand-file-name "orcl.el" timfel/gist-location)))
-    (autoload 'timfel/git-merges-jira-html orcl nil t)
-    (autoload 'jira orcl nil t)))
+    (autoload 'timfel/git-merges-jira-html orcl nil t)))
 
 (use-package timfel-agent-shell-extensions
   :commands (timfel/agent-shell-fan-out-worktrees)
+  :after timfel)
+
+(use-package timfel-jira-extensions
+  :commands (timfel/jira-periodic-python-issues-alist timfel/jira)
   :after timfel)
 
 (use-package wsl-interop

@@ -69,7 +69,7 @@ Use this when the user wants multiple parallel agent shells, especially one per 
 
 Use this when the user wants a quick Jira result directly from their Emacs setup instead of reconstructing JQL plumbing each time.
 
-- `timfel/jira-periodic-python-issues-alist` is available from `lisp/timfel.el` and returns `((KEY . SUMMARY) ...)` pairs.
+- `timfel/jira-periodic-python-issues-alist` returns `((KEY . SUMMARY) ...)` pairs.
 - It queries Jira for issues with label `periodic-job-failures`, component `Python`, status not in `Closed` or `In Progress`, and created within the last 90 days by default.
 - Pass a numeric argument to override the day window.
 - Example: `emacsclient -r --eval '(timfel/jira-periodic-python-issues-alist)'`
