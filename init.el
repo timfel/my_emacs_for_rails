@@ -164,6 +164,7 @@
 
 (use-package lua-mode
   :ensure t
+  :defines (eglot-server-programs)
   :config (let ((lsp-clients-emmy-lua-jar-path (locate-user-emacs-file "lsp-servers/emmylua.jar")))
             (when (not (file-exists-p lsp-clients-emmy-lua-jar-path))
               (mkdir (file-name-directory lsp-clients-emmy-lua-jar-path) t)
@@ -192,6 +193,7 @@
 
 (use-package org
   :commands org-mode
+  :defines (ctl-x-o-map)
   :mode (("\\.org$" . org-mode))
   :init
   (define-prefix-command 'ctl-x-o-map)
@@ -269,6 +271,7 @@
 
 (use-package eldoc
   :custom (eldoc-documentation-strategy #'eldoc-documentation-compose)
+  :functions (eldoc-display-in-buffer-at-point)
   :bind (([remap display-local-help] . timfel/local-help-or-doc))
   :config
   (defun timfel/local-help-or-doc ()
@@ -280,6 +283,9 @@
   (add-hook 'eldoc-display-functions #'eldoc-display-in-echo-area))
 
 (use-package icomplete
+  :functions (icomplete-backward-completions icomplete-force-complete
+              icomplete-force-complete-and-exit icomplete-forward-completions
+              icomplete-minibuffer-setup)
   :custom
   (icomplete-in-buffer t)
   (icomplete-hide-common-prefix t)
@@ -299,6 +305,8 @@
   (add-to-list 'completion-category-overrides '(imenu (styles flex))))
 
 (use-package grep
+  :defines (find-name-arg)
+  :functions (grep-apply-setting)
   :config
   (when (eq system-type 'windows-nt)
     (grep-apply-setting 'grep-find-template
@@ -342,6 +350,10 @@
 
 (use-package vc-dir
   :after vc
+  :functions (log-view-current-entry
+              vc-deduce-backend vc-dir-current-file vc-dir-hide-up-to-date
+              vc-dir-mark-by-regexp vc-dir-marked-files vc-git-push
+              vc-revert-file)
   :bind (:map vc-dir-mode-map
          ("!" . eshell)
          ("F" . vc-pull)
@@ -483,6 +495,7 @@
 
 (use-package treemacs-nerd-icons
   :unless (display-graphic-p)
+  :functions (treemacs-load-theme)
   :after treemacs
   :ensure t
   :config
@@ -496,6 +509,8 @@
   (which-key-idle-delay 1.0))
 
 (use-package cc-mode
+  :defines (c-syntactic-context)
+  :functions (c-update-modeline my/c-update-modeline)
   :hook ((cc-mode . timfel/infer-indentation-style)
 	 (java-mode . timfel/friendly-whitespace)
 	 (java-mode . (lambda ()
@@ -531,6 +546,7 @@
 
 (use-package mmm-mode
   :ensure t
+  :functions (mmm-add-mode-ext-class)
   :commands (mmm-parse-buffer)
   :hook (java-mode . (lambda () (mmm-parse-buffer)))
   :config (progn
@@ -582,6 +598,7 @@
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 (use-package ido
+  :functions (ido-everywhere)
   :config
   (ido-mode t)
   (ido-everywhere t))
@@ -647,6 +664,7 @@
 
 (use-package exec-path-from-windows-powershell
   :defer 3
+  :functions (exec-path-from-windows-powershell-initialize)
   :if (eq system-type 'windows-nt)
   :config
   (exec-path-from-windows-powershell-initialize))
@@ -685,6 +703,11 @@
 
 (use-package gptel
   :ensure t
+  :defines (cashpw/gptel-mode-line--indicator-querying
+            cashpw/gptel-mode-line--indicator-responding
+            cashpw/gptel-show-progress-in-mode-line)
+  :functions (cashpw/gptel-mode-line cashpw/gptel-mode-line--hide-all
+              cashpw/gptel-mode-line--indicator gptel-abort)
   :commands (gptel gptel-request)
   :custom
   (gptel-model 'gemma3n:latest)
@@ -911,6 +934,12 @@
 
 (use-package lsp-mode
   :preface (setq lsp-use-plists t)
+  :defines (lsp-headerline-arrow)
+  :functions (c-clear-string-fences c-restore-string-fences
+              dired-get-file-for-visit lsp--line-character-to-point
+              lsp-booster--advice-final-command
+              lsp-booster--advice-json-parse lsp-diagnostics
+              my/c-clear-string-fences)
   :ensure t
   :commands (lsp)
   :bind (:map lsp-mode-map
@@ -1078,6 +1107,7 @@
 
 (use-package lsp-treemacs
   :ensure t
+  :functions (determine-recent-project-root lsp-treemacs--build-error-list)
   :commands lsp-treemacs-errors-list
   :bind (:map lsp-mode-map
          ("C-c e" . lsp-treemacs-errors-list))
@@ -1103,6 +1133,10 @@
 
 (use-package lsp-java
   :ensure t
+  :functions (-flatten -map -uniq dap-register-debug-template
+              lsp-find-session-folder lsp-find-workspace lsp-session
+              lsp-workspace-shutdown my/lsp-find-session-folder-with-mx
+              my/setup-java-workspace-dir)
   :after (lsp-mode treemacs)
   :mode ("\\.java.*\\.class" . java-mode)
   :custom
