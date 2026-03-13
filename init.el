@@ -124,7 +124,9 @@
     (autoload 'timfel/git-merges-jira-html orcl nil t)))
 
 (use-package timfel-agent-shell-extensions
-  :commands (timfel/agent-shell-fan-out-worktrees)
+  :commands (timfel/agent-shell-fan-out-worktrees
+             timfel/agent-shell-tile-buffers-grid)
+  :bind ("C-x a t" . #'timfel/agent-shell-tile-buffers-grid)
   :after timfel)
 
 (use-package timfel-jira-extensions

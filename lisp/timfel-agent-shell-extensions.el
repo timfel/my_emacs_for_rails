@@ -225,6 +225,53 @@ directory."
           (call-interactively #'agent-shell-rename-buffer))
       (rename-buffer title t))))
 
+(defun timfel/agent-shell--live-buffers ()
+  "Return live `agent-shell' buffers sorted by buffer name."
+  (sort (seq-filter #'buffer-live-p (agent-shell-buffers))
+        (lambda (left right)
+          (string-lessp (buffer-name left)
+                        (buffer-name right)))))
+
+(defun timfel/agent-shell--grid-dimensions (count)
+  "Return `(COLUMNS . ROWS)' for arranging COUNT buffers in a grid."
+  (let* ((columns (max 1 (ceiling (sqrt count))))
+         (rows (max 1 (ceiling (/ (float count) columns)))))
+    (cons columns rows)))
+
+(defun timfel/agent-shell-tile-buffers-grid ()
+  "Tile all live `agent-shell' buffers in the selected frame as a grid."
+  (interactive)
+  (let* ((buffers (timfel/agent-shell--live-buffers))
+         (count (length buffers)))
+    (if (zerop count)
+        (message "No live agent-shell buffers")
+      (pcase-let* ((`(,columns . ,rows)
+                    (timfel/agent-shell--grid-dimensions count)))
+        (let* ((root (selected-window))
+               (column-windows (list root))
+               all-windows)
+          (delete-other-windows root)
+          (dotimes (_ (1- columns))
+            (setq column-windows
+                  (append column-windows
+                          (list (split-window (car (last column-windows))
+                                              nil 'right)))))
+          (dolist (column-window column-windows)
+            (let ((windows-in-column (list column-window)))
+              (dotimes (_ (1- rows))
+                (setq windows-in-column
+                      (append windows-in-column
+                              (list (split-window
+                                     (car (last windows-in-column))
+                                     nil 'below)))))
+              (setq all-windows (append all-windows windows-in-column))))
+          (cl-mapc #'set-window-buffer all-windows buffers)
+          (dolist (window (nthcdr count all-windows))
+            (when (window-live-p window)
+              (delete-window window)))
+          (balance-windows-area)
+          (select-window (car (window-list (selected-frame) 'nomini))))))))
+
 (defun timfel/agent-shell--queue-startup-requests (shell-buffer task)
   "Queue planning mode in SHELL-BUFFER before TASK, then start processing.
 
