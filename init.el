@@ -1191,6 +1191,7 @@
 (use-package agent-shell
   :ensure t
   :commands agent-shell
+  :pin melpa
   :custom
   (agent-shell-header-style 'text)
   (agent-shell-session-strategy 'new)
@@ -1242,9 +1243,9 @@
              "--tmpfs" ,timfel/cloud-storage
              "--bind" ,tmpdir ,tmpdir
              "--chdir" ,default-directory
-             "--setenv" "HTTP_PROXY" ,(getenv "HTTP_PROXY")
-             "--setenv" "HTTPS_PROXY" ,(getenv "HTTPS_PROXY")
-             "--setenv" "NO_PROXY" ,(getenv "NO_PROXY")
+             "--setenv" "HTTP_PROXY" ,(or (getenv "HTTP_PROXY") "")
+             "--setenv" "HTTPS_PROXY" ,(or (getenv "HTTPS_PROXY") "")
+             "--setenv" "NO_PROXY" ,(or (getenv "NO_PROXY") "")
              "--setenv" "HOME" ,(getenv "HOME")
              "--setenv" "TMPDIR" ,tmpdir
              "--setenv" "XDG_CACHE_INNER" ,(expand-file-name ".agent-shell/xdgcache")
