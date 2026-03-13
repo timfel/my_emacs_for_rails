@@ -9,13 +9,7 @@
 (require 'cl-lib)
 (require 'subr-x)
 (require 'timfel)
-
-(declare-function agent-shell--resolve-preferred-config "ext:agent-shell")
-(declare-function agent-shell--start "ext:agent-shell")
-(declare-function agent-shell-start "ext:agent-shell")
-(declare-function agent-shell-buffers "ext:agent-shell")
-(declare-function agent-shell-queue-request "ext:agent-shell")
-(declare-function agent-shell-rename-buffer "ext:agent-shell")
+(require 'agent-shell)
 
 (defcustom timfel/agent-shell-worktree-subdirectory
   ".agent-shell/worktrees"
