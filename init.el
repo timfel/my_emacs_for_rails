@@ -1284,6 +1284,7 @@
   :vc (:url "https://github.com/ultronozm/agent-shell-attention.el" :rev :newest)
   :ensure t
   :after (agent-shell)
+  :bind (("C-x a a" . #'agent-shell-attention-dashboard))
   :config
   (agent-shell-attention-mode 1)
   :custom
