@@ -38,7 +38,9 @@ if not errorlevel 1 (
   rem 2) Use PowerShell with profile to resolve emacs executable path
   rem We ask PowerShell: resolve whatever `emacs` points to (alias/function/app),
   rem then run it with -Q and an elisp snippet that prints invocation-name.
-  for /f "usebackq delims=" %%I in (`powershell -NoLogo -ExecutionPolicy Bypass -Command "& { $cmd = Get-Command emacs -ErrorAction Stop; $exe = if ($cmd.Path) { $cmd.Path } elseif ($cmd.CommandType -eq 'Application') { $cmd.Source } else { $cmd.Definition }; & $exe -Q --batch --eval \"(princ invocation-name)\" }"`) do (
+  for /f "usebackq delims=" %%I in (`
+    powershell -NoLogo -ExecutionPolicy Bypass -Command "emacs -Q --batch --eval '(princ (expand-file-name invocation-name invocation-directory))'"
+  `) do (
     set "EMACS_RES=%%I"
   )
 )

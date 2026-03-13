@@ -30,3 +30,4 @@ request/curl-cookie-jar
 *.elc
 eln-cache/
 lisp/ci-dashboard/
+/server/server
