@@ -11,9 +11,18 @@ set -eu
 EMACS_BIN=${EMACS_BIN:-"$(git config --get core.hookEmacs 2>/dev/null || true)"}
 EMACS_BIN=${EMACS_BIN:-emacs}
 
+if [ -x "$EMACS_BIN" ]; then
+  :
+elif EMACS_PATH=$(command -v -- "$EMACS_BIN" 2>/dev/null); then
+  EMACS_BIN=$EMACS_PATH
+else
+  echo "Skipping hook byte-compilation: Emacs binary not found: $EMACS_BIN" >&2
+  exit 0
+fi
+
 EMACSDIR=$(git rev-parse --show-toplevel)
 LISPDIR="$EMACSDIR/lisp"
-COMPILE_INIT="$EMACSDIR/compile-init.el"
+COMPILE_INIT="$EMACSDIR/.githooks/compile-init.el"
 
 FILES=""
 [ -f "$EMACSDIR/init.el" ] && FILES="$FILES $EMACSDIR/init.el"
