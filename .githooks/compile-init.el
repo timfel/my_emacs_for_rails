@@ -6,7 +6,8 @@
 (setq user-emacs-directory
       (file-name-as-directory
        (expand-file-name ".." (file-name-directory (or load-file-name buffer-file-name)))))
-(setq load-prefer-newer t)
+(setq load-prefer-newer t
+      ad-redefinition-action 'accept)
 
 ;; Activate installed package.el packages so their directories are on `load-path'.
 (setq package-user-dir (expand-file-name "elpa" user-emacs-directory))
