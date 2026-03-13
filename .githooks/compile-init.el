@@ -3,7 +3,9 @@
 ;; Keep this file small and side-effect free: it exists to make `require' work
 ;; during `emacs -Q --batch' byte-compilation.
 
-(setq user-emacs-directory (file-name-directory (or load-file-name buffer-file-name)))
+(setq user-emacs-directory
+      (file-name-as-directory
+       (expand-file-name ".." (file-name-directory (or load-file-name buffer-file-name)))))
 (setq load-prefer-newer t)
 
 ;; Activate installed package.el packages so their directories are on `load-path'.
