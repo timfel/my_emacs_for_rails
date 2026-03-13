@@ -114,6 +114,10 @@
     (autoload 'timfel/git-merges-jira-html orcl nil t)
     (autoload 'jira orcl nil t)))
 
+(use-package timfel-agent-shell-extensions
+  :commands (timfel/agent-shell-fan-out-worktrees)
+  :after timfel)
+
 (use-package wsl-interop
   :commands (wsl-p
              wsl-powershell-command wsl-powershell-command-to-string
