@@ -1,9 +1,10 @@
 ;;; -*- lexical-binding: t -*-
 (require 'package)
-;; (setq use-package-compute-statistics t)
+(require 'warnings)
 (setq warning-minimum-level :error
-      gc-cons-threshold most-positive-fixnum
-      use-package-verbose t)
+      gc-cons-threshold most-positive-fixnum)
+
+;; keep in sync with .githooks/compile-init.el
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
@@ -14,7 +15,10 @@
 	("melpa" . 1)
 	("cselpa" . 0)))
 (package-initialize)
+
 (require 'use-package)
+;; (setq use-package-compute-statistics t)
+(setq use-package-verbose t)
 
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
 (add-to-list 'load-path (locate-user-emacs-file "lisp/ci-dashboard"))
@@ -32,8 +36,8 @@
 		               (xref-pop-marker-stack)
 		             (previous-buffer))))
          ("C-x <right>" . pop-global-mark)
-         ("C-<down>" . (lambda (n) (interactive "p") (next-line n) (scroll-up n)))
-         ("C-<up>" . (lambda (n) (interactive "p") (previous-line n) (scroll-down n)))
+         ("C-<down>" . (lambda (n) (interactive "p") (forward-line n) (scroll-up n)))
+         ("C-<up>" . (lambda (n) (interactive "p") (forward-line (- n)) (scroll-down n)))
          ("C-/" . (lambda ()
 		    (interactive)
 		    (if mark-active
@@ -146,7 +150,7 @@
 (use-package hippie-exp
   :bind (([remap dabbrev-expand] . hippie-expand))
   :config
-  (defun timfel/try-complete-abbrev (old)
+  (defun timfel/try-complete-abbrev (_old)
     (if (expand-abbrev) t nil))
   :custom
   (hippie-expand-try-functions-list '(timfel/try-complete-abbrev
@@ -300,7 +304,7 @@
   ;; I don't like it in the minibuffer
   (remove-hook 'minibuffer-setup-hook #'icomplete-minibuffer-setup)
   ;; i like completion to be local
-  (advice-add 'completion-at-point :after (lambda (&rest args) (unless (minibuffer-window-active-p (get-buffer-window)) (minibuffer-hide-completions))))
+  (advice-add 'completion-at-point :after (lambda (&rest _args) (unless (minibuffer-window-active-p (get-buffer-window)) (minibuffer-hide-completions))))
   (add-to-list 'completion-category-overrides '(project-file (styles substring)))
   (add-to-list 'completion-category-overrides '(imenu (styles flex))))
 
@@ -397,9 +401,7 @@
                     (vc-dir-mark-by-regexp (regexp-quote (file-relative-name file (vc-root-dir))) nil))))
          ("u" . (lambda ()
                   (interactive)
-                  (let* ((backend (vc-deduce-backend))
-                         (file (vc-dir-current-file))
-                         (fileset (list backend (list file) nil nil nil)))
+                  (let ((file (vc-dir-current-file)))
                     (if (eq (vc-state file) 'added) (vc-revert-file file))
                     (vc-dir-mark-by-regexp (regexp-quote (file-relative-name file (vc-root-dir))) t))))))
 
@@ -521,7 +523,7 @@
 			(if (assoc 'inexpr-class c-offsets-alist)
 			    (c-set-offset 'inexpr-class 0))
 			(c-set-offset 'arglist-cont-nonempty
-				      (lambda (syntax)
+				      (lambda (_syntax)
 					(save-excursion
 					  (if (and (= (length c-syntactic-context) 2)
 						   (eq (caar c-syntactic-context) 'arglist-cont-nonempty)
@@ -756,7 +758,7 @@
   (add-hook 'gptel-pre-response-hook 'cashpw/gptel-mode-line--show-responding)
   (add-hook 'gptel-post-response-functions 'cashpw/gptel-mode-line--hide-all)
 
-  (advice-add 'keyboard-quit :before (lambda (&rest args) (ignore-errors (gptel-abort (current-buffer)))))
+  (advice-add 'keyboard-quit :before (lambda (&rest _args) (ignore-errors (gptel-abort (current-buffer)))))
 
   (defun timfel/gptel-complete ()
     (interactive
@@ -785,8 +787,7 @@
                            (mapcar (lambda (prompt-file)
                                      (with-temp-buffer
                                        (insert-file-contents prompt-file)
-                                       (let ((prompt-description "NO DESCRIPTION")
-                                             (prompt-text nil))
+                                       (let ((prompt-description "NO DESCRIPTION"))
                                          ;; nab the description - single-line descriptions only!
                                          (goto-char (point-min))
                                          (when (re-search-forward "#\\+description: \\(.*?\\) *--> *$" nil t)
@@ -1169,7 +1170,7 @@
                                      :projectName "com.oracle.graal.python"
                                      :port 8000))
 
-  (defun my/setup-java-workspace-dir (&rest args)
+  (defun my/setup-java-workspace-dir (&rest _args)
     (unless (lsp-find-workspace 'jdtls nil)
       (if-let* ((p (project-current))
                 (r (project-root p))
@@ -1180,7 +1181,7 @@
                  (hash-table-values)
                  (-flatten)
                  (-uniq)
-                 (-map #'lsp-workspace-shutdown))
+                 (mapc #'lsp-workspace-shutdown))
             (setq lsp--session nil)
             (add-to-list 'desktop-globals-to-save 'lsp-java-workspace-dir)
             (add-to-list 'desktop-globals-to-save 'lsp-java-workspace-cache-dir)
@@ -1224,6 +1225,10 @@
 
 (use-package agent-shell
   :ensure t
+  :functions (agent-shell-make-environment-variables
+              agent-shell-openai-make-authentication
+              agent-shell-opencode-make-authentication
+              oca-key)
   :commands agent-shell
   :pin melpa
   :custom
@@ -1372,7 +1377,7 @@
   (jira-debug nil))
 
 (use-package custom
-  :config
+  :defines (wl-copy-process)
   :config
   (set-fontset-font
    t
