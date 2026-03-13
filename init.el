@@ -1305,7 +1305,7 @@
                                    <speak>
                                      <emph><pitch middle='+10'>Check Your Agent! %s %s</pitch></emph>
                                    </speak>
-                                   \", 0)" title body))))
+                                   \", 0)" (replace-regexp-in-string "\\<agent\\>" "" title t t) (replace-regexp-in-string "\\<agent\\>" "" body t t)))))
      (knockknock-notify
       :title title
       :message body
