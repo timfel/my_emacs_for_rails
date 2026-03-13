@@ -1,0 +1,37 @@
+#!/bin/sh
+set -eu
+
+# After a successful merge (including after pull), refresh byte-compiled files.
+
+# Emacs binary resolution order:
+# 1) EMACS_BIN env var
+# 2) git config core.hookEmacs
+# 3) "emacs" (PATH)
+EMACS_BIN=${EMACS_BIN:-"$(git config --get core.hookEmacs 2>/dev/null || true)"}
+EMACS_BIN=${EMACS_BIN:-emacs}
+
+EMACSDIR=$(git rev-parse --show-toplevel)
+LISPDIR="$EMACSDIR/lisp"
+COMPILE_INIT="$EMACSDIR/compile-init.el"
+
+FILES=""
+[ -f "$EMACSDIR/init.el" ] && FILES="$FILES $EMACSDIR/init.el"
+[ -f "$EMACSDIR/early-init.el" ] && FILES="$FILES $EMACSDIR/early-init.el"
+
+if [ -d "$LISPDIR" ]; then
+  # Only compile *.el directly under ./lisp (non-recursive)
+  for f in "$LISPDIR"/*.el; do
+    [ -e "$f" ] || continue
+    FILES="$FILES $f"
+  done
+fi
+
+if [ -z "$(printf %s "$FILES" | tr -d ' ')" ]; then
+  exit 0
+fi
+
+"$EMACS_BIN" -Q --batch \
+  -l "$COMPILE_INIT" \
+  --eval "(setq byte-compile-warnings '(not obsolete))" \
+  -f batch-byte-compile \
+  $FILES
