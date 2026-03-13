@@ -1,3 +1,4 @@
+(setq load-prefer-newer t)
 (setenv "LSP_USE_PLISTS" "true")
 (when (eq system-type 'android)
   (let ((termuxpath "/data/data/com.termux/files/usr/bin"))
