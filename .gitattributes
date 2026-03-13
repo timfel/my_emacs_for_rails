@@ -1,0 +1,7 @@
+# Ensure POSIX shell scripts keep LF line endings so shebangs work on all platforms.
+*.sh text eol=lf
+.githooks/* text eol=lf
+
+# Windows batch files should typically use CRLF.
+*.cmd text eol=crlf
+*.bat text eol=crlf
