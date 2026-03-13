@@ -6,185 +6,221 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'gptel)
 (require 'llm-tool-collection)
 (require 'timfel)
 (require 'subr-x)
 (require 'url-util)
 
+(defun timfel/gptel-tool--ensure-executable (program)
+  "Ensure PROGRAM is available in `exec-path'."
+  (unless (executable-find program)
+    (user-error "Required executable not found: %s" program)))
+
+(defun timfel/gptel-tool--valid-directory (directory)
+  "Return DIRECTORY as an absolute directory name, or signal `user-error'."
+  (let ((expanded (expand-file-name (or directory default-directory))))
+    (unless (file-directory-p expanded)
+      (user-error "Directory does not exist: %s" expanded))
+    (file-name-as-directory expanded)))
+
+(defun timfel/gptel-tool--run-process (program args &optional directory)
+  "Run PROGRAM with ARGS in DIRECTORY and return a plist with results."
+  (let ((default-directory (timfel/gptel-tool--valid-directory directory)))
+    (with-temp-buffer
+      (let ((exit-code (apply #'process-file program nil (current-buffer) nil args)))
+        (list :ok (zerop exit-code)
+              :program program
+              :args args
+              :directory default-directory
+              :exit-code exit-code
+              :output (buffer-string))))))
+
+(defun timfel/gptel-tool--run-shell-command (command &optional directory)
+  "Run shell COMMAND in DIRECTORY and return a plist with results."
+  (let ((default-directory (timfel/gptel-tool--valid-directory directory)))
+    (with-temp-buffer
+      (let ((exit-code (call-process shell-file-name nil (current-buffer) nil
+                                     shell-command-switch command)))
+        (list :ok (zerop exit-code)
+              :command command
+              :directory default-directory
+              :exit-code exit-code
+              :output (buffer-string))))))
+
 (defun timfel/gptel-tool-execute-command (command &optional working-dir)
-  "Execute COMMAND, optionally in WORKING-DIR, and return its output."
+  "Execute COMMAND, optionally in WORKING-DIR, and return structured output."
   (with-temp-message (format "Executing command: `%s`" command)
-    (let ((default-directory (if (and working-dir (not (string= working-dir "")))
-                                 (expand-file-name working-dir)
-                               default-directory)))
-      (shell-command-to-string command))))
+    (timfel/gptel-tool--run-shell-command command working-dir)))
 
 (defun timfel/gptel-tool-change-directory (dir)
-  "Change `default-directory' to DIR when it exists."
-  (when (file-directory-p dir)
-    (setq default-directory dir)))
+  "Change the current buffer's `default-directory' to DIR."
+  (let ((directory (timfel/gptel-tool--valid-directory dir)))
+    (setq-local default-directory directory)
+    (list :ok t :directory default-directory)))
 
 (defun timfel/gptel-tool-get-current-directory ()
   "Return the current default directory."
-  default-directory)
+  (list :directory default-directory))
 
 (defun timfel/gptel-tool-get-recently-edited-filenames ()
   "Return up to 5 recently visited filenames from open buffers."
-  (mapcar #'buffer-file-name
-          (seq-take
-           (delete-dups
-            (seq-remove
-             (lambda (buffer)
-               (or (null buffer)
-                   (not (buffer-file-name buffer))
-                   (string-prefix-p " " (buffer-name buffer))))
-             (buffer-list)))
-           5)))
+  (cl-loop for buffer in (buffer-list)
+           for filename = (buffer-file-name buffer)
+           unless (or (null filename)
+                      (string-prefix-p " " (buffer-name buffer)))
+           collect filename into files
+           finally return (seq-take (delete-dups files) 5)))
 
 (defun timfel/gptel-tool-search-in-project (pattern)
   "Search for PATTERN in the recent project using ripgrep."
-  (let ((rg-cmd (format "rg --max-count 20 --no-heading --color never %s %s"
-                        (shell-quote-argument pattern)
-                        (determine-recent-project-root))))
-    (shell-command-to-string rg-cmd)))
+  (timfel/gptel-tool--ensure-executable "rg")
+  (let ((project-root (determine-recent-project-root)))
+    (unless project-root
+      (user-error "No recent project root found"))
+    (let ((result (timfel/gptel-tool--run-process
+                   "rg"
+                   (list "--max-count" "20"
+                         "--no-heading"
+                         "--color" "never"
+                         "-e" pattern
+                         (expand-file-name project-root)))))
+      (plist-put result :project-root (expand-file-name project-root))
+      result)))
 
 (defun timfel/gptel-tool-set-file-content (filename content)
-  "Overwrite FILENAME with CONTENT and return a confirmation string."
-  (with-temp-file filename
-    (insert content))
-  "Saved!")
+  "Overwrite FILENAME with CONTENT and return a structured confirmation."
+  (let* ((expanded (expand-file-name filename))
+         (parent (file-name-directory expanded)))
+    (when parent
+      (make-directory parent t))
+    (with-temp-file expanded
+      (insert content))
+    (list :ok t
+          :file expanded
+          :bytes (string-bytes content))))
 
 (defun timfel/gptel-tool-read-webpage (url)
-  "Read URL via `w3m -dump' and return the output."
-  (shell-command-to-string (format "w3m -dump '%s'" url)))
+  "Read URL via `w3m -dump' and return structured output."
+  (timfel/gptel-tool--ensure-executable "w3m")
+  (let ((result (timfel/gptel-tool--run-process "w3m" (list "-dump" url))))
+    (plist-put result :url url)
+    result))
 
 (defun timfel/gptel-tool-search-web (phrase)
   "Search the web for PHRASE, or dump it directly when it is a URL."
-  (if (string-match-p "^http" phrase)
-      (shell-command-to-string (format "w3m -dump '%s'" phrase))
-    (shell-command-to-string
-     (format "w3m -dump 'https://duckduckgo.com/?q=%s'"
-             (url-hexify-string phrase)))))
+  (timfel/gptel-tool--ensure-executable "w3m")
+  (let* ((url (if (string-match-p "^http" phrase)
+                  phrase
+                (format "https://duckduckgo.com/?q=%s"
+                        (url-hexify-string phrase))))
+         (result (timfel/gptel-tool--run-process "w3m" (list "-dump" url))))
+    (plist-put result :query phrase)
+    (plist-put result :url url)
+    result))
 
-(gptel-make-tool
- :function #'timfel/gptel-tool-execute-command
- :name "execute_command"
- :description "Executes a shell command and returns the output as a string. IMPORTANT: This tool allows execution of arbitrary code; user confirmation will be required before any command is run."
- :args (list
-        '(:name "command"
-                :type string
-                :description "The complete shell command to execute.")
-        '(:name "working_dir"
-                :type string
-                :description "Optional: The directory in which to run the command. Defaults to the current directory if not specified."))
- :category "command"
- :confirm t
- :include t)
+(defun timfel/gptel-tool-list-buffers ()
+  "Return the list of file-backed buffers currently open."
+  (string-join (remove nil (mapcar #'buffer-file-name (buffer-list))) "\n"))
 
-(gptel-make-tool
- :function #'timfel/gptel-tool-change-directory
- :name "change_directory"
- :description "Change the default working directory for subsequent work."
- :args (list '(:name "dir" :type string :description "The directory to cd into."))
- :category "command"
- :confirm t
- :include nil)
+(defun timfel/gptel-tool--make-selected-category-tools (category names)
+  "Return GPTel tools from CATEGORY whose names are listed in NAMES."
+  (cl-loop for spec in (llm-tool-collection-get-category category)
+           for name = (plist-get spec :name)
+           when (member name names)
+           collect (apply #'gptel-make-tool spec)))
 
-(gptel-make-tool
- :function #'timfel/gptel-tool-get-current-directory
- :name "get_current_directory"
- :description "Return the name of the current working directory."
- :args (list)
- :confirm nil
- :include nil
- :category "command")
+(defvar timfel/gptel-tool--custom-tools nil
+  "Custom GPTel tool objects defined by Tim's config.")
 
-(gptel-make-tool
- :name "get_recently_edited_filenames"
- :description "Return a list of the 5 most recently opened buffers in this emacs session to help better understand the context of what we are doing and the users request."
- :function #'timfel/gptel-tool-get-recently-edited-filenames
- :args (list)
- :confirm nil
- :include nil
- :category "buffers")
+(setq timfel/gptel-tool--custom-tools
+      (list
+       (gptel-make-tool
+        :function #'timfel/gptel-tool-execute-command
+        :name "execute_command"
+        :description "Execute a shell command and return a result plist with exit code, directory, and output. IMPORTANT: This tool allows execution of arbitrary code; user confirmation will be required before any command is run."
+        :args (list
+               '(:name "command" :type string :description "The complete shell command to execute.")
+               '(:name "working_dir" :type string :description "Optional directory in which to run the command."))
+        :category "command"
+        :confirm t
+        :include t)
+       (gptel-make-tool
+        :function #'timfel/gptel-tool-change-directory
+        :name "change_directory"
+        :description "Change the current buffer's working directory and return the new directory."
+        :args (list '(:name "dir" :type string :description "The directory to cd into."))
+        :category "command"
+        :confirm t
+        :include nil)
+       (gptel-make-tool
+        :function #'timfel/gptel-tool-get-current-directory
+        :name "get_current_directory"
+        :description "Return the current working directory as a plist."
+        :args (list)
+        :confirm nil
+        :include nil
+        :category "command")
+       (gptel-make-tool
+        :name "get_recently_edited_filenames"
+        :description "Return up to 5 recently visited file-backed buffers in this Emacs session."
+        :function #'timfel/gptel-tool-get-recently-edited-filenames
+        :args (list)
+        :confirm nil
+        :include nil
+        :category "buffers")
+       (gptel-make-tool
+        :name "search_in_project"
+        :description "Search for a string within the recent project using ripgrep, returning a result plist."
+        :function #'timfel/gptel-tool-search-in-project
+        :args (list '(:name "pattern" :type string :description "Pattern to search for."))
+        :confirm t
+        :include nil
+        :category "search")
+       (gptel-make-tool
+        :name "set_file_content"
+        :description "Set the content of a file to the given string, creating parent directories when needed."
+        :function #'timfel/gptel-tool-set-file-content
+        :args (list
+               '(:name "filename" :type string :description "The file to overwrite.")
+               '(:name "content" :type string :description "The new content for the file."))
+        :confirm t
+        :include t
+        :category "files")
+       (gptel-make-tool
+        :function #'timfel/gptel-tool-read-webpage
+        :name "read_webpage"
+        :description "Read the contents of a URL with w3m, returning a result plist."
+        :args (list '(:name "url" :type string :description "The URL to read."))
+        :category "web")
+       (gptel-make-tool
+        :function #'timfel/gptel-tool-search-web
+        :name "search_web"
+        :description "Search the web for a string, or read it directly when it is already a URL. Returns a result plist."
+        :args (list '(:name "phrase" :type string :description "The keywords to search for on the web, or a URL."))
+        :category "web")
+       (gptel-make-tool
+        :function #'timfel/gptel-tool-list-buffers
+        :name "list_buffers"
+        :description "Get the list of files the user has open in buffers."
+        :args (list)
+        :category "buffers")))
 
-(gptel-make-tool
- :name "search_in_project"
- :description "Search for a string within the project using a fast search tool (like ripgrep)."
- :function #'timfel/gptel-tool-search-in-project
- :args (list '(:name "pattern"
-                     :type string
-                     :description "Pattern to search for"))
- :confirm t
- :include nil
- :category "search")
+(defvar timfel/gptel-tool--collection-tools nil
+  "Selected GPTel tool objects imported from `llm-tool-collection'.")
 
-(gptel-make-tool
- :name "set_file_content"
- :description "Set the content of a file to the given string. Expects filename, and the full content."
- :function #'timfel/gptel-tool-set-file-content
- :args (list
-        '(:name "filename" :type string :description "The file to overwrite.")
-        '(:name "content" :type string :description "The new content for the file."))
- :confirm t
- :include t
- :category "files")
-
-(gptel-make-tool
- :function #'timfel/gptel-tool-read-webpage
- :name "read_webpage"
- :description "Read the contents of a URL"
- :args (list '(:name "url"
-                     :type string
-                     :description "The URL to read"))
- :category "web")
-
-(gptel-make-tool
- :function #'timfel/gptel-tool-search-web
- :name "search_web"
- :description "Search the web for a string."
- :args (list '(:name "phrase"
-                     :type string
-                     :description "The keywords to search for on the web, just the KEYWORDS"))
- :category "web")
-
-(llm-tool-collection-deftool list-buffers
-  (:category "buffers" :tags (buffers editing))
-  nil
-  "Get the list of files the user has open in buffers."
-  (string-join
-   (remove nil (mapcar #'buffer-file-name
-                       (buffer-list)))
-   "\n"))
-
-(mapc (apply-partially #'apply #'gptel-make-tool)
-      (llm-tool-collection-get-category "filesystem"))
-(mapc (apply-partially #'apply #'gptel-make-tool)
-      (llm-tool-collection-get-category "buffers"))
+(setq timfel/gptel-tool--collection-tools
+      (append (timfel/gptel-tool--make-selected-category-tools
+               "filesystem"
+               '("read_file" "list_directory" "create_file" "patch_file" "create_directory"))
+              (timfel/gptel-tool--make-selected-category-tools
+               "buffers"
+               '("view_buffer"))))
 
 (setq gptel-tools
-      (let ((funcs nil)
-            (names '("get_recently_edited_filenames"
-                     "search_in_project"
-                     "set_file_content"
-                     "read_webpage"
-                     "search_web"
-                     "change_directory"
-                     "get_current_directory"
-                     "execute_command"
-                     "view_buffer"
-                     "read_file"
-                     "list_directory"
-                     "list_buffers"
-                     "create_file"
-                     "patch_file"
-                     "create_directory")))
-        (dolist (category gptel--known-tools)
-          (dolist (pair (cdr category))
-            (when (member (car pair) names)
-              (push (cdr pair) funcs))))
-        funcs))
+      (append timfel/gptel-tool--custom-tools
+              timfel/gptel-tool--collection-tools))
 
 (setq gptel-use-tools t
       gptel-confirm-tool-calls 'auto)
