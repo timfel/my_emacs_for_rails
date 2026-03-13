@@ -128,7 +128,9 @@
   :after timfel)
 
 (use-package timfel-jira-extensions
-  :commands (timfel/jira-periodic-issues timfel/jira)
+  :commands (timfel/jira-periodic-issues
+             timfel/jira
+             timfel/jira-issues-investigate-marked-with-agent)
   :after timfel)
 
 (use-package timfel-lsp-java-extensions
@@ -1472,9 +1474,15 @@
 (use-package jira
   :ensure t
   :commands (jira-api-get-basic-data jira-api-get-users jira-issues)
+  :bind (:map jira-issues-mode-map
+              ("C-x a i" . timfel/jira-issues-investigate-marked-with-agent))
   :config
   (add-to-list 'transient-values
                '(jira-issues-menu "--myself" "--resolution=Unresolved"))
+  (with-eval-after-load 'jira-issues
+    (transient-append-suffix 'jira-issues-actions-menu "W"
+      '("a" "Investigate marked issues with agent"
+         timfel/jira-issues-investigate-marked-with-agent)))
   :custom
   (jira-issues-max-results 70)
   (jira-token-is-personal-access-token t)

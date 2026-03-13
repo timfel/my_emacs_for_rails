@@ -12,6 +12,13 @@
 (require 'jira)
 (require 'orcl (expand-file-name "orcl.el" timfel/gist-location))
 
+(declare-function timfel/agent-shell-fan-out-worktrees
+                  "timfel-agent-shell-extensions"
+                  (task-specs &optional directory))
+(declare-function jira-utils-marked-items "jira-utils")
+
+(defvar jira-issues-key-summary-map)
+
 (defvar timfel/jira-periodic-issues-buffer-name "*Jira Periodic Issues*"
   "Buffer name for periodic Jira issues.")
 
@@ -70,6 +77,60 @@ The return value is a list of `(KEY . SUMMARY)' pairs for issues with label
   (interactive)
   (jira-actions-open-issue (timfel/jira-periodic-issues--issue-at-point)))
 
+(defun timfel/jira-periodic-issues--issue-title-at-point ()
+  "Return the Jira issue summary for the current tabulated row."
+  (let ((entry (tabulated-list-get-entry)))
+    (or (and entry (> (length entry) 1)
+             (aref entry 1))
+        (user-error "No Jira issue summary on this line"))))
+
+(defun timfel/jira--agent-task (issue-id issue-title)
+  "Build the agent investigation task for ISSUE-ID and ISSUE-TITLE."
+  (format
+   (concat
+    "Investigate recent GraalPy periodic issue %s: %s\n\n"
+    "Please inspect the failing job context, identify the likely "
+    "root cause in this repository, and propose a focused fix "
+    "with validation if feasible.")
+   issue-id issue-title))
+
+(defun timfel/jira-periodic-issues-investigate-with-agent ()
+  "Start a worktree-backed agent investigation for the Jira issue at point."
+  (interactive)
+  (unless (require 'timfel-agent-shell-extensions nil t)
+    (user-error "timfel-agent-shell-extensions is not available"))
+  (let* ((issue-id (timfel/jira-periodic-issues--issue-at-point))
+         (issue-title (timfel/jira-periodic-issues--issue-title-at-point))
+         (project-root (or (timfel/determine-recent-project-root)
+                           (user-error "No recent project root found for agent worktree creation")))
+         (task (timfel/jira--agent-task issue-id issue-title)))
+    (timfel/agent-shell-fan-out-worktrees
+     (list (cons issue-id task))
+     project-root)))
+
+;;;###autoload
+(defun timfel/jira-issues-investigate-marked-with-agent ()
+  "Start worktree-backed agent investigations for marked Jira issues.
+
+If no issues are marked in `*Jira Issues*', emit a message and do nothing."
+  (interactive)
+  (unless (require 'timfel-agent-shell-extensions nil t)
+    (user-error "timfel-agent-shell-extensions is not available"))
+  (unless (require 'jira-utils nil t)
+    (user-error "jira-utils is not available"))
+  (let ((issue-ids (jira-utils-marked-items)))
+    (if (null issue-ids)
+        (message "No Jira issues are marked")
+      (let ((project-root (or (timfel/determine-recent-project-root)
+                              (user-error "No recent project root found for agent worktree creation"))))
+        (timfel/agent-shell-fan-out-worktrees
+         (mapcar (lambda (issue-id)
+                   (let ((issue-title (or (gethash issue-id jira-issues-key-summary-map)
+                                          "")))
+                     (cons issue-id (timfel/jira--agent-task issue-id issue-title))))
+                 issue-ids)
+         project-root)))))
+
 (defun timfel/jira-periodic-issues--refresh (&optional days)
   "Populate the current buffer with periodic Jira issues for DAYS."
   (let* ((days (or days timfel/jira-periodic-issues--days 90))
@@ -90,6 +151,7 @@ The return value is a list of `(KEY . SUMMARY)' pairs for issues with label
 (defvar timfel/jira-periodic-issues-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "C-x a i") #'timfel/jira-periodic-issues-investigate-with-agent)
     (define-key map (kbd "I") #'timfel/jira-periodic-issues-open-issue)
     (define-key map (kbd "O") #'timfel/jira-periodic-issues-open-issue-in-browser)
     map)
@@ -102,7 +164,7 @@ The return value is a list of `(KEY . SUMMARY)' pairs for issues with label
   (setq tabulated-list-padding 2)
   (setq tabulated-list-sort-key (cons "Issue" nil))
   (setq-local header-line-format
-              "I: open issue in Jira    O: open issue in browser")
+              "I: open issue in Jira    O: open issue in browser    C-x a i: investigate with agent")
   (setq-local revert-buffer-function #'timfel/jira-periodic-issues--revert)
   (tabulated-list-init-header))
 
