@@ -1379,6 +1379,7 @@
   :ensure t
   :pin melpa
   :custom (difftastic-executable (locate-user-emacs-file (concat "bin/difft" (if (eq system-type 'windows-nt) ".exe" ""))))
+  :commands (difftastic-dired-diff difftastic-magit-diff)
   :config (difftastic-bindings-mode)
   (unless (file-executable-p difftastic-executable)
     "Find, download, and extract the latest binary from https://github.com/Wilfred/difftastic/releases/latest for the current platform into ~/.emacs.d/bin/"
