@@ -3,6 +3,8 @@
 (require 'cl-lib)
 (require 'subr-x)
 
+(defvar eshell-path-env)
+
 (defgroup exec-path-from-windows-powershell nil
   "Import environment variables from PowerShell into Emacs."
   :group 'environment)
@@ -100,35 +102,12 @@ Uses a temp .ps1 file to avoid Windows command-line length limits."
      "$cmd = 'chcp 65001>nul & ' + $cmdLine + ' & set';"
      "& cmd.exe /d /s /c $cmd")))
 
-(defun exec-path-from-windows-powershell--ps-script-vsdev-env ()
-  (let ((arch exec-path-from-windows-powershell-vs-arch)
-        (host exec-path-from-windows-powershell-vs-host-arch))
-    (concat
-     "$ErrorActionPreference='Stop';"
-     "$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\\Installer\\vswhere.exe';"
-     "if (-not (Test-Path $vswhere)) { throw \"vswhere not found: $vswhere\" };"
-     "$install = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath;"
-     "if (-not $install) { throw 'No suitable Visual Studio/BuildTools installation found.' };"
-     "$vsdev = Join-Path $install 'Common7\\Tools\\VsDevCmd.bat';"
-     "$vcvars = Join-Path $install 'VC\\Auxiliary\\Build\\vcvarsall.bat';"
-
-     "$cmdLine = $null;"
-     "if (Test-Path $vsdev) {"
-     "  $cmdLine = ('call \"' + $vsdev + '\" -no_logo -arch=" arch " -host_arch=" host "');"
-     "} elseif (Test-Path $vcvars) {"
-     "  $cmdLine = ('call \"' + $vcvars + '\" " arch "');"
-     "} else { throw \"Neither VsDevCmd.bat nor vcvarsall.bat found under: $install\" };"
-
-     ;; Use `&` instead of `&&` to avoid cmd parsing issues; also force UTF-8.
-     "$cmd = 'chcp 65001>nul & ' + $cmdLine + ' & set';"
-     "& cmd.exe /d /s /c $cmd"
-     )))
-
 ;;;###autoload
 (defun exec-path-from-windows-powershell-initialize (&optional with-vsdev)
   "Import environment from PowerShell into Emacs.
-If WITH-VSDEV is non-nil (or `exec-path-from-windows-powershell-use-vsdev-env' is non-nil),
-also import the Visual Studio Developer environment."
+If WITH-VSDEV is non-nil, or
+`exec-path-from-windows-powershell-use-vsdev-env' is non-nil, also
+import the Visual Studio Developer environment."
   (interactive "P")
   (when (eq system-type 'windows-nt)
     ;; 1) Import base env from PowerShell (profile included by default)

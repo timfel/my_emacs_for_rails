@@ -1,4 +1,4 @@
-;;; sudo-save.el --- Allow saving files using sudo
+;;; sudo-save.el --- Allow saving files using sudo -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2003 Free Software Foundation, Inc.
 
@@ -88,9 +88,9 @@
   "Disable read-only support since this is no obsolete for this file."
   (setq buffer-read-only nil))
   
-(add-hook 'write-file-hooks 'sudo-save--write-file-hook)
+(add-hook 'write-file-functions 'sudo-save--write-file-hook)
 (add-hook 'after-save-hook 'sudo-save--after-save-hook)
-(add-hook 'find-file-hooks 'sudo-save--find-file-hook)
+(add-hook 'find-file-hook 'sudo-save--find-file-hook)
 
 (provide 'sudo-save)
 

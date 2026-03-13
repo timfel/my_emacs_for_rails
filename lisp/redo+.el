@@ -1,4 +1,4 @@
-;;; redo+.el --- Redo/undo system for Emacs
+;;; redo+.el --- Redo/undo system for Emacs -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 1985, 1986, 1987, 1993-1995 Free Software Foundation, Inc.
 ;; Copyright (C) 1995 Tinker Systems and INS Engineering Corp.
@@ -330,7 +330,7 @@ A numeric argument serves as a repeat count."
 	(setq x-gtk-stock-map
 	      (cons '("etc/images/redo" . "gtk-redo") x-gtk-stock-map)))
     ;; update tool-bar icon immediately
-    (defun redo-toolbar-update (&optional bgn end lng)
+    (defun redo-toolbar-update (&optional _bgn _end _lng)
       (interactive)
       (set-buffer-modified-p (buffer-modified-p)))
     (add-hook 'after-change-functions 'redo-toolbar-update))

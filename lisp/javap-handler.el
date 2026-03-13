@@ -1,4 +1,4 @@
-(provide 'javap-handler)
+;;; javap-handler.el --- Handle javap output -*- lexical-binding: t; -*-
 
 (add-to-list 'file-name-handler-alist '("\\.class$" . javap-handler))
 
@@ -29,3 +29,4 @@
         (inhibit-file-name-operation operation))
     (apply operation args)))
 
+(provide 'javap-handler)

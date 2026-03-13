@@ -1,4 +1,4 @@
-;;; narrow-indirect.el --- Narrow using an indirect buffer that is a clone
+;;; narrow-indirect.el --- Indirect narrowing helpers -*- lexical-binding: t; -*-
 ;;
 ;; Filename: narrow-indirect.el
 ;; Description: Narrow using an indirect buffer that is a clone
@@ -174,6 +174,8 @@
 ;;
 ;;; Code:
 
+(declare-function buffer-substring-of-visible "subr+")
+
 (defgroup Narrow-Indirect nil
   "Narrow using an indirect buffer."
   :prefix "ni-" :group 'editing
@@ -292,16 +294,11 @@ invisible text is removed."
                              "\\`\\s-+\\|\\s-+\\'" ""
                              (if (not (require 'subr+ nil t))
                                  (buffer-substring-no-properties start end)
-                               (let* ((filter-buffer-substring-function
-                                       (lambda (beg end _delete) ; Remove invisible text.
-                                         (let ((strg  (buffer-substring-of-visible beg end)))
-                                           (set-text-properties 0 (length strg) () strg)
-                                           strg)))
-                                      ;; Older Emacs versions use `filter-buffer-substring-functions',
-                                      ;; not `filter-buffer-substring-function'.
-                                      (filter-buffer-substring-functions
-                                       (list (lambda (fun beg end del)
-                                               (funcall filter-buffer-substring-function beg end del)))))
+                               (let ((filter-buffer-substring-function
+                                      (lambda (beg end _delete)
+                                        (let ((strg (buffer-substring-of-visible beg end)))
+                                          (set-text-properties 0 (length strg) nil strg)
+                                          strg))))
                                  (filter-buffer-substring start end))))))
 
 ;;;###autoload
