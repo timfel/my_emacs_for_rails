@@ -17,6 +17,12 @@
   :type 'string
   :group 'timfel)
 
+(defcustom timfel/agent-shell-planning-request
+  "Go into planning mode"
+  "Initial request queued before each fan-out agent task."
+  :type 'string
+  :group 'timfel)
+
 (defun timfel/agent-shell--git-root (&optional directory)
   "Return the git root for DIRECTORY, or nil when outside Git."
   (let ((default-directory
@@ -173,6 +179,21 @@ directory."
           (call-interactively #'agent-shell-rename-buffer))
       (rename-buffer title t))))
 
+(defun timfel/agent-shell--queue-startup-requests (shell-buffer task)
+  "Queue planning mode in SHELL-BUFFER before TASK, then start processing.
+
+This always enqueues both requests first so the planning prompt is guaranteed
+to run before TASK even when the shell has just started and is currently idle."
+  (with-current-buffer shell-buffer
+    (unless (derived-mode-p 'agent-shell-mode)
+      (error "Not in an agent-shell buffer: %s" (buffer-name shell-buffer)))
+    (unless (fboundp 'agent-shell--enqueue-request)
+      (error "agent-shell does not expose its request queue helper"))
+    (agent-shell--enqueue-request :prompt timfel/agent-shell-planning-request)
+    (agent-shell--enqueue-request :prompt task)
+    (unless (shell-maker-busy)
+      (agent-shell-resume-pending-requests))))
+
 ;;;###autoload
 (defun timfel/agent-shell-fan-out-worktrees (task-specs &optional directory)
   "Create one worktree-backed `agent-shell' per entry in TASK-SPECS.
@@ -221,8 +242,8 @@ for each one.  Return a plist for each created shell with `:title', `:task',
                          (timfel/agent-shell--start-shell-in-directory
                           worktree-dir)))
                    (timfel/agent-shell--rename-shell-buffer shell-buffer title)
-                   (with-current-buffer shell-buffer
-                     (agent-shell-queue-request task))
+                   (timfel/agent-shell--queue-startup-requests
+                    shell-buffer task)
                    (list :title title
                          :task task
                          :worktree worktree-dir
