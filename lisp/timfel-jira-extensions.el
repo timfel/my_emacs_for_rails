@@ -93,8 +93,11 @@ The return value is a list of `(KEY . SUMMARY)' pairs for issues with label
   (format
    (concat
     "Investigate recent GraalPy periodic issue %s: %s\n\n"
-    "Please inspect the failing job context, identify the likely "
-    "root cause in this repository, and propose a focused fix "
+    "Please inspect the Jira issue, failing job context, identify "
+    "if any work on it was already done in this git repository. "
+    "If work was done, double check it against the issue context "
+    "and report your conclusions. Othewise, try to find the root "
+    "cause in this repository, and propose a focused fix "
     "with validation if feasible.")
    issue-id issue-title))
 

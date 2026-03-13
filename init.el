@@ -1295,6 +1295,7 @@
              "--bind" ,(expand-file-name "~/dev/graal-enterprise") ,(expand-file-name "~/dev/graal-enterprise")
              "--bind" ,(expand-file-name "~/.cache") ,(expand-file-name "~/.cache")
              "--bind" ,(expand-file-name "~/.mx") ,(expand-file-name "~/.mx")
+             "--bind" ,(expand-file-name "~/dev/.metadata") ,(expand-file-name "~/dev/.metadata")
              "--bind" ,(expand-file-name "~/.eclipse") ,(expand-file-name "~/.eclipse")
              "--bind" ,(expand-file-name "~/.codex") ,(expand-file-name "~/.codex")
              "--bind" ,(expand-file-name "~/.opencode") ,(expand-file-name "~/.opencode")
