@@ -1375,6 +1375,96 @@
   :defer t
   :pin melpa)
 
+(use-package difftastic
+  :ensure t
+  :pin melpa
+  :custom (difftastic-executable (locate-user-emacs-file (concat "bin/difft" (if (eq system-type 'windows-nt) ".exe" ""))))
+  :config (difftastic-bindings-mode)
+  (unless (file-executable-p difftastic-executable)
+    "Find, download, and extract the latest binary from https://github.com/Wilfred/difftastic/releases/latest for the current platform into ~/.emacs.d/bin/"
+    (cl-flet*
+        ((timfel/difftastic--asset-pattern ()
+           (pcase system-type
+             ('gnu/linux "x86_64-unknown-linux")
+             ('windows-nt "x86_64-pc-windows")
+             (_ nil)))
+
+         (timfel/difftastic--install-dir ()
+           (let ((dir (file-name-directory difftastic-executable)))
+             (make-directory dir t)
+             dir))
+
+         (timfel/difftastic--download-url ()
+           (let* ((api "https://api.github.com/repos/Wilfred/difftastic/releases/latest")
+                  (json (with-temp-buffer
+                          (url-insert-file-contents api)
+                          (goto-char (point-min))
+                          (when (re-search-forward "^\r?$" nil t)
+                            (delete-region (point-min) (point)))
+                          (json-parse-buffer :object-type 'alist :array-type 'list :null-object nil :false-object nil)))
+                  (assets (alist-get 'assets json))
+                  (pat (timfel/difftastic--asset-pattern)))
+             (unless pat
+               (error "Unsupported system-type: %s" system-type))
+             (or
+              (catch 'found
+                (dolist (a assets)
+                  (let* ((name (alist-get 'name a))
+                         (url (alist-get 'browser_download_url a)))
+                    (when (and (stringp name)
+                               (stringp url)
+                               (string-match-p "\\.tar\\.gz\\'\\|\\.zip\\'\\|\\.tgz\\'\\|\\.gz\\'" name)
+                               (string-match-p pat name))
+                      (throw 'found url)))))
+              (error "Could not find difftastic release asset for %s" system-type))))
+
+         (timfel/difftastic--extract (archive destdir)
+           (let ((default-directory destdir))
+             (cond
+              ((string-match-p "\\.zip\\'" archive)
+               (unless (executable-find "unzip")
+                 (error "Need unzip to extract %s" archive))
+               (let ((cmd (format "unzip -o %s" (shell-quote-argument archive))))
+                 (unless (= 0 (shell-command cmd))
+                   (error "Failed: %s" cmd))))
+              ((string-match-p "\\.tar\\.gz\\'\\|\\.tgz\\'" archive)
+               (unless (executable-find "tar")
+                 (error "Need tar to extract %s" archive))
+               (let ((cmd (format "tar -xzf %s" (shell-quote-argument archive))))
+                 (unless (= 0 (shell-command cmd))
+                   (error "Failed: %s" cmd))))
+              ((string-match-p "\\.gz\\'" archive)
+               (unless (executable-find "gzip")
+                 (error "Need gzip to extract %s" archive))
+               (let* ((cmd (format "gzip -dkf %s" (shell-quote-argument archive))))
+                 (unless (= 0 (shell-command cmd))
+                   (error "Failed: %s" cmd))))
+              (t
+               (error "Unknown archive type: %s" archive)))))
+
+         (timfel/difftastic--find-downloaded-exe (dir)
+           (or
+            (car (seq-filter #'file-executable-p
+                             (directory-files-recursively dir "\\`difft\\(\\.exe\\)?\\'" t)))
+            (car (seq-filter #'file-executable-p
+                             (directory-files-recursively dir "\\`difftastic\\(\\.exe\\)?\\'" t)))
+            (car (seq-filter (lambda (f)
+                               (and (file-regular-p f)
+                                    (file-executable-p f)
+                                    (string-match-p "difft\\(\\.exe\\)?\\'" f)))
+                             (directory-files-recursively dir "difft\\|difftastic" t))))))
+
+      (let* ((url (timfel/difftastic--download-url))
+             (tmpdir (make-temp-file "difftastic" t))
+             (archive (expand-file-name (file-name-nondirectory url) tmpdir)))
+        (url-copy-file url archive t)
+        (timfel/difftastic--extract archive tmpdir)
+        (let ((downloaded (timfel/difftastic--find-downloaded-exe tmpdir)))
+          (unless downloaded
+            (error "Could not locate difftastic binary after extracting %s" archive))
+          (copy-file downloaded difftastic-executable t t t)
+          (set-file-modes difftastic-executable #o755))))))
+
 (use-package jira
   :ensure t
   :commands (jira-api-get-basic-data jira-api-get-users jira-issues)
