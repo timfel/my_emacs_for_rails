@@ -121,6 +121,16 @@
   :commands (timfel/jira-periodic-python-issues-alist timfel/jira)
   :after timfel)
 
+(use-package timfel-lsp-java-extensions
+  :commands (timfel/my/lsp/find-eclipse-projects-recursively
+             timfel/my/lsp/reload-all-java-buffers
+             timfel/my/lsp/kill-old-java-buffers
+             timfel/my/lsp/kill-all-java-buffers
+             timfel/my/lsp/clear-workspace
+             timfel/my/lsp/import-eclipse-projects
+             timfel/my/lsp/rebuild-java)
+  :after timfel)
+
 (use-package wsl-interop
   :commands (wsl-p
              wsl-powershell-command wsl-powershell-command-to-string
