@@ -1428,11 +1428,13 @@
            (let ((default-directory destdir))
              (cond
               ((string-match-p "\\.zip\\'" archive)
-               (unless (executable-find "unzip")
-                 (error "Need unzip to extract %s" archive))
-               (let ((cmd (format "unzip -o %s" (shell-quote-argument archive))))
-                 (unless (= 0 (shell-command cmd))
-                   (error "Failed: %s" cmd))))
+               (let ((unzip (or (executable-find "unzip")
+                                (expand-file-name "../../usr/bin/unzip.exe" (executable-find "git.exe")))))
+                 (unless (file-executable-p unzip)
+                   (error "Need unzip to extract %s" archive))
+                 (let ((cmd (format "%s -o %s" (shell-quote-argument unzip) (shell-quote-argument archive))))
+                   (unless (= 0 (shell-command cmd))
+                     (error "Failed: %s" cmd)))))
               ((string-match-p "\\.tar\\.gz\\'\\|\\.tgz\\'" archive)
                (unless (executable-find "tar")
                  (error "Need tar to extract %s" archive))
@@ -1468,6 +1470,7 @@
         (let ((downloaded (timfel/difftastic--find-downloaded-exe tmpdir)))
           (unless downloaded
             (error "Could not locate difftastic binary after extracting %s" archive))
+          (make-directory (file-name-directory difftastic-executable) t)
           (copy-file downloaded difftastic-executable t t t)
           (set-file-modes difftastic-executable #o755))))))
 
