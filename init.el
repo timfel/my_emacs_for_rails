@@ -1256,6 +1256,7 @@
   (agent-shell-show-config-icons nil)
   (agent-shell-show-usage-at-turn-end t)
   (agent-shell-session-strategy 'prompt)
+  (agent-shell-text-file-capabilities nil)
   (agent-shell-command-prefix
    (lambda (buffer)
      (if (executable-find "bwrap")
