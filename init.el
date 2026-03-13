@@ -136,6 +136,11 @@
              timfel/my/lsp/rebuild-java)
   :after timfel)
 
+(use-package presentation
+  :commands (presentation-mode)
+  :custom
+  (presentation-default-text-scale 4))
+
 (use-package wsl-interop
   :commands (wsl-p
              wsl-powershell-command wsl-powershell-command-to-string
