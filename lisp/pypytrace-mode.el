@@ -1,4 +1,4 @@
-(provide 'pypytrace-mode)
+;;; pypytrace-mode.el --- Major mode for PyPy traces -*- lexical-binding: t; -*-
 (eval-when-compile
   (require 'generic-x)
   (require 'hi-lock)

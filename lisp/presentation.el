@@ -94,10 +94,10 @@
   :group 'presentation)
 
 (defcustom presentation-keep-last-text-scale t
-  "When non-NIL eproduce the size when using presention-mode last time.
+  "When non-nil, keep the last text scale used by presentation mode.
 
-Be aware that size will not be inherited when you exit Emacs.
-Please set presentation-default-text-scale in initialization processing of your init.el."
+Be aware that the size is not inherited when you exit Emacs.
+Set `presentation-default-text-scale' in your init file if needed."
   :type 'boolean
   :group 'presentation)
 
@@ -118,13 +118,13 @@ Please set presentation-default-text-scale in initialization processing of your 
   :type '(repeat (choice variable symbol))
   :group 'presentation)
 
-;; Buffer local variables:
+;; Buffer-local state:
 (defvar-local presentation-disable nil)
 
-;; Variables:
+;; State variables:
 (defvar presentation-last-text-scale nil)
 
-;; Functions:
+;; Helper functions:
 
 (defun presentation--text-scale-set (&rest _args)
   "Set `text-scale-mode-amount' for each buffer."
@@ -155,8 +155,6 @@ Please set presentation-default-text-scale in initialization processing of your 
            (setq text-scale-mode-amount level)
            (text-scale-mode (if (zerop text-scale-mode-amount) -1 1)))))
      t t)))
-
-;; Mode:
 
 ;;;###autoload
 (define-minor-mode presentation-mode
