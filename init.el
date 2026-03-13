@@ -1194,6 +1194,7 @@
   :pin melpa
   :custom
   (agent-shell-header-style 'text)
+  (agent-shell-buffer-name-format (lambda (_agent-name project-name) (format "%s agent" project-name)))
   (agent-shell-session-strategy 'new)
   (agent-shell-highlight-blocks nil)
   (agent-shell-prefer-viewport-interaction nil)
