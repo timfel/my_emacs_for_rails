@@ -7,6 +7,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'seq)
 (require 'subr-x)
 (require 'timfel)
 (require 'agent-shell)
@@ -85,10 +86,51 @@ include sibling checkouts named `graal' and `graal-enterprise' when present."
                  (expand-file-name (concat "../" name) repo-root))
                '("graal" "graal-enterprise"))))))
 
+(defun timfel/agent-shell--git-branch-exists-p (repo-root branch)
+  "Return non-nil when BRANCH already exists in REPO-ROOT."
+  (let ((default-directory (file-name-as-directory (expand-file-name repo-root))))
+    (zerop (process-file "git" nil nil nil
+                         "show-ref" "--verify" "--quiet"
+                         (format "refs/heads/%s" branch)))))
+
+(defun timfel/agent-shell--prune-missing-worktrees (repo-root)
+  "Prune registered worktrees in REPO-ROOT whose directories are missing."
+  (let ((default-directory (file-name-as-directory (expand-file-name repo-root)))
+        (missing-worktrees nil))
+    (with-temp-buffer
+      (unless (zerop (process-file "git" nil t nil "worktree" "list" "--porcelain"))
+        (user-error "Failed to list worktrees for %s: %s"
+                    repo-root
+                    (string-trim (buffer-string))))
+      (goto-char (point-min))
+      (while (re-search-forward "^worktree \(.+\)$" nil t)
+        (let ((worktree-dir (match-string 1)))
+          (unless (file-directory-p worktree-dir)
+            (push worktree-dir missing-worktrees)))))
+    (when missing-worktrees
+      (with-temp-buffer
+        (unless (zerop (process-file "git" nil t nil "worktree" "prune"))
+          (user-error "Failed to prune missing worktrees for %s: %s"
+                      repo-root
+                      (string-trim (buffer-string))))))
+    missing-worktrees))
+
+(defun timfel/agent-shell--available-branch-name (repo-roots base-branch)
+  "Return a branch name derived from BASE-BRANCH available in every REPO-ROOTS."
+  (let ((branch base-branch)
+        (suffix 2))
+    (while (seq-some (lambda (root)
+                       (timfel/agent-shell--git-branch-exists-p root branch))
+                     repo-roots)
+      (setq branch (format "%s-%02d" base-branch suffix)
+            suffix (1+ suffix)))
+    branch))
+
 (defun timfel/agent-shell--create-single-worktree (repo-root worktree-parent branch)
   "Create one Git worktree for REPO-ROOT below WORKTREE-PARENT on BRANCH."
   (let* ((repo-name (timfel/agent-shell--repo-name repo-root))
          (worktree-dir (expand-file-name repo-name worktree-parent)))
+    (timfel/agent-shell--prune-missing-worktrees repo-root)
     (when (file-exists-p worktree-dir)
       (user-error "Worktree directory already exists: %s" worktree-dir))
     (make-directory worktree-parent t)
@@ -115,13 +157,17 @@ sibling `graal' or `graal-enterprise' checkout exists, create sibling worktrees
 under the same task parent directory as well.  Return the primary worktree
 directory."
   (let* ((worktree-parent (timfel/agent-shell--worktree-parent repo-root title index))
-         (branch (format "agent-shell/%s"
-                         (file-name-nondirectory
-                          (directory-file-name worktree-parent))))
+         (repo-roots (cons repo-root
+                           (timfel/agent-shell--mx-linked-sibling-repos repo-root)))
+         (branch (timfel/agent-shell--available-branch-name
+                  repo-roots
+                  (format "agent-shell/%s"
+                          (file-name-nondirectory
+                           (directory-file-name worktree-parent)))))
          (primary-worktree
           (timfel/agent-shell--create-single-worktree
            repo-root worktree-parent branch)))
-    (dolist (sibling-repo (timfel/agent-shell--mx-linked-sibling-repos repo-root))
+    (dolist (sibling-repo (cdr repo-roots))
       (timfel/agent-shell--create-single-worktree
        sibling-repo worktree-parent branch))
     primary-worktree))
