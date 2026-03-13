@@ -1297,15 +1297,10 @@
           (string-replace "\n" ""
                           (format "$sp = New-Object -ComObject SAPI.SpVoice;
                                    $sp.Volume = 100;
-                                   $sp.Rate   = 2;
+                                   $sp.Rate   = 4;
                                    $sp.Speak(\"
                                    <speak>
-                                     <emph><pitch middle='+10'>Check Your E</pitch></emph>
-                                     <emph><pitch middle='+16'>macs!</pitch></emph>
-                                     <break time='120ms'/>
-                                     <pitch middle='+4'>%s</pitch>
-                                     <break time='120ms'/>
-                                     %s
+                                     <emph><pitch middle='+10'>Check Your Agent! %s %s</pitch></emph>
                                    </speak>
                                    \", 0)" title body))))
      (knockknock-notify
