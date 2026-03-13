@@ -476,7 +476,10 @@
   (doom-modeline-hud nil)
   (doom-modeline-vcs-max-length 28)
   (doom-modeline-lsp t)
-  (doom-modeline-buffer-file-name-style 'truncate-all))
+  (doom-modeline-buffer-file-name-style 'truncate-all)
+  :custom-face
+  (doom-modeline-buffer-file ((t (:foreground "black" :weight bold))))
+  (doom-modeline-buffer-modified ((t (:foreground "#444" :weight bold)))))
 
 (use-package desktop
   :custom
