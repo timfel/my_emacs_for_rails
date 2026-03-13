@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 (setq load-prefer-newer t)
 (setenv "LSP_USE_PLISTS" "true")
 (when (eq system-type 'android)

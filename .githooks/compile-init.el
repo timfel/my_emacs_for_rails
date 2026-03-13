@@ -12,10 +12,20 @@
 (setq package-user-dir (expand-file-name "elpa" user-emacs-directory))
 (require 'package)
 (setq package-enable-at-startup nil)
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
+(setq package-archive-priorities
+      '(("melpa-stable" . 10)
+        ("nongnu" . 5)
+        ("gnu" . 5)
+        ("melpa" . 1)
+        ("cselpa" . 0)))
 (package-initialize)
 
-;; Add local lisp directory.
+;; Add local lisp directories.
 (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+(add-to-list 'load-path (expand-file-name "lisp/ci-dashboard" user-emacs-directory))
 
 (provide 'compile-init)
 ;;; compile-init.el ends here
