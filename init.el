@@ -1282,6 +1282,9 @@
              "--bind" ,extra-dir-to-bind ,extra-dir-to-bind
              "--bind" ,graal-common-root ,graal-common-root
              "--bind" ,(expand-file-name "~/dev/mx") ,(expand-file-name "~/dev/mx")
+             "--bind" ,(expand-file-name "~/dev/graal") ,(expand-file-name "~/dev/graal")
+             "--bind" ,(expand-file-name "~/dev/graalpython") ,(expand-file-name "~/dev/graalpython")
+             "--bind" ,(expand-file-name "~/dev/graal-enterprise") ,(expand-file-name "~/dev/graal-enterprise")
              "--bind" ,(expand-file-name "~/.cache") ,(expand-file-name "~/.cache")
              "--bind" ,(expand-file-name "~/.mx") ,(expand-file-name "~/.mx")
              "--bind" ,(expand-file-name "~/.eclipse") ,(expand-file-name "~/.eclipse")
