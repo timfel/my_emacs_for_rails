@@ -7,16 +7,7 @@
 ;;; Code:
 
 (require 'timfel)
-
-(declare-function jira-api-get-basic-data "ext:jira-api")
-(declare-function jira-api-get-fields "ext:jira-api")
-(declare-function jira-api-get-projects "ext:jira-api")
-(declare-function jira-api-get-resolutions "ext:jira-api")
-(declare-function jira-api-get-statuses "ext:jira-api")
-(declare-function jira-api-get-users "ext:jira-api")
-(declare-function jira-api-search "ext:jira-api")
-(declare-function jira-issues "ext:jira-issues")
-(declare-function request-response-data "ext:request")
+(require 'jira)
 
 ;;;###autoload
 (defun timfel/jira-periodic-python-issues-alist (&optional days)
