@@ -108,6 +108,11 @@
   (put 'dired-find-alternate-file 'disabled nil)
   (setq-default indent-tabs-mode nil))
 
+(use-package request ;; has not had a release in ages, but bugfixes on master
+  :ensure t
+  :defer t
+  :pin melpa)
+
 (use-package timfel
   :config
   (let ((oca (expand-file-name "oca.el" timfel/gist-location)))
@@ -123,7 +128,7 @@
   :after timfel)
 
 (use-package timfel-jira-extensions
-  :commands (timfel/jira-periodic-python-issues-alist timfel/jira)
+  :commands (timfel/jira-periodic-issues timfel/jira)
   :after timfel)
 
 (use-package timfel-lsp-java-extensions
@@ -1369,11 +1374,6 @@
   :custom
   (knockknock-darken-background-percent 30)
   :commands (knockknock-notify))
-
-(use-package request ;; has not had a release in ages, but bugfixes on master
-  :ensure t
-  :defer t
-  :pin melpa)
 
 (use-package difftastic
   :ensure t
