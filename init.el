@@ -733,119 +733,6 @@
   (add-hook 'gptel-pre-response-hook 'cashpw/gptel-mode-line--show-responding)
   (add-hook 'gptel-post-response-functions 'cashpw/gptel-mode-line--hide-all)
 
-  (gptel-make-tool
-   :function (lambda (command &optional working_dir)
-               (with-temp-message (format "Executing command: `%s`" command)
-                 (let ((default-directory (if (and working_dir (not (string= working_dir "")))
-                                              (expand-file-name working_dir)
-                                            default-directory)))
-                   (shell-command-to-string command))))
-   :name "execute_command"
-   :description "Executes a shell command and returns the output as a string. IMPORTANT: This tool allows execution of arbitrary code; user confirmation will be required before any command is run."
-   :args (list
-          '(:name "command"
-                  :type string
-                  :description "The complete shell command to execute.")
-          '(:name "working_dir"
-                  :type string
-                  :description "Optional: The directory in which to run the command. Defaults to the current directory if not specified."))
-   :category "command"
-   :confirm t
-   :include t)
-
-  (gptel-make-tool
-   :function (lambda (dir)
-               (if (file-directory-p dir)
-                   (setq default-directory dir)))
-   :name "change_directory"
-   :description "Change the default working directory for subsequent work."
-   :args (list '(:name "dir" :type string :description "The directory to cd into."))
-   :category "command"
-   :confirm t
-   :include nil)
-
-  (gptel-make-tool
-   :function (lambda () default-directory)
-   :name "get_current_directory"
-   :description "Return the name of the current working directory."
-   :args (list)
-   :confirm nil
-   :include nil
-   :category "command")
-
-  (gptel-make-tool
-   :name "get_recently_edited_filenames"
-   :description "Return a list of the 5 most recently opened buffers in this emacs session to help better understand the context of what we are doing and the users request."
-   :function (lambda ()
-               (mapcar #'buffer-file-name
-                       (seq-take
-                        (delete-dups
-                         (seq-remove
-                          (lambda (b)
-                            (or (null b)
-                                (not (buffer-file-name b))
-                                (string-prefix-p " " (buffer-name b))))
-                          (buffer-list)))
-                        5)))
-   :args (list)
-   :confirm nil
-   :include nil
-   :category "buffers")
-
-  (gptel-make-tool
-   :name "search_in_project"
-   :description "Search for a string within the project using a fast search tool (like ripgrep)."
-   :function (lambda (pattern)
-               (let ((rg-cmd (format "rg --max-count 20 --no-heading --color never %s %s"
-                                     (shell-quote-argument pattern)
-                                     (determine-recent-project-root))))
-                 (shell-command-to-string rg-cmd)))
-   :args (list '(:name "pattern"
-                       :type string
-                       :description "Pattern to search for"))
-   :confirm t
-   :include nil
-   :category "search")
-
-  (gptel-make-tool
-   :name "set_file_content"
-   :description "Set the content of a file to the given string. Expects filename, and the full content."
-   :function (lambda (filename content)
-               (with-temp-file filename
-                 (insert content))
-               "Saved!")
-   :args (list
-          '(:name "filename" :type string :description "The file to overwrite.")
-          '(:name "content" :type string :description "The new content for the file."))
-   :confirm t
-   :include t
-   :category "files")
-
-  (gptel-make-tool
-   :function (lambda (url)
-               (shell-command-to-string (format "w3m -dump '%s'" url)))
-   :name "read_webpage"
-   :description "Read the contents of a URL"
-   :args (list '(:name "url"
-                       :type string
-                       :description "The URL to read"))
-   :category "web")
-
-  (gptel-make-tool
-   :function (lambda (phrase)
-               (if (string-match-p "^http" phrase)
-                   (shell-command-to-string (format "w3m -dump '%s'" phrase))
-                 (shell-command-to-string
-                  (format
-                   "w3m -dump 'https://duckduckgo.com/?q=%s'"
-                   (url-hexify-string phrase)))))
-   :name "search_web"
-   :description "Search the web for a string."
-   :args (list '(:name "phrase"
-                       :type string
-                       :description "The keywords to search for on the web, just the KEYWORDS"))
-   :category "web")
-
   (advice-add 'keyboard-quit :before (lambda (&rest args) (ignore-errors (gptel-abort (current-buffer)))))
 
   (defun timfel/gptel-complete ()
@@ -897,46 +784,10 @@
 (use-package llm-tool-collection
   :ensure t
   :after gptel
-  :vc (:url "https://github.com/skissue/llm-tool-collection" :branch "main" :rev :newest)
-  :config
-  (llm-tool-collection-deftool list-buffers
-    (:category "buffers" :tags (buffers editing))
-    nil
-    "Get the list of files the user has open in buffers."
-    (string-join
-     (remove nil (mapcar #'buffer-file-name
-                         (buffer-list)))
-     "\n"))
+  :vc (:url "https://github.com/skissue/llm-tool-collection" :branch "main" :rev :newest))
 
-  (mapcar (apply-partially #'apply #'gptel-make-tool)
-          (llm-tool-collection-get-category "filesystem"))
-  (mapcar (apply-partially #'apply #'gptel-make-tool)
-          (llm-tool-collection-get-category "buffers"))
-  (setq gptel-tools (let ((funcs nil)
-                          (names (list
-                                  "get_recently_edited_filenames"
-                                  "search_in_project"
-                                  "set_file_content"
-                                  "read_webpage"
-                                  "search_web"
-                                  "change_directory"
-                                  "get_current_directory"
-                                  "execute_command"
-                                  "view_buffer"
-                                  "read_file"
-                                  "list_directory"
-                                  "list_buffers"
-                                  "create_file"
-                                  "patch_file"
-                                  "create_directory")))
-                      (dolist (category gptel--known-tools)
-                        (dolist (pair (cdr category))
-                          (when (member (car pair) names)
-                            (push (cdr pair) funcs))))
-                      funcs))
-  :custom
-  (gptel-use-tools t)
-  (gptel-confirm-tool-calls 'auto))
+(use-package timfel-gptel-tools
+  :after (gptel llm-tool-collection))
 
 (use-package xt-mouse
   :if (eq window-system nil)
