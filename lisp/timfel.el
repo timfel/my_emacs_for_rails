@@ -131,8 +131,8 @@ Non-interactive arguments are Begin End Regexp"
   (interactive "p")
   (move-line (if (null n) 1 n)))
 
-(defun timfel/update-proxies-from-wpad ()
-  (interactive)
+(defun timfel/update-proxies-from-wpad (&optional force-enable)
+  (interactive "p")
   (let* (wpad
          (no-proxy-env "localhost,127.0.0.1,*.oraclecorp.com,oraclecorp.com,*.oraclecloud.com,oraclecloud.com,*.us.oracle.com")
          (no-proxy
@@ -140,9 +140,9 @@ Non-interactive arguments are Begin End Regexp"
             (setq s (string-replace "\\*" ".*" s))
             (setq s (string-replace "," "\\|" s))
             s)))
-    (if (not (or url-proxy-services
-                 (not (setq wpad (shell-command-to-string "curl -s wpad")))
-                 (not (string-match "PROXY\s\\([^; \n\t]+\\)" wpad))))
+    (if (and (or force-enable (not url-proxy-services))
+             (setq wpad (shell-command-to-string "curl -s wpad"))
+             (string-match "PROXY\s\\([^; \n\t]+\\)" wpad))
         (progn
           (setq wpad (match-string-no-properties 1 wpad))
           (let ((wpad_with_protocol (if (not (string-match "^https?://" wpad))
