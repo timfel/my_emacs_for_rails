@@ -2,6 +2,7 @@
 (require 'package)
 (require 'warnings)
 (setq warning-minimum-level :error
+      ad-redefinition-action 'accept
       gc-cons-threshold most-positive-fixnum)
 
 ;; keep in sync with .githooks/compile-init.el
