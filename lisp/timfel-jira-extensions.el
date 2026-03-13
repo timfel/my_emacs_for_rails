@@ -7,6 +7,7 @@
 ;;; Code:
 
 (require 'tabulated-list)
+(require 'tablist)
 
 (require 'timfel)
 (require 'jira)
@@ -24,6 +25,9 @@
 
 (defvar-local timfel/jira-periodic-issues--days 90
   "Number of days used to populate the current periodic issues buffer.")
+
+(defvar-local timfel/jira-periodic-issues--summary-map nil
+  "Hash table mapping visible issue keys to summaries in the current buffer.")
 
 (defun timfel/jira-periodic-issues-alist (&optional days)
   "Return an alist of recent periodic Jira issues within DAYS.
@@ -94,19 +98,59 @@ The return value is a list of `(KEY . SUMMARY)' pairs for issues with label
     "with validation if feasible.")
    issue-id issue-title))
 
+(defun timfel/jira-periodic-issues--marked-issues ()
+  "Return explicitly marked periodic Jira issues as `(KEY . SUMMARY)' pairs."
+  (let (issues)
+    (save-excursion
+      (goto-char (point-min))
+      (while (< (point) (point-max))
+        (let ((issue-id (tabulated-list-get-id))
+              (mark-state (and (fboundp 'tablist-get-mark-state)
+                               (tablist-get-mark-state))))
+          (when (and issue-id mark-state
+                     (not (eq (car mark-state) ?\s)))
+            (push (cons issue-id
+                        (or (and timfel/jira-periodic-issues--summary-map
+                                 (gethash issue-id timfel/jira-periodic-issues--summary-map))
+                            ""))
+                  issues)))
+        (forward-line 1)))
+    (nreverse issues)))
+
+(defun timfel/jira--explicitly-marked-issue-ids ()
+  "Return explicitly marked Jira issue ids in the current tabulated list."
+  (let (issue-ids)
+    (save-excursion
+      (goto-char (point-min))
+      (while (< (point) (point-max))
+        (let ((issue-id (tabulated-list-get-id))
+              (mark-state (and (fboundp 'tablist-get-mark-state)
+                               (tablist-get-mark-state))))
+          (when (and issue-id mark-state
+                     (not (eq (car mark-state) ?\s)))
+            (push issue-id issue-ids)))
+        (forward-line 1)))
+    (nreverse issue-ids)))
+
 (defun timfel/jira-periodic-issues-investigate-with-agent ()
-  "Start a worktree-backed agent investigation for the Jira issue at point."
+  "Start worktree-backed agent investigations for marked periodic Jira issues.
+
+If no issues are marked in `*Jira Periodic Issues*', emit a message and do
+nothing."
   (interactive)
   (unless (require 'timfel-agent-shell-extensions nil t)
     (user-error "timfel-agent-shell-extensions is not available"))
-  (let* ((issue-id (timfel/jira-periodic-issues--issue-at-point))
-         (issue-title (timfel/jira-periodic-issues--issue-title-at-point))
-         (project-root (or (timfel/determine-recent-project-root)
-                           (user-error "No recent project root found for agent worktree creation")))
-         (task (timfel/jira--agent-task issue-id issue-title)))
-    (timfel/agent-shell-fan-out-worktrees
-     (list (cons issue-id task))
-     project-root)))
+  (let ((issues (timfel/jira-periodic-issues--marked-issues)))
+    (if (null issues)
+        (message "No Jira issues are marked")
+      (let ((project-root (or (timfel/determine-recent-project-root)
+                              (user-error "No recent project root found for agent worktree creation"))))
+        (timfel/agent-shell-fan-out-worktrees
+         (mapcar (lambda (issue)
+                   (cons (car issue)
+                         (timfel/jira--agent-task (car issue) (cdr issue))))
+                 issues)
+         project-root)))))
 
 ;;;###autoload
 (defun timfel/jira-issues-investigate-marked-with-agent ()
@@ -116,9 +160,7 @@ If no issues are marked in `*Jira Issues*', emit a message and do nothing."
   (interactive)
   (unless (require 'timfel-agent-shell-extensions nil t)
     (user-error "timfel-agent-shell-extensions is not available"))
-  (unless (require 'jira-utils nil t)
-    (user-error "jira-utils is not available"))
-  (let ((issue-ids (jira-utils-marked-items)))
+  (let ((issue-ids (timfel/jira--explicitly-marked-issue-ids)))
     (if (null issue-ids)
         (message "No Jira issues are marked")
       (let ((project-root (or (timfel/determine-recent-project-root)
@@ -134,8 +176,12 @@ If no issues are marked in `*Jira Issues*', emit a message and do nothing."
 (defun timfel/jira-periodic-issues--refresh (&optional days)
   "Populate the current buffer with periodic Jira issues for DAYS."
   (let* ((days (or days timfel/jira-periodic-issues--days 90))
-         (issues (timfel/jira-periodic-issues-alist days)))
+         (issues (timfel/jira-periodic-issues-alist days))
+         (summary-map (make-hash-table :test #'equal)))
+    (dolist (issue issues)
+      (puthash (car issue) (or (cdr issue) "") summary-map))
     (setq-local timfel/jira-periodic-issues--days days)
+    (setq-local timfel/jira-periodic-issues--summary-map summary-map)
     (setq tabulated-list-entries
           (mapcar (lambda (issue)
                     (let ((key (car issue))
@@ -164,7 +210,8 @@ If no issues are marked in `*Jira Issues*', emit a message and do nothing."
   (setq tabulated-list-padding 2)
   (setq tabulated-list-sort-key (cons "Issue" nil))
   (setq-local header-line-format
-              "I: open issue in Jira    O: open issue in browser    C-x a i: investigate with agent")
+              "m/u: mark or unmark    I: open issue in Jira    O: open issue in browser    C-x a i: investigate marked issues")
+  (tablist-minor-mode)
   (setq-local revert-buffer-function #'timfel/jira-periodic-issues--revert)
   (tabulated-list-init-header))
 
