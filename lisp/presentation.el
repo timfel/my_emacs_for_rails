@@ -123,8 +123,64 @@ Set `presentation-default-text-scale' in your init file if needed."
 
 ;; State variables:
 (defvar presentation-last-text-scale nil)
+(defvar presentation--saved-ui-face-heights nil)
 
 ;; Helper functions:
+
+(defun presentation--text-scale-factor (level)
+  "Return the face height scale factor for text scale LEVEL."
+  (expt text-scale-mode-step level))
+
+(defun presentation--ui-faces ()
+  "Return the faces that should scale in presentation mode."
+  (cl-loop for face in '(mode-line mode-line-active mode-line-inactive header-line)
+           when (facep face)
+           collect face))
+
+(defun presentation--ui-face-entry-face (entry)
+  "Return the face stored in saved UI face ENTRY."
+  (car entry))
+
+(defun presentation--ui-face-entry-raw-height (entry)
+  "Return the original raw height stored in saved UI face ENTRY."
+  (if (consp (cdr entry))
+      (nth 1 entry)
+    (cdr entry)))
+
+(defun presentation--ui-face-entry-base-height (entry)
+  "Return the numeric base height stored in saved UI face ENTRY."
+  (if (consp (cdr entry))
+      (nth 2 entry)
+    (face-attribute (car entry) :height nil 'default)))
+
+(defun presentation--save-ui-face-heights ()
+  "Remember the current heights for presentation UI faces."
+  (unless presentation--saved-ui-face-heights
+    (setq presentation--saved-ui-face-heights
+          (mapcar (lambda (face)
+                    (list face
+                          (face-attribute face :height nil)
+                          (face-attribute face :height nil 'default)))
+                  (presentation--ui-faces)))))
+
+(defun presentation--restore-ui-face-heights ()
+  "Restore the remembered heights for presentation UI faces."
+  (when presentation--saved-ui-face-heights
+    (dolist (entry presentation--saved-ui-face-heights)
+      (set-face-attribute (presentation--ui-face-entry-face entry) nil
+                          :height (presentation--ui-face-entry-raw-height entry)))
+    (setq presentation--saved-ui-face-heights nil)
+    (redisplay t)))
+
+(defun presentation--set-ui-face-heights (level)
+  "Set presentation UI face heights for text scale LEVEL."
+  (presentation--save-ui-face-heights)
+  (let ((factor (presentation--text-scale-factor level)))
+    (dolist (entry presentation--saved-ui-face-heights)
+      (set-face-attribute (presentation--ui-face-entry-face entry) nil
+                          :height (round (* (presentation--ui-face-entry-base-height entry)
+                                            factor))))
+    (redisplay t)))
 
 (defun presentation--text-scale-set (&rest _args)
   "Set `text-scale-mode-amount' for each buffer."
@@ -146,6 +202,9 @@ Set `presentation-default-text-scale' in your init file if needed."
   "Set `LEVEL' for each buffer."
   (setq text-scale-mode-amount level)
   (text-scale-mode (if (zerop text-scale-mode-amount) -1 1))
+  (if (zerop level)
+      (presentation--restore-ui-face-heights)
+    (presentation--set-ui-face-heights level))
 
   (save-selected-window
     (walk-windows
@@ -181,6 +240,7 @@ Set `presentation-default-text-scale' in your init file if needed."
                do (with-current-buffer buf
                     (unless (presentation-ignore-current-buffer)
                       (text-scale-set 0))))
+      (presentation--restore-ui-face-heights)
       (run-hooks 'presentation-off-hook))))
 
 (provide 'presentation)
