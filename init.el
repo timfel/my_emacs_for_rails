@@ -95,6 +95,11 @@
   (put 'dired-find-alternate-file 'disabled nil)
   (setq-default indent-tabs-mode nil))
 
+(use-package request ;; has not had a release in ages, but bugfixes on master
+  :ensure t
+  :defer t
+  :pin melpa)
+
 (use-package timfel
   :config
   (let ((oca (expand-file-name "oca.el" timfel/gist-location)))
@@ -106,11 +111,15 @@
     (autoload 'timfel/git-merges-jira-html orcl nil t)))
 
 (use-package timfel-agent-shell-extensions
-  :commands (timfel/agent-shell-fan-out-worktrees)
+  :commands (timfel/agent-shell-fan-out-worktrees
+             timfel/agent-shell-tile-buffers-grid)
+  :bind ("C-x a t" . #'timfel/agent-shell-tile-buffers-grid)
   :after timfel)
 
 (use-package timfel-jira-extensions
-  :commands (timfel/jira-periodic-python-issues-alist timfel/jira)
+  :commands (timfel/jira-periodic-issues
+             timfel/jira
+             timfel/jira-issues-investigate-marked-with-agent)
   :after timfel)
 
 (use-package timfel-lsp-java-extensions
@@ -484,7 +493,10 @@
   (doom-modeline-hud nil)
   (doom-modeline-vcs-max-length 28)
   (doom-modeline-lsp t)
-  (doom-modeline-buffer-file-name-style 'truncate-all))
+  (doom-modeline-buffer-file-name-style 'truncate-all)
+  :custom-face
+  (doom-modeline-buffer-file ((t (:foreground "black" :weight bold))))
+  (doom-modeline-buffer-modified ((t (:foreground "#444" :weight bold)))))
 
 (use-package desktop
   :custom
@@ -1264,6 +1276,7 @@
   (agent-shell-show-config-icons nil)
   (agent-shell-show-usage-at-turn-end t)
   (agent-shell-session-strategy 'prompt)
+  (agent-shell-text-file-capabilities nil)
   (agent-shell-command-prefix
    (lambda (buffer)
      (if (executable-find "bwrap")
@@ -1294,8 +1307,12 @@
              "--bind" ,extra-dir-to-bind ,extra-dir-to-bind
              "--bind" ,graal-common-root ,graal-common-root
              "--bind" ,(expand-file-name "~/dev/mx") ,(expand-file-name "~/dev/mx")
+             "--bind" ,(expand-file-name "~/dev/graal") ,(expand-file-name "~/dev/graal")
+             "--bind" ,(expand-file-name "~/dev/graalpython") ,(expand-file-name "~/dev/graalpython")
+             "--bind" ,(expand-file-name "~/dev/graal-enterprise") ,(expand-file-name "~/dev/graal-enterprise")
              "--bind" ,(expand-file-name "~/.cache") ,(expand-file-name "~/.cache")
              "--bind" ,(expand-file-name "~/.mx") ,(expand-file-name "~/.mx")
+             "--bind" ,(expand-file-name "~/dev/.metadata") ,(expand-file-name "~/dev/.metadata")
              "--bind" ,(expand-file-name "~/.eclipse") ,(expand-file-name "~/.eclipse")
              "--bind" ,(expand-file-name "~/.codex") ,(expand-file-name "~/.codex")
              "--bind" ,(expand-file-name "~/.opencode") ,(expand-file-name "~/.opencode")
@@ -1386,11 +1403,6 @@
   :custom
   (knockknock-darken-background-percent 30)
   :commands (knockknock-notify))
-
-(use-package request ;; has not had a release in ages, but bugfixes on master
-  :ensure t
-  :defer t
-  :pin melpa)
 
 (use-package difftastic
   :ensure t
@@ -1489,9 +1501,15 @@
 (use-package jira
   :ensure t
   :commands (jira-api-get-basic-data jira-api-get-users jira-issues)
+  :bind (:map jira-issues-mode-map
+              ("C-x a i" . timfel/jira-issues-investigate-marked-with-agent))
   :config
   (add-to-list 'transient-values
                '(jira-issues-menu "--myself" "--resolution=Unresolved"))
+  (with-eval-after-load 'jira-issues
+    (transient-append-suffix 'jira-issues-actions-menu "W"
+      '("a" "Investigate marked issues with agent"
+         timfel/jira-issues-investigate-marked-with-agent)))
   :custom
   (jira-issues-max-results 70)
   (jira-token-is-personal-access-token t)

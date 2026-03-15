@@ -7,6 +7,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'seq)
 (require 'subr-x)
 (require 'timfel)
 (require 'agent-shell)
@@ -14,6 +15,12 @@
 (defcustom timfel/agent-shell-worktree-subdirectory
   ".agent-shell/worktrees"
   "Relative directory under a git repository for agent-shell worktrees."
+  :type 'string
+  :group 'timfel)
+
+(defcustom timfel/agent-shell-planning-request
+  "Go into planning mode"
+  "Initial request queued before each fan-out agent task."
   :type 'string
   :group 'timfel)
 
@@ -45,22 +52,21 @@
   "Create the base worktree directory name for TITLE."
   (timfel/agent-shell--slugify title))
 
-(defun timfel/agent-shell--worktree-parent (repo-root title index)
-  "Return the per-task parent directory for REPO-ROOT, TITLE, and INDEX.
-
-Use the slugified TITLE by default, appending a numeric suffix only when the
-resulting directory already exists.  INDEX is used as the initial fallback
-suffix when disambiguation is needed."
+(defun timfel/agent-shell--worktree-parent (repo-root title index &optional suffix)
+  "Return the per-task parent directory for REPO-ROOT, TITLE, INDEX, and SUFFIX."
   (let* ((base-dir (expand-file-name timfel/agent-shell-worktree-subdirectory
                                      repo-root))
          (base-name (timfel/agent-shell--worktree-name title index))
-         (candidate (expand-file-name base-name base-dir))
-         (suffix (max 2 index)))
-    (while (file-exists-p candidate)
-      (setq candidate (expand-file-name (format "%s-%02d" base-name suffix)
-                                        base-dir)
-            suffix (1+ suffix)))
-    candidate))
+         (name (if suffix
+                   (format "%s-%02d" base-name suffix)
+                 base-name)))
+    (expand-file-name name base-dir)))
+
+(defun timfel/agent-shell--worktree-branch (worktree-parent)
+  "Return the agent-shell branch name for WORKTREE-PARENT."
+  (format "agent-shell/%s"
+          (file-name-nondirectory
+           (directory-file-name worktree-parent))))
 
 (defun timfel/agent-shell--mx-linked-sibling-repos (repo-root)
   "Return extra repo roots that should get sibling worktrees with REPO-ROOT.
@@ -79,10 +85,190 @@ include sibling checkouts named `graal' and `graal-enterprise' when present."
                  (expand-file-name (concat "../" name) repo-root))
                '("graal" "graal-enterprise"))))))
 
+(defun timfel/agent-shell--git-branch-exists-p (repo-root branch)
+  "Return non-nil when BRANCH already exists in REPO-ROOT."
+  (let ((default-directory (file-name-as-directory (expand-file-name repo-root))))
+    (zerop (process-file "git" nil nil nil
+                         "show-ref" "--verify" "--quiet"
+                         (format "refs/heads/%s" branch)))))
+
+(defun timfel/agent-shell--prune-missing-worktrees (repo-root)
+  "Prune registered worktrees in REPO-ROOT whose directories are missing."
+  (let ((default-directory (file-name-as-directory (expand-file-name repo-root)))
+        (missing-worktrees nil))
+    (with-temp-buffer
+      (unless (zerop (process-file "git" nil t nil "worktree" "list" "--porcelain"))
+        (user-error "Failed to list worktrees for %s: %s"
+                    repo-root
+                    (string-trim (buffer-string))))
+      (goto-char (point-min))
+      (while (re-search-forward "^worktree \(.+\)$" nil t)
+        (let ((worktree-dir (match-string 1)))
+          (unless (file-directory-p worktree-dir)
+            (push worktree-dir missing-worktrees)))))
+    (when missing-worktrees
+      (with-temp-buffer
+        (unless (zerop (process-file "git" nil t nil "worktree" "prune"))
+          (user-error "Failed to prune missing worktrees for %s: %s"
+                      repo-root
+                      (string-trim (buffer-string))))))
+    missing-worktrees))
+
+(defun timfel/agent-shell--registered-worktrees (repo-root)
+  "Return registered Git worktrees for REPO-ROOT as plists."
+  (let ((default-directory (file-name-as-directory (expand-file-name repo-root)))
+        entries
+        current)
+    (with-temp-buffer
+      (unless (zerop (process-file "git" nil t nil "worktree" "list" "--porcelain"))
+        (user-error "Failed to list worktrees for %s: %s"
+                    repo-root
+                    (string-trim (buffer-string))))
+      (goto-char (point-min))
+      (while (not (eobp))
+        (let ((line (buffer-substring-no-properties
+                     (line-beginning-position)
+                     (line-end-position))))
+          (cond
+           ((string-prefix-p "worktree " line)
+            (when current
+              (push current entries))
+            (setq current (list :path (string-remove-prefix "worktree " line))))
+           ((and current (string-prefix-p "branch " line))
+            (setq current (plist-put current :branch
+                                     (string-remove-prefix "branch " line))))))
+        (forward-line 1)))
+    (when current
+      (push current entries))
+    (nreverse entries)))
+
+(defun timfel/agent-shell--normalize-branch-ref (branch)
+  "Return BRANCH without a leading `refs/heads/' prefix."
+  (string-remove-prefix "refs/heads/" branch))
+
+(defun timfel/agent-shell--registered-worktree-for-branch (repo-root branch)
+  "Return the registered worktree path for BRANCH in REPO-ROOT, or nil."
+  (let ((branch-ref (format "refs/heads/%s" branch)))
+    (seq-some (lambda (entry)
+                (when (equal (plist-get entry :branch) branch-ref)
+                  (plist-get entry :path)))
+              (timfel/agent-shell--registered-worktrees repo-root))))
+
+(defun timfel/agent-shell--registered-worktree-at-path (repo-root worktree-dir)
+  "Return the registered worktree entry for WORKTREE-DIR in REPO-ROOT, or nil."
+  (let ((target (file-name-as-directory (expand-file-name worktree-dir))))
+    (seq-some (lambda (entry)
+                (when (string= (file-name-as-directory
+                                (expand-file-name (plist-get entry :path)))
+                               target)
+                  entry))
+              (timfel/agent-shell--registered-worktrees repo-root))))
+
+(defun timfel/agent-shell--directory-prefix-p (directory path)
+  "Return non-nil when PATH is DIRECTORY or a descendant of DIRECTORY."
+  (let ((directory (file-name-as-directory (expand-file-name directory)))
+        (path (and path (file-name-as-directory (expand-file-name path)))))
+    (and path (string-prefix-p directory path))))
+
+(defun timfel/agent-shell--acp-buffer-p (buffer)
+  "Return non-nil when BUFFER looks like an ACP helper buffer."
+  (let ((name (buffer-name buffer)))
+    (or (string-match-p "\`\*acp-.*\(log\|traffic\)\*\'" name)
+        (string-match-p "\`acp-client-stderr(" name))))
+
+(defun timfel/agent-shell--directory-associated-buffers (directory)
+  "Return live agent-shell or ACP buffers associated with DIRECTORY."
+  (seq-filter
+   (lambda (buffer)
+     (and (buffer-live-p buffer)
+          (with-current-buffer buffer
+            (and default-directory
+                 (timfel/agent-shell--directory-prefix-p directory default-directory)
+                 (or (derived-mode-p 'agent-shell-mode)
+                     (timfel/agent-shell--acp-buffer-p buffer))))))
+   (buffer-list)))
+
+(defun timfel/agent-shell--process-directory (process)
+  "Return a best-effort working directory for PROCESS, or nil."
+  (or (when-let ((buffer (process-buffer process)))
+        (and (buffer-live-p buffer)
+             (buffer-local-value 'default-directory buffer)))
+      (let* ((command (process-command process))
+             (chdir-pos (cl-position "--chdir" command :test #'string=)))
+        (when chdir-pos
+          (nth (1+ chdir-pos) command)))))
+
+(defun timfel/agent-shell--directory-live-processes (directory)
+  "Return live processes associated with DIRECTORY."
+  (seq-filter
+   (lambda (process)
+     (and (process-live-p process)
+          (timfel/agent-shell--directory-prefix-p
+           directory
+           (timfel/agent-shell--process-directory process))))
+   (process-list)))
+
+(defun timfel/agent-shell--worktree-reusable-p (directory)
+  "Return non-nil when DIRECTORY has no associated live buffers or processes."
+  (and (file-directory-p directory)
+       (null (timfel/agent-shell--directory-associated-buffers directory))
+       (null (timfel/agent-shell--directory-live-processes directory))))
+
+(defun timfel/agent-shell--resolve-worktree-allocation (repo-root repo-roots title index)
+  "Resolve a worktree allocation for REPO-ROOT, REPO-ROOTS, TITLE, and INDEX.
+
+Return a plist with `:branch', `:worktree-parent', `:primary-worktree', and
+`:reuse' keys.  Reuse an existing worktree when every repo in REPO-ROOTS has a
+registered worktree at the candidate path, all those worktrees share the same
+branch, and none has live agent-shell, ACP, or process activity."
+  (let ((suffix nil)
+        (next-suffix (max 2 index)))
+    (catch 'allocation
+      (while t
+        (let* ((worktree-parent (timfel/agent-shell--worktree-parent
+                                 repo-root title index suffix))
+               (expected-worktrees
+                (mapcar (lambda (root)
+                          (expand-file-name (timfel/agent-shell--repo-name root)
+                                            worktree-parent))
+                        repo-roots))
+               (registered-entries
+                (cl-mapcar #'timfel/agent-shell--registered-worktree-at-path
+                           repo-roots expected-worktrees))
+               (branches (delq nil
+                               (mapcar (lambda (entry)
+                                         (when-let ((branch (plist-get entry :branch)))
+                                           (timfel/agent-shell--normalize-branch-ref branch)))
+                                       registered-entries)))
+               (branch (timfel/agent-shell--worktree-branch worktree-parent)))
+          (cond
+           ((and (seq-every-p #'identity registered-entries)
+                 (= (length (delete-dups (copy-sequence branches))) 1)
+                 (seq-every-p #'timfel/agent-shell--worktree-reusable-p
+                              expected-worktrees))
+            (throw 'allocation
+                   (list :branch (car branches)
+                         :worktree-parent worktree-parent
+                         :primary-worktree (car expected-worktrees)
+                         :reuse t)))
+           ((and (not (seq-some #'identity registered-entries))
+                 (not (seq-some (lambda (root)
+                                  (timfel/agent-shell--git-branch-exists-p root branch))
+                                repo-roots))
+                 (not (file-exists-p worktree-parent)))
+            (throw 'allocation
+                   (list :branch branch
+                         :worktree-parent worktree-parent
+                         :primary-worktree nil
+                         :reuse nil))))
+          (setq suffix next-suffix
+                next-suffix (1+ next-suffix)))))))
+
 (defun timfel/agent-shell--create-single-worktree (repo-root worktree-parent branch)
   "Create one Git worktree for REPO-ROOT below WORKTREE-PARENT on BRANCH."
   (let* ((repo-name (timfel/agent-shell--repo-name repo-root))
          (worktree-dir (expand-file-name repo-name worktree-parent)))
+    (timfel/agent-shell--prune-missing-worktrees repo-root)
     (when (file-exists-p worktree-dir)
       (user-error "Worktree directory already exists: %s" worktree-dir))
     (make-directory worktree-parent t)
@@ -99,26 +285,39 @@ include sibling checkouts named `graal' and `graal-enterprise' when present."
     worktree-dir))
 
 (defun timfel/agent-shell--create-worktree (repo-root title index)
-  "Create a Git worktree below REPO-ROOT for TITLE at INDEX.
+  "Create or reuse a Git worktree below REPO-ROOT for TITLE at INDEX.
 
 The primary worktree lives at:
   <repo-root>/<subdir>/<title-slug>/<repo-name>
 
 If REPO-ROOT is an mx suite checkout with an `mx.<repo-name>' directory and a
 sibling `graal' or `graal-enterprise' checkout exists, create sibling worktrees
-under the same task parent directory as well.  Return the primary worktree
-directory."
-  (let* ((worktree-parent (timfel/agent-shell--worktree-parent repo-root title index))
-         (branch (format "agent-shell/%s"
-                         (file-name-nondirectory
-                          (directory-file-name worktree-parent))))
-         (primary-worktree
+under the same task parent directory as well.  When a matching branch already
+has registered worktrees and none has live agent-shell, ACP, or process
+activity, reuse those worktrees instead of allocating a suffixed branch name.
+Return the primary worktree directory."
+  (let* ((repo-roots (cons repo-root
+                           (timfel/agent-shell--mx-linked-sibling-repos repo-root))))
+    (dolist (root repo-roots)
+      (timfel/agent-shell--prune-missing-worktrees root))
+    (let* ((allocation (timfel/agent-shell--resolve-worktree-allocation
+                        repo-root repo-roots title index))
+           (worktree-parent (plist-get allocation :worktree-parent))
+           (branch (plist-get allocation :branch))
+           (primary-worktree (plist-get allocation :primary-worktree)))
+      (if (plist-get allocation :reuse)
+          (progn
+            (message "Reusing existing worktree %s on branch %s"
+                     primary-worktree
+                     branch)
+            primary-worktree)
+        (setq primary-worktree
+              (timfel/agent-shell--create-single-worktree
+               repo-root worktree-parent branch))
+        (dolist (sibling-repo (cdr repo-roots))
           (timfel/agent-shell--create-single-worktree
-           repo-root worktree-parent branch)))
-    (dolist (sibling-repo (timfel/agent-shell--mx-linked-sibling-repos repo-root))
-      (timfel/agent-shell--create-single-worktree
-       sibling-repo worktree-parent branch))
-    primary-worktree))
+           sibling-repo worktree-parent branch))
+        primary-worktree))))
 
 (defun timfel/agent-shell--buffer-for-directory (directory)
   "Return the live `agent-shell' buffer rooted at DIRECTORY, or nil."
@@ -173,6 +372,68 @@ directory."
           (call-interactively #'agent-shell-rename-buffer))
       (rename-buffer title t))))
 
+(defun timfel/agent-shell--live-buffers ()
+  "Return live `agent-shell' buffers sorted by buffer name."
+  (sort (seq-filter #'buffer-live-p (agent-shell-buffers))
+        (lambda (left right)
+          (string-lessp (buffer-name left)
+                        (buffer-name right)))))
+
+(defun timfel/agent-shell--grid-dimensions (count)
+  "Return `(COLUMNS . ROWS)' for arranging COUNT buffers in a grid."
+  (let* ((columns (max 1 (ceiling (sqrt count))))
+         (rows (max 1 (ceiling (/ (float count) columns)))))
+    (cons columns rows)))
+
+(defun timfel/agent-shell-tile-buffers-grid ()
+  "Tile all live `agent-shell' buffers in the selected frame as a grid."
+  (interactive)
+  (let* ((buffers (timfel/agent-shell--live-buffers))
+         (count (length buffers)))
+    (if (zerop count)
+        (message "No live agent-shell buffers")
+      (pcase-let* ((`(,columns . ,rows)
+                    (timfel/agent-shell--grid-dimensions count)))
+        (let* ((root (selected-window))
+               (column-windows (list root))
+               all-windows)
+          (delete-other-windows root)
+          (dotimes (_ (1- columns))
+            (setq column-windows
+                  (append column-windows
+                          (list (split-window (car (last column-windows))
+                                              nil 'right)))))
+          (dolist (column-window column-windows)
+            (let ((windows-in-column (list column-window)))
+              (dotimes (_ (1- rows))
+                (setq windows-in-column
+                      (append windows-in-column
+                              (list (split-window
+                                     (car (last windows-in-column))
+                                     nil 'below)))))
+              (setq all-windows (append all-windows windows-in-column))))
+          (cl-mapc #'set-window-buffer all-windows buffers)
+          (dolist (window (nthcdr count all-windows))
+            (when (window-live-p window)
+              (delete-window window)))
+          (balance-windows-area)
+          (select-window (car (window-list (selected-frame) 'nomini))))))))
+
+(defun timfel/agent-shell--queue-startup-requests (shell-buffer task)
+  "Queue planning mode in SHELL-BUFFER before TASK, then start processing.
+
+This always enqueues both requests first so the planning prompt is guaranteed
+to run before TASK even when the shell has just started and is currently idle."
+  (with-current-buffer shell-buffer
+    (unless (derived-mode-p 'agent-shell-mode)
+      (error "Not in an agent-shell buffer: %s" (buffer-name shell-buffer)))
+    (unless (fboundp 'agent-shell--enqueue-request)
+      (error "agent-shell does not expose its request queue helper"))
+    (agent-shell--enqueue-request :prompt timfel/agent-shell-planning-request)
+    (agent-shell--enqueue-request :prompt task)
+    (unless (shell-maker-busy)
+      (agent-shell-resume-pending-requests))))
+
 ;;;###autoload
 (defun timfel/agent-shell-fan-out-worktrees (task-specs &optional directory)
   "Create one worktree-backed `agent-shell' per entry in TASK-SPECS.
@@ -221,8 +482,8 @@ for each one.  Return a plist for each created shell with `:title', `:task',
                          (timfel/agent-shell--start-shell-in-directory
                           worktree-dir)))
                    (timfel/agent-shell--rename-shell-buffer shell-buffer title)
-                   (with-current-buffer shell-buffer
-                     (agent-shell-queue-request task))
+                   (timfel/agent-shell--queue-startup-requests
+                    shell-buffer task)
                    (list :title title
                          :task task
                          :worktree worktree-dir
