@@ -55,19 +55,6 @@
   :custom
   (browse-url-generic-program (or (executable-find "wslview") "xdg-open"))
   (browse-url-browser-function (if (eq system-type 'windows-nt) 'browse-url-default-browser 'browse-url-generic))
-  (diff-command (if (eq system-type 'windows-nt)
-                    (or (executable-find "diff.exe")
-                        (if-let* ((git (executable-find "git.exe"))
-                                  (gitdir (file-name-directory git)))
-                            (catch 'found
-                              (dolist (candidate '("../../usr/bin/diff.exe"
-                                                   "../../mingw64/bin/diff.exe"
-                                                   "../usr/bin/diff.exe"
-                                                   "../mingw64/bin/diff.exe"))
-                                (let ((c (expand-file-name candidate gitdir)))
-                                  (when (file-executable-p c)
-                                    (throw 'found c)))))))
-                  "diff"))
   (custom-file (locate-user-emacs-file "emacs-custom.el"))
   (confirm-kill-emacs 'yes-or-no-p)
   (visible-bell nil)
@@ -326,8 +313,24 @@
 (use-package grep
   :defines (find-name-arg)
   :functions (grep-apply-setting)
+  :custom
+  (find-program (if (eq system-type 'windows-nt)
+                    (shell-quote-argument
+                     (or (if-let* ((git (executable-find "git.exe"))
+                                   (gitdir (file-name-directory git)))
+                             (catch 'found
+                               (dolist (candidate '("../../usr/bin/find.exe"
+                                                    "../../mingw64/bin/find.exe"
+                                                    "../usr/bin/find.exe"
+                                                    "../mingw64/bin/find.exe"))
+                                 (let ((c (expand-file-name candidate gitdir)))
+                                   (when (file-executable-p c)
+                                     (throw 'found c))))))
+                         "find"))
+                  "find"))
   :config
-  (when (eq system-type 'windows-nt)
+  (when (and (eq system-type 'windows-nt)
+             (equal find-program "find"))
     (grep-apply-setting 'grep-find-template
 			"findstr /S /N /D:. /C:<R> <F>")
     (setq find-name-arg nil))
@@ -366,6 +369,20 @@
 
 (use-package diff
   :after vc
+  :custom
+  (diff-command (if (eq system-type 'windows-nt)
+                    (or (executable-find "diff.exe")
+                        (if-let* ((git (executable-find "git.exe"))
+                                  (gitdir (file-name-directory git)))
+                            (catch 'found
+                              (dolist (candidate '("../../usr/bin/diff.exe"
+                                                   "../../mingw64/bin/diff.exe"
+                                                   "../usr/bin/diff.exe"
+                                                   "../mingw64/bin/diff.exe"))
+                                (let ((c (expand-file-name candidate gitdir)))
+                                  (when (file-executable-p c)
+                                    (throw 'found c)))))))
+                  "diff"))
   :bind (:map diff-mode-map
          ("c" . vc-next-action)))
 
@@ -903,16 +920,40 @@
   :after exec-path-from-windows-powershell
   :bind (("<f12>" . (lambda ()
                       (interactive)
-                      (let ((b (get-buffer-create "*eshell*")))
-                        (if-let ((w (get-window-with-predicate (lambda (w) (eq b (window-buffer w))))))
-                            (delete-window w)
-                          (let ((w (split-window (selected-window)
-                                                 (let ((edges (window-edges)))
-                                                   (round (* 0.7 (- (nth 3 edges) (nth 1 edges))))))))
-                            (select-window w)
-                            (set-window-buffer w b)
-                            (with-current-buffer b
-                              (unless (derived-mode-p 'eshell-mode) (eshell-mode))))))))))
+                      (if-let ((w (get-window-with-predicate (lambda (w) (string-prefix-p "*eshell" (buffer-name (window-buffer w)))))))
+                          (select-window w)
+                        (let ((w (split-window (selected-window) -18)))
+                          (select-window w)
+                          (let ((buf (seq-find (lambda (b) (string-prefix-p "*eshell" (or (buffer-name b) ""))) (buffer-list))))
+                            (if buf
+                                (switch-to-buffer buf)
+                              (eshell t)
+                              (add-hook 'kill-buffer-hook #'delete-window 0 t)))
+                          (set-window-dedicated-p w t)))))
+         :map eshell-mode-map
+         ("C-x <left>" . (lambda () (interactive)
+                           (let* ((bl (seq-sort (lambda (a b) (string-lessp (buffer-name a) (buffer-name b))) (buffer-list)))
+                                  (before (seq-take-while (lambda (b) (not (eq b (current-buffer)))) bl))
+                                  (after (seq-difference bl before)))
+                             (set-window-dedicated-p (selected-window) nil)
+                             (set-window-buffer (selected-window)
+                              (seq-find (lambda (b) (string-prefix-p "*eshell" (or (buffer-name b) ""))) (seq-reverse before)
+                                        (seq-find (lambda (b) (string-prefix-p "*eshell" (or (buffer-name b) ""))) (seq-reverse after))))
+                             (set-window-dedicated-p (selected-window) t))))
+         ("C-x <right>" . (lambda () (interactive)
+                            (let* ((bl (seq-sort (lambda (a b) (string-lessp (buffer-name a) (buffer-name b))) (buffer-list)))
+                                   (before (seq-concatenate 'list (seq-take-while (lambda (b) (not (eq b (current-buffer)))) bl) (list (current-buffer))))
+                                   (after (seq-difference bl before)))
+                              (set-window-dedicated-p (selected-window) nil)
+                              (set-window-buffer (selected-window)
+                               (seq-find (lambda (b) (string-prefix-p "*eshell" (or (buffer-name b) ""))) after
+                                         (seq-find (lambda (b) (string-prefix-p "*eshell" (or (buffer-name b) ""))) before)))
+                              (set-window-dedicated-p (selected-window) t))))
+         ("C-x c" . (lambda () (interactive)
+                      (set-window-dedicated-p (selected-window) nil)
+                      (eshell t)
+                      (set-window-dedicated-p (selected-window) t)))
+         ("<f12>" . delete-window)))
 
 (use-package eglot-booster
   :after eglot
