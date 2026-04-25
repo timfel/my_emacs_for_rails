@@ -16,6 +16,7 @@
 (require 'timfel-agent-shell-ui)
 (require 'timfel-agent-shell-context)
 (require 'timfel-markdown-overlays-extensions)
+(require 'timfel-agent-shell-continue)
 
 ;;;###autoload
 (defun timfel/agent-shell-start-deferred (arg)
@@ -25,9 +26,10 @@
     (agent-shell arg)))
 
 ;;;###autoload
-(defun timfel/dired-agent-shell-marked-directories ()
-  "Start or resume `agent-shell' for each marked Dired directory."
-  (interactive)
+(defun timfel/dired-agent-shell-marked-directories (&optional create-worktrees?)
+  "Start or resume `agent-shell' for each marked Dired directory.
+Ask to create a worktree with PREFIX"
+  (interactive "P")
   (unless (derived-mode-p 'dired-mode)
     (user-error "Current buffer is not a Dired buffer"))
   (let ((directories
@@ -39,7 +41,12 @@
     (unless directories
       (user-error "No marked directories in %s" (buffer-name)))
     (timfel/agent-shell-fan-out-worktrees
-     (seq-map (lambda (d) (cons d "")) directories))))
+     (seq-map
+      (lambda (d)
+        (if create-worktrees?
+            (cons (file-name-nondirectory (directory-file-name d)) nil)
+          (cons d nil)))
+      directories))))
 
 (provide 'timfel-agent-shell-extensions)
 

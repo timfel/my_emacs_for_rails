@@ -207,10 +207,21 @@ under PROJECT-ROOT."
       (string-join (reverse path) " -> "))))
 
 (defun timfel/agent-shell-context-source ()
-  "Gather recent Emacs context for SHELL-BUFFER that has not already been sent."
+  "Gather recent Emacs context for SHELL-BUFFER that has not already been sent.
+
+This current includes:
+
+   - the command to use to gather more info from the live emacs session
+
+   - the current point and hunk around buffers in the same project.el
+     project up to TIMFEL/AGENT-SHELL-CONTEXT-BUFFER-LIMIT
+
+   - recent xref symbol navigation within the same project
+"
   (let* ((context-parts '())
          (buffers-found 0)
          (project-root (timfel/agent-shell-context--project-root (current-buffer)))
+         ;; let the agent know if it may inspect my emacs
          (emacsclient-command
           (when (and (boundp 'server-process)
                      (process-live-p server-process))
@@ -229,7 +240,10 @@ under PROJECT-ROOT."
                   ""))
              " "))))
     (catch 'timfel/agent-shell-context-limit-reached
-      (dolist (buffer (seq-subseq (buffer-list) 0 (* 2 timfel/agent-shell-context-buffer-limit)))
+      (dolist (buffer (seq-subseq (buffer-list)
+                                  0
+                                  (min (seq-length (buffer-list))
+                                       (* 2 timfel/agent-shell-context-buffer-limit))))
         (when (timfel/agent-shell-context--eligible-buffer-p buffer project-root)
           (let* ((name (buffer-name buffer))
                  (state (timfel/agent-shell-context--buffer-state buffer))

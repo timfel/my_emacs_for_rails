@@ -13,7 +13,7 @@
 
 (declare-function timfel/agent-shell-fan-out-worktrees
                   "timfel-agent-shell-extensions"
-                  (task-specs &optional directory))
+                  (task-specs &optional directory session-strategy))
 (declare-function jira-utils-marked-items "jira-utils")
 (declare-function timfel/determine-recent-project-root "timfel")
 
@@ -252,7 +252,10 @@ With a prefix argument, prompt for DAYS.  DAYS defaults to 90."
   (jira-api-get-statuses)
   (jira-api-get-resolutions)
   (jira-api-get-projects)
-  (funcall-interactively #'jira-issues))
+  (let ((b (current-buffer)))
+    (jira-issues)
+    (switch-to-buffer b))
+  (switch-to-buffer-other-window "*Jira Issues*"))
 
 (provide 'timfel-jira-extensions)
 

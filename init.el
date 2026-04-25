@@ -53,12 +53,20 @@
 
   :custom
   (browse-url-generic-program (or (executable-find "wslview") "xdg-open"))
-  (browse-url-browser-function (lambda (&rest args)
-                                 (if (y-or-n-p "Browse with EWW? ")
-                                     (apply #'eww-browse-url args)
+  (browse-url-browser-function (lambda (url &rest args)
+                                 (if (and (not (string-match-p
+                                                (rx (or "github.com"
+                                                        "jira"
+                                                        "bitbucket"
+                                                        ".google.com"
+                                                        ".office.com"
+                                                        ".slack.com"))
+                                                url))
+                                          (y-or-n-p "Browse with EWW? "))
+                                     (apply #'eww-browse-url url args)
                                    (if (eq system-type 'windows-nt)
-                                       (apply #'browse-url-default-browser args)
-                                     (apply #'browse-url-generic args)))))
+                                       (apply #'browse-url-default-browser url args)
+                                     (apply #'browse-url-generic url args)))))
   (custom-file (locate-user-emacs-file "emacs-custom.el"))
   (confirm-kill-emacs 'yes-or-no-p)
   (visible-bell nil)
@@ -105,7 +113,6 @@
   :functions (org-capture-kill org-capture-finalize org-capture with-auto-default)
   :after (timfel)
   :config
-  (load-theme 'leuven-dark t)
   (global-visual-line-mode t)
   (setq visual-line-fringe-indicators
         '(left-curly-arrow right-curly-arrow))
@@ -208,7 +215,39 @@
 
 (use-package emacs-ci
   :after timfel
-  :commands ci-dashboard)
+  :commands ci-dashboard
+  :functions (magit-current-section
+              org-link-set-parameters
+              org-link-store-props
+              timfel/org-follow-ci-link
+              timfel/org-store-ci-link)
+  :defines ci-dashboard-base-url
+  :config
+  (with-eval-after-load 'org
+    (defun timfel/org-store-ci-link ()
+      (when-let* ((section (magit-current-section))
+                  (typ (oref section type))
+                  (val (oref section value))
+                  (url (cond ((eq typ 'ci-dashboard-job)
+                              (alist-get 'url val))
+                             ((eq typ 'ci-pr-entry)
+                              (when-let* ((mrg (alist-get 'mergeJob val))
+                                          (prv (or (alist-get 'pullRequest val) (alist-get 'pullRequest mrg)))
+                                          (to-ref (alist-get 'toRef prv))
+                                          (to-repo (alist-get 'repository to-ref))
+                                          (to-slug (alist-get 'slug to-repo))
+                                          (pr-id (alist-get 'id prv)))
+                                (format "bitbucket:projects/G/repos/%s/pull-requests/%s" to-slug pr-id))))))
+        (org-link-store-props :type "bitbucket" :link url :description url)
+        url))
+
+    (defun timfel/org-follow-ci-link (url)
+      (browse-url (format "%s/%s" ci-dashboard-base-url url)))
+
+    (org-link-set-parameters
+     "bitbucket"
+     :follow #'timfel/org-follow-ci-link
+     :store #'timfel/org-store-ci-link)))
 
 (use-package timfel-ci-extensions
   :after (timfel emacs-ci))
@@ -229,6 +268,9 @@
              timfel/dired-agent-shell-marked-directories
              timfel/agent-shell-context-source
              timfel/agent-shell-return-dwim
+             timfel/agent-shell-continue-configure
+             timfel/agent-shell-continue-run-now
+             timfel-agent-shell-continue-mode
              timfel/agent-shell-tile-buffers-grid)
   :hook ((agent-shell-mode . timfel/agent-shell-recovery-track-live-set)
          (agent-shell-mode . timfel/agent-shell-retry-on-hitting-rate-limit)
@@ -365,23 +407,57 @@
 
 (use-package org
   :commands org-mode
-  :defines (ctl-x-o-map)
   :mode (("\\.org$" . org-mode))
   :init
-  (define-prefix-command 'ctl-x-o-map)
-  :bind (:map ctl-x-map
-         ("o" . ctl-x-o-map)
-         :map ctl-x-o-map
-         ("w" . other-window) ;; because I clobbered the other window command
-         ("a" . org-agenda)
-         ("c" . org-capture)
+  :bind (("C-c c" . org-capture)
+         ("C-c m" . (lambda () (interactive) (org-capture nil "m")))
+         ("C-c t" . (lambda () (interactive) (org-capture nil "t")))
+         ("C-c a" . org-agenda)
+         ("C-c l" . org-store-link)
+         ("C-c b" . (lambda ()
+                      (interactive)
+                      (org-store-link nil)
+                      (when-let* ((link (caar org-stored-links))
+                                  (files (org-agenda-files))
+                                  (re (regexp-quote link))
+                                  (hit 0))
+                        (seq-find (lambda (f)
+                                    (ignore-errors
+                                      (with-current-buffer (find-file-noselect f)
+                                        (save-excursion
+                                          (goto-char (point-min))
+                                          (when (re-search-forward re nil t)
+                                            (setq hit (cons f (match-beginning 0)))
+                                            t)))))
+                                  files)
+                        (unless (numberp hit)
+                          (find-file (car hit))
+                          (goto-char (cdr hit))
+                          (recenter)))))
          :map org-mode-map
+         ("C-c g" . org-dblock-update)
+         ("C-c d" . org-dynamic-block-insert-dblock)
          ("C-c <right>" . org-shiftright)
          ("C-c <left>" . org-shiftleft)
          ("C-c M-RET" . org-insert-subheading))
   :custom
   (org-image-actual-width (list 600))
   (org-log-done 'time)
+  (org-export-backends '(ascii md html latex odt confluence))
+  (org-hide-emphasis-markers t)
+  (org-link-elisp-skip-confirm-regexp
+   (concat
+    "^(jira-detail-show-issue \"[^\"]+\")$"
+    "\\|"
+    "^(timfel/ci-dashboard-show-pr \"[^\"]+\" \"[^\"]+\" [0-9]+)$"
+    "\\|"
+    "^(browse-url-default-browser \"slack:[^\"]+\")$"
+    "\\|"
+    "^(timfel/jira)$"
+    "\\|"
+    "^(ci-dashboard)$"
+    "\\|"
+    "^(let ((default-directory \"[^\"]+\")) (call-interactively #'agent-shell))$"))
   (org-return-follows-link t)
   (org-file-apps '((auto-mode . emacs)
                    ("\\.mm\\'" . default)
@@ -399,6 +475,8 @@
                                 (tags priority-down category-keep)
                                 (search category-keep)))
   (org-insert-mode-line-in-empty-file t)
+  (org-refile-targets `(((,(expand-file-name "SyncFolder/todo.org" timfel/cloud-storage))
+                         . (:regexp . ,(rx (= 4 num) "-" (= 2 num) "-" (= 2 num) (+ space) (+ word))))))
   (org-adapt-indentation nil "do not shift lower items")
   (org-hide-leading-stars t "i like this more")
   (org-priority-highest ?A)
@@ -408,15 +486,93 @@
                        (?B . (:foreground "LightSteelBlue"))
                        (?C . (:foreground "OliveDrab"))))
   (org-agenda-window-setup 'current-window)
+  (org-agenda-skip-deadline-if-done t)
+  (org-todo-keywords '((sequence "TODO(t)" "IN PROGRESS(i@/!)" "BLOCKED(b@)" "|" "DONE(d!)" "WONT DO(w@/!)")))
+  (org-todo-keyword-faces
+   '(("TODO" . (:foreground "Red" :weight bold))
+     ("IN PROGRESS" . (:foreground "Cyan" :weight bold))
+     ("BLOCKED" . (:foreground "Magenta" :weight bold))
+     ("DONE" . (:foreground "LimeGreen" :weight bold))
+     ("WONT DO" . (:foreground "LimeGreen" :weight bold))))
+  (org-agenda-custom-commands
+   '(("a" "Daily agenda and all TODOs"
+      ((tags-todo "-DONE"
+                  ((org-agenda-overriding-header "Active")
+                   (org-agenda-skip-function
+                    '(and
+                      (org-agenda-skip-entry-if 'notregexp "Daily work items")
+                      (org-agenda-skip-entry-if 'todo '("TODO" "DONE" "WONT DO"))))))
+       (agenda ""
+               ((org-agenda-span 7)
+                (org-agenda-overriding-header "Agenda")
+                (org-agenda-skip-function
+                 '(or (org-agenda-skip-entry-if 'regexp "Daily work items")
+                      (org-agenda-skip-entry-if 'todo '("IN PROGRESS" "BLOCKED" "DONE" "WONT DO"))
+                      (org-agenda-skip-entry-if 'nottimestamp)))))
+       (alltodo ""
+                ((org-agenda-overriding-header "Unscheduled")
+                 (org-agenda-skip-function
+                  '(or (org-agenda-skip-entry-if 'nottodo '("TODO"))
+                       (org-agenda-skip-entry-if 'scheduled 'deadline)))))))))
   (org-clock-idle-time 15)
   (org-agenda-files (list (expand-file-name "SyncFolder/todo.org" timfel/cloud-storage)
                           (expand-file-name "SyncFolder/notes.org" timfel/cloud-storage)))
-  (org-capture-templates `(("n" "note" entry
-                             (file+olp+datetree ,(expand-file-name "SyncFolder/notes.org" timfel/cloud-storage))
-                             "* %?\nEntered on %U\n"))))
+  (org-capture-templates
+   `(("t" "todo"
+      entry (file+olp+datetree ,(expand-file-name "SyncFolder/todo.org" timfel/cloud-storage))
+      ,(string-join '("* TODO %i%?"
+                      ":Created: %T"
+                      ":DEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+7d\"))"
+                      "  %a")
+                    "\n")
+      :empty-lines 1
+      :tree-type month)
+     ("n" "note"
+      entry (file+olp+datetree ,(expand-file-name "SyncFolder/notes.org" timfel/cloud-storage))
+      "* %?\nEntered on %U\n")
+     ("m" "meeting"
+      entry (file+olp+datetree ,(expand-file-name "SyncFolder/notes.org" timfel/cloud-storage))
+      ,(string-join '("* %? :meeting:"
+                      ":Created: %T"
+                      "** Notes"
+                      "** Action Items"
+                     "*** TODO [#A] ")
+                    "\n")
+      :clock-in t
+      :clock-resume t
+      :empty-lines 0))))
 
 (use-package org-tempo
   :after org)
+
+(use-package org-tree-slide
+  :after org
+  :ensure t
+  :functions (org-fold-show-all
+              org-tree-slide-mode
+              org-tree-slide-move-next-tree
+              org-tree-slide-move-previous-tree
+              org-tree-slide-content)
+  :defines (org-tree-slide-mode-map)
+  :commands org-tree-slide-mode
+  :config
+  (setq org-tree-slide-header t)
+  (setq org-tree-slide-slide-in-effect (display-graphic-p))
+  (setq org-tree-slide-heading-emphasis nil)
+  (setq org-tree-slide-cursor-init nil)
+  (setq org-tree-slide-modeline-display 'outside)
+  (setq org-tree-slide-skip-done nil)
+  (setq org-tree-slide-skip-comments t)
+  :bind (:map org-mode-map
+         ("<f5>" . org-tree-slide-mode)
+         :map org-tree-slide-mode-map
+         ("<f5>" . (lambda ()
+                     (interactive)
+                     (org-tree-slide-mode 0)
+                     (org-fold-show-all)))
+         ("C-<f5>" . org-tree-slide-content)
+         ("C-<right>" . org-tree-slide-move-next-tree)
+         ("C-<left>" . org-tree-slide-move-previous-tree)))
 
 (use-package ox-gfm
   :ensure t
@@ -433,7 +589,7 @@
                                               (executable-find "python3")
                                               (expand-file-name "~/dotfiles/bin/wslscr.py %s"))
                                     (expand-file-name "~/bin/wslscr.py %s")))
-  (org-download-image-dir (expand-file-name "Screenshots/" timfel/cloud-storage)))
+  (org-download-image-dir "./Screenshots/"))
 
 (use-package imenu
   :custom
@@ -442,7 +598,9 @@
   :bind (("C-." . imenu)))
 
 (use-package eldoc
-  :custom (eldoc-documentation-strategy #'eldoc-documentation-compose)
+  :custom
+  (eldoc-documentation-strategy #'eldoc-documentation-compose)
+  (eldoc-echo-area-prefer-doc-buffer t)
   :functions (eldoc-display-in-buffer-at-point)
   :bind (([remap display-local-help] . timfel/local-help-or-doc))
   :config
@@ -450,6 +608,7 @@
     (interactive)
     (unless (display-local-help t)
       (call-interactively #'eldoc-print-current-symbol-info)))
+  (setq eldoc-display-functions '(eldoc-display-in-echo-area eldoc-display-in-buffer))
   (remove-hook 'eldoc-display-functions #'eldoc-display-in-buffer)
   (remove-hook 'eldoc-display-functions #'eldoc-display-in-buffer-at-point)
   (add-hook 'eldoc-display-functions #'eldoc-display-in-echo-area))
@@ -875,13 +1034,93 @@
 
 (use-package eclipse-theme
   :ensure t
+  :disabled
   :unless (eq system-type 'android)
   :config
   (load-theme 'eclipse t))
 
 (use-package tramp
-  :defer 30
+  :defer 3
+  :custom
+  (tramp-use-scp-direct-remote-copying t)
+  (remote-file-name-inhibit-cache nil)
+  (remote-file-name-inhibit-locks t)
+  (remote-file-name-inhibit-auto-save t)
+  (remote-file-name-inhibit-auto-save-visited t)
+  (auto-revert-remote-files nil)
+  (enable-remote-dir-locals nil)
+  (tramp-copy-size-limit (* 1024 1024))
+  (tramp-verbose 2)
   :config
+  (connection-local-set-profile-variables
+   'my-remote-profile
+   '((dired-check-symlinks . nil)
+     (shell-history-file-name . t)
+     (tramp-direct-async-process . t)))
+
+  (connection-local-set-profiles
+   '(:application tramp)
+   'my-remote-profile)
+
+  (defun memoize-remote (key cache orig-fn &rest args)
+    "Memoize a value if the key is a remote path."
+    (if (and key
+             (file-remote-p key))
+        (if-let ((current (assoc key (symbol-value cache))))
+            (cdr current)
+          (let ((current (apply orig-fn args)))
+            (set cache (cons (cons key current) (symbol-value cache)))
+            current))
+      (apply orig-fn args)))
+
+  (with-eval-after-load 'magit
+    (connection-local-set-profile-variables
+     'my-remote-magit-profile
+     '((magit-commit-show-diff . nil)
+       (magit-branch-direct-configure . nil)
+       (magit-refresh-status-buffer . nil)))
+
+    (connection-local-set-profiles
+     '(:application tramp)
+     'my-remote-magit-profile)
+
+    ;; Memoize magit top level
+    (defvar magit-toplevel-cache nil)
+    (defun memoize-magit-toplevel (orig &optional directory)
+      (memoize-remote (or directory default-directory)
+                      'magit-toplevel-cache orig directory))
+    (advice-add 'magit-toplevel :around #'memoize-magit-toplevel)
+    
+    (setq magit-tramp-pipe-stty-settings 'pty))
+
+  (with-eval-after-load 'vc
+    (setq vc-ignore-dir-regexp
+          (format "\\(%s\\)\\|\\(%s\\)"
+                  vc-ignore-dir-regexp
+                  tramp-file-name-regexp))
+    ;; memoize vc-git-root
+    (defvar vc-git-root-cache nil)
+    (defun memoize-vc-git-root (orig file)
+      (let ((value (memoize-remote (file-name-directory file) 'vc-git-root-cache orig file)))
+        ;; sometimes vc-git-root returns nil even when there is a root there
+        (when (null (cdr (car vc-git-root-cache)))
+          (setq vc-git-root-cache (cdr vc-git-root-cache)))
+        value))
+    (advice-add 'vc-git-root :around #'memoize-vc-git-root))
+
+  (with-eval-after-load 'compile
+    (remove-hook 'compilation-mode-hook #'tramp-compile-disable-ssh-controlmaster-options))
+
+  (with-eval-after-load 'project
+    ;; Memoize current project
+    (defvar project-current-cache nil)
+    (defun memoize-project-current (orig &optional prompt directory)
+      (memoize-remote (or directory
+                          project-current-directory-override
+                          default-directory)
+                      'project-current-cache orig prompt directory))
+    (advice-add 'project-current :around #'memoize-project-current))
+
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 (use-package ido
@@ -921,6 +1160,9 @@
   :unless (display-graphic-p)
   :vc (:url "https://github.com/timfel/sixel-graphics.el" :branch "main" :rev :newest)
   :config
+  (when (getenv "WT_SESSION")
+    (setq sixel-graphics-cell-width 10
+          sixel-graphics-cell-height 20))
   (if (eq system-type 'windows-nt)
       ;; uses https://github.com/trackd/Sixel, installed via Install-Module Sixel
       (let* ((script-dir (locate-user-emacs-file "bin/"))
@@ -1190,7 +1432,7 @@
         (let* ((promptdir (expand-file-name "prompts" user-emacs-directory))
                (prompt-files (directory-files promptdir t "\\.md\\'")))
           (mapcar #'timfel/gptel--load-prompt-directive prompt-files)))
-  :bind (("C-x a i" . gptel-send)
+  :bind (("C-x a i" . gptel)
          ("C-x a c" . timfel/gptel-complete)))
 
 (use-package llm-tool-collection
@@ -1217,6 +1459,10 @@
 (use-package xt-mouse
   :if (eq window-system nil)
   :config (run-with-idle-timer 0.1 nil #'xterm-mouse-mode +1))
+
+(use-package clipetty
+  :ensure t
+  :if (eq window-system nil))
 
 (use-package proced
   :ensure t
@@ -1763,9 +2009,12 @@ input means nil arguments."
               agent-shell-openai-make-authentication
               agent-shell-opencode-make-authentication
               agent-shell-rename-buffer
+              org-link-set-parameters
+              org-link-store-props
               shell-maker-submit
               oca-key
               oca-codex-login
+              timfel/org-store-agent-shell-link
               timfel/agent-shell-return-dwim
               timfel/agent-shell-command-prefix-bwrap)
   :commands agent-shell
@@ -1788,6 +2037,28 @@ input means nil arguments."
   (agent-shell-text-file-capabilities t)
   (agent-shell-command-prefix #'timfel/agent-shell-command-prefix-bwrap)
   :config
+
+  (defun timfel/org-store-agent-shell-link (&optional _interactive?)
+    (when (derived-mode-p 'agent-shell-mode)
+      (let* ((directory (file-name-as-directory (expand-file-name default-directory)))
+             (link (concat "agent-shell:" directory))
+             (description (format "agent shell in %s"
+                                  (abbreviate-file-name directory))))
+        (org-link-store-props
+         :type "agent-shell"
+         :link link
+         :description description)
+        link)))
+
+  (with-eval-after-load 'org
+    (org-link-set-parameters
+     "agent-shell"
+     :follow (lambda (d) (let ((default-directory d)
+                               (agent-shell-session-strategy 'prompt)
+                               (agent-shell-context-sources nil))
+                           (call-interactively #'agent-shell)))
+     :store #'timfel/org-store-agent-shell-link))
+
   (keymap-unset agent-shell-mode-map "p")
   (keymap-unset agent-shell-mode-map "n")
   ;; Remove once upstream includes the session strategy snapshot fix.
@@ -1975,7 +2246,11 @@ input means nil arguments."
   :ensure t
   :functions (jira-actions-copy-issues-id-to-clipboard
               jira-api--get-current-url
-              jira-utils-marked-item)
+              jira-detail-show-issue
+              jira-utils-marked-item
+              org-link-set-parameters
+              org-link-store-props
+              timfel/org-store-jira-link)
   :defines (jira-detail--current-key)
   :commands (jira-api-get-basic-data jira-api-get-users jira-issues)
   :bind (:map jira-detail-mode-map
@@ -2001,7 +2276,20 @@ input means nil arguments."
   (with-eval-after-load 'jira-issues
     (transient-append-suffix 'jira-issues-actions-menu "W"
       '("a" "Investigate marked issues with agent"
-         timfel/jira-issues-investigate-marked-with-agent)))
+        timfel/jira-issues-investigate-marked-with-agent)))
+
+  (with-eval-after-load 'org
+    (defun timfel/org-store-jira-link (&optional _interactive?)
+      (when-let ((_ (or (derived-mode-p 'jira-detail-mode)
+                        (derived-mode-p 'jira-issues-mode)))
+                 (key (concat "jira:" (jira-utils-marked-item))))
+        (org-link-store-props :type "jira" :link key :description key)
+        key))
+    (org-link-set-parameters
+     "jira"
+     :follow #'jira-detail-show-issue
+     :store #'timfel/org-store-jira-link))
+
   :custom
   (jira-issues-max-results 70)
   (jira-token-is-personal-access-token t)
@@ -2029,8 +2317,11 @@ input means nil arguments."
      "https://www.osnews.com/feed/")))
 
 (use-package custom
-  :defines (wl-copy-process)
   :config
+  (if (eq system-type 'android)
+      (load-theme 'leuven-dark t)
+    (load-theme 'leuven))
+
   (set-fontset-font
    t
    'emoji
@@ -2060,24 +2351,35 @@ input means nil arguments."
                                  (if (eq system-type 'android)
                                      (set-face-attribute 'default nil :family "Droid Sans Mono" :height 120)))))))
 
+  (setq safe-local-variable-values
+        (append safe-local-variable-values
+                '((eval ignore-errors (require 'emacs-ci))
+                  (eval ignore-errors (require 'agent-shell))
+                  (eval ignore-errors (require 'jira))
+                  (smie-indent-basic . 4)
+                  (jsonnet-indent-level . 4)
+                  (flycheck-disabled-checkers emacs-lisp-checkdoc))))
+
   (when (eq system-type 'gnu/linux)
-    (if (or (eq window-system 'pgtk)
-            (and (not window-system) (getenv "WAYLAND_DISPLAY")))
-        (progn
-          (setq wl-copy-process nil)
-          (defun wl-copy (text)
-            (setq wl-copy-process (make-process :name "wl-copy"
-                                                :buffer nil
-                                                :command '("wl-copy" "-f" "-n")
-                                                :connection-type 'pipe))
-            (process-send-string wl-copy-process text)
-            (process-send-eof wl-copy-process))
-          (defun wl-paste ()
-            (if (and wl-copy-process (process-live-p wl-copy-process))
-                nil ; should return nil if we're the current paste owner
-              (shell-command-to-string "wl-paste -n | tr -d \r")))
-          (setq interprogram-cut-function 'wl-copy
-                interprogram-paste-function 'wl-paste))))
+    (when (or (eq window-system 'pgtk)
+              (and (not window-system) (getenv "WAYLAND_DISPLAY")))
+      (declare-function clipetty-cut "clipetty" (text))
+      (let ((last-copied-text))
+        (setq interprogram-cut-function
+              (lambda (text)
+                (setq last-copied-text (substring-no-properties text))
+                (if (and (fboundp #'clipetty-cut) (not window-system))
+                    (clipetty-cut last-copied-text)
+                  (make-process :name "wl-copy"
+                                :buffer nil
+                                :command '("wl-copy" "-t" "text" last-copied-text))))
+              interprogram-paste-function
+              (lambda ()
+                (let* ((raw (shell-command-to-string "wl-paste -t text -n 2>/dev/null | tr -d '\r'"))
+                       (s (and raw (not (string-empty-p raw)) raw)))
+                  (if (and s last-copied-text (string= s last-copied-text))
+                      nil
+                    s)))))))
 
   (when-let* ((nvm "~/.nvm/versions/node/")
               (_ (file-exists-p nvm)))

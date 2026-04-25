@@ -20,18 +20,12 @@
 (declare-function org-agenda "org-agenda" (&optional arg keys restriction-lock))
 (declare-function timfel/agent-shell-fan-out-worktrees
                   "timfel-agent-shell-extensions"
-                  (task-specs &optional directory))
+                  (task-specs &optional directory session-strategy))
 (declare-function timfel/jira "timfel-jira-extensions" ())
 
 (defconst timfel/gptel-orchestration-live-set-file
   (locate-user-emacs-file ".agent-shell/live-agent-shell-set.el")
   "Location of the persisted live agent-shell directory set.")
-
-(defconst timfel/gptel-orchestration-tool-names
-  '("inspect_current_work_context"
-    "open_work_queues"
-    "start_worktree_tasks")
-  "GPTel tool names used by the orchestration preset.")
 
 (defconst timfel/gptel-orchestration-buffer-name "*gptel-agents*"
   "Default buffer name for the AGENTS.md orchestration chat.")
@@ -69,6 +63,21 @@
         (when (listp value)
           (seq-map #'expand-file-name value))))))
 
+(defun timfel/gptel-orchestration--read-forms-from-string (string)
+  "Read all Lisp forms from STRING and return them as a list."
+  (let ((position 0)
+        forms)
+    (condition-case err
+        (while t
+          (let ((parsed (read-from-string string position)))
+            (setq forms (cons (car parsed) forms)
+                  position (cdr parsed))))
+      (end-of-file
+       (unless (string-match-p "\\`[[:space:]\n\r\t]*\\'"
+                               (substring string position))
+         (signal (car err) (cdr err)))))
+    (nreverse forms)))
+
 (defun timfel/gptel-tool-inspect-current-work-context (&optional limit)
   "Return the most relevant current-work context from the Emacs session."
   (let* ((limit (or limit 12))
@@ -91,6 +100,18 @@
           :agent_shell_buffers agent-shell-summaries
           :recent_agent_shell_directories
           (timfel/gptel-orchestration--read-live-agent-shell-set))))
+
+(defun timfel/gptel-tool-evaluate-workspace-elisp (code)
+  "Evaluate one or more Elisp forms from CODE in the live Emacs workspace."
+  (let* ((forms (timfel/gptel-orchestration--read-forms-from-string code))
+         (last-value nil))
+    (unless forms
+      (user-error "No Elisp forms provided"))
+    (dolist (form forms)
+      (setq last-value (eval form t)))
+    (list :ok t
+          :forms_evaluated (length forms)
+          :result (prin1-to-string last-value))))
 
 (defun timfel/gptel-orchestration--open-jira ()
   "Open Tim's Jira work queue and return a summary plist."
@@ -162,6 +183,17 @@
              (timfel/gptel-orchestration--task-prompt task)))
      items)))
 
+(defun timfel/gptel-orchestration--use-explicit-directory-task-specs-p (task-specs directory explicit-directory-p)
+  "Return non-nil when TASK-SPECS should target DIRECTORY directly.
+
+When EXPLICIT-DIRECTORY-P is non-nil, this tool should treat the
+directory as the task-spec title so `timfel/agent-shell-fan-out-worktrees'
+starts the task in that exact directory."
+  (when explicit-directory-p
+    (when (> (length task-specs) 1)
+      (user-error "Cannot start multiple tasks directly in %s" directory))
+    t))
+
 (defun timfel/gptel-orchestration--default-work-root ()
   "Return the most sensible default root for starting work."
   (seq-find #'file-directory-p
@@ -206,27 +238,31 @@ Return a plist describing whether anything was created."
         (zerop (process-file "git" nil nil nil "rev-parse" "--verify" "--quiet"
                              "HEAD")))))
 
-(defun timfel/gptel-tool-start-worktree-tasks (tasks &optional directory)
+(defun timfel/gptel-tool-start-worktree-tasks (tasks &optional directory resume-p)
   "Prompt for a work directory when needed and fan out TASKS there."
   (unless (require 'timfel-agent-shell-extensions nil t)
     (user-error "timfel-agent-shell-extensions is not available"))
-  (let* ((task-specs (timfel/gptel-orchestration--normalize-task-specs tasks))
+  (let* ((explicit-directory-p (and directory (not (string-blank-p directory))))
+         (task-specs (timfel/gptel-orchestration--normalize-task-specs tasks))
          (directory (expand-file-name
-                     (or (and directory (not (string-blank-p directory)) directory)
+                     (or (and explicit-directory-p directory)
                          (timfel/gptel-orchestration--read-work-directory))))
          (repo-state (timfel/gptel-orchestration--ensure-git-repo directory))
          (used-worktrees (timfel/gptel-orchestration--worktree-capable-p directory))
          (effective-task-specs
-          (if used-worktrees
-              task-specs
-            (progn
-              (when (> (length task-specs) 1)
-                (user-error
-                 (concat "Cannot fan out multiple tasks from %s yet; "
-                         "the repository needs a base branch or commit first")
-                 directory))
-              (list (cons directory (cdar task-specs)))))))
-    (timfel/agent-shell-fan-out-worktrees effective-task-specs directory)
+          (if (timfel/gptel-orchestration--use-explicit-directory-task-specs-p
+               task-specs directory explicit-directory-p)
+              (list (cons directory (cdar task-specs)))
+            (if used-worktrees
+                task-specs
+              (progn
+                (when (> (length task-specs) 1)
+                  (user-error
+                   (concat "Cannot fan out multiple tasks from %s yet; "
+                           "the repository needs a base branch or commit first")
+                   directory))
+                (list (cons directory (cdar task-specs))))))))
+    (timfel/agent-shell-fan-out-worktrees effective-task-specs directory (if resume-p 'latest 'new))
     (list :ok t
           :directory directory
           :used_worktrees used-worktrees
@@ -234,27 +270,49 @@ Return a plist describing whether anything was created."
           :initialized_git (plist-get repo-state :initialized_git)
           :tasks_started (length effective-task-specs))))
 
+(defun timfel/gptel-tool-bitbucket (argv)
+  (condition-case nil
+      (let* ((cmd (string-join (append '("gdev-cli" "bitbucket") (mapcar #'shell-quote-argument argv)) " ")))
+        (list :ok t
+              :command cmd
+              :output (shell-command-to-string cmd)))
+    (error "bitbucket arguments must be a list of strings")))
+
+(defun timfel/gptel-tool-jira (argv)
+  (condition-case nil
+      (let* ((cmd (string-join (append '("gdev-cli" "jira") (mapcar #'shell-quote-argument argv)) " ")))
+        (list :ok t
+              :command cmd
+              :output (shell-command-to-string cmd)))
+    (error "jira arguments must be a list of strings")))
+
 ;;;###autoload
-(defun timfel/gptel-open-agents-orchestration (&optional new-buffer)
+(defun timfel/gptel-open-agents-orchestration (&optional inline?)
   "Open a gptel chat buffer configured for the AGENTS.md orchestration flow.
 
-With prefix argument NEW-BUFFER, create a fresh buffer instead of reusing
+With prefix argument INLINE?, just send the current buffer and see.
 `timfel/gptel-orchestration-buffer-name'."
   (interactive "P")
   (let* ((default-directory (expand-file-name (locate-user-emacs-file "")))
-         (buffer-name (if new-buffer
-                          (generate-new-buffer-name
-                           timfel/gptel-orchestration-buffer-name)
-                        timfel/gptel-orchestration-buffer-name))
-         (buffer (gptel buffer-name nil nil t)))
+         (buffer-name timfel/gptel-orchestration-buffer-name)
+         (buffer (if inline? (current-buffer) (gptel buffer-name nil nil t))))
     (with-current-buffer buffer
       (gptel--apply-preset
        'agents-orchestration
        (lambda (sym val)
          (set (make-local-variable sym) val))))
+
+    (if inline?
+        (gptel-request
+            (if (use-region-p)
+                (buffer-substring-no-properties (region-beginning)
+                                                (region-end))
+              (buffer-substring-no-properties (point-min)
+                                              (point)))
+          :stream gptel-stream))
     buffer))
 
-(defvar timfel/gptel-orchestration-tools
+(setq timfel/gptel-orchestration-tools
   (list
    (gptel-make-tool
     :name "inspect_current_work_context"
@@ -287,7 +345,7 @@ With prefix argument NEW-BUFFER, create a fresh buffer instead of reusing
     :name "start_worktree_tasks"
     :function #'timfel/gptel-tool-start-worktree-tasks
     :description
-    "Start one or more agent-shell tasks using Tim's AGENTS.md workflow. If no directory is provided, this prompts with `read-directory-name` using the prompt `work where: `. When the chosen directory does not exist, it is created and initialized with git. Use this instead of driving the workflow through emacsclient."
+    "Start one or more agent-shell tasks. If no directory is provided, this prompts with `read-directory-name` using the prompt `work where: `. When an explicit directory is provided, a single task starts directly in that absolute directory."
     :args (list
            '(:name "tasks"
              :type array
@@ -301,25 +359,51 @@ With prefix argument NEW-BUFFER, create a fresh buffer instead of reusing
            '(:name "directory"
              :type string
              :description "Optional repository or project directory. When omitted, Emacs prompts interactively."
+             :optional t)
+           '(:name "resume_previous_session"
+             :type boolean
+             :description "Optional flag to select if this should resume a previous session if any (the default), or if this is a new task."
              :optional t))
     :category "orchestration"
     :confirm t
-    :include t))
-  "GPTel tools that map directly to Tim's AGENTS.md orchestration workflow.")
-
-(setq gptel-tools
-      (append
-       (cl-remove-if
-        (lambda (tool)
-          (member (gptel-tool-name tool) timfel/gptel-orchestration-tool-names))
-        gptel-tools)
-       timfel/gptel-orchestration-tools))
+    :include t)
+   (gptel-make-tool
+    :name "bitbucket"
+    :function #'timfel/gptel-tool-bitbucket
+    :confirm t
+    :include t
+    :category "orchestration"
+    :description
+    "A CLI tool to access bitbucket. It has subcommands and the argument is passed as argv"
+    :args '((:name "argv" :type array :description "arguments to pass" :items (:type string))))
+   (gptel-make-tool
+    :name "jira"
+    :function #'timfel/gptel-tool-jira
+    :confirm t
+    :include t
+    :category "orchestration"
+    :description
+    "A CLI tool to access Jira. It has subcommand and the argument is passed as argv"
+    :args '((:name "argv" :type array :description "arguments to pass" :items (:type string))))
+   (gptel-make-tool
+    :name "evaluate_workspace_elisp"
+    :function #'timfel/gptel-tool-evaluate-workspace-elisp
+    :description
+    "Evaluate Elisp directly in the live Emacs workspace and return the printed value of the last form. Use this to inspect and read buffers or query editor state when the built-in orchestration tools are not enough. IMPORTANT: This runs arbitrary Elisp in the user's Emacs session; confirmation is required."
+    :args (list
+           '(:name "code"
+             :type string
+             :description "One or more Elisp forms to evaluate in the live Emacs session."))
+    :category "orchestration"
+    :confirm t
+    :include t)))
 
 (gptel-make-preset
  'agents-orchestration
- :description "Use Emacs-native orchestration tools for current work, work queues, and starting agent-shell tasks."
+ :description "Use Emacs-native orchestration tools for current work, work queues, worktree task startup, and direct live-workspace Elisp evaluation."
  :system 'agents-orchestration
- :tools timfel/gptel-orchestration-tool-names
+ :tools (append (mapcar #'gptel-tool-name timfel/gptel-orchestration-tools)
+                '("create_file"))
  :use-tools t)
 
 (provide 'timfel-gptel-orchestration)
