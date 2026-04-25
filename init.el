@@ -117,7 +117,7 @@
                 "\\|\\`/data/data/com.termux/\\'"
                 "\\|\\`/content/storage/\\'"))
   ;; fullscreen
-  (set-frame-parameter nil 'fullscreen 'fullboth)
+  ;; (set-frame-parameter nil 'fullscreen 'fullboth)
   ;; useful menus
   (setq tool-bar-map '(keymap))
   (define-key-after tool-bar-map [separator-0] menu-bar-separator)
