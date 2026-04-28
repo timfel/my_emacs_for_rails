@@ -13,6 +13,9 @@
 (defconst write-dirs
   '("~/.cache"
     "~/.codex"
+    "~/.config/goose"
+    "~/.local/share/goose"
+    "~/.local/state/goose"
     "~/.local/share/opencode/"
     "~/.eclipse"
     "~/.gradle"
@@ -87,6 +90,8 @@
              (extra-dir-to-bind (if (file-directory-p graal-dir) graal-dir default-directory))
              (graal-common-root (if (file-directory-p graal-dir) (git-common-root graal-dir) extra-dir-to-bind))
              (real-config-toml (file-truename "~/.codex/config.toml"))
+             (real-goose-config (file-truename "~/.config/goose/config.yaml"))
+             (real-goose-adversary-config (file-truename "~/.config/goose/adversary.md"))
              (real-config-jsonc (file-truename "~/.config/opencode/opencode.jsonc"))
              (extra-write-dirs (list default-directory
                                      common-root
@@ -107,9 +112,11 @@
          ;; expose select folders as writable
          (thread-last
            (seq-map #'expand-file-name
-                    (append write-dirs
-                            (list real-config-toml
-                                  real-config-jsonc)
+                     (append write-dirs
+                             (list real-config-toml
+                                   real-goose-config
+                                   real-goose-adversary-config
+                                   real-config-jsonc)
                             extra-write-dirs))
            (seq-filter #'file-exists-p)
            (seq-mapcat (lambda (p) `("--bind" ,p ,p))))

@@ -254,7 +254,11 @@
 
 (use-package oca
   :after timfel
-  :commands (oca-key oca-update-codex-config oca-update-opencode-config oca-codex-login))
+  :commands (oca-key
+             oca-update-codex-config
+             oca-update-opencode-config
+             oca-update-goose-config
+             oca-codex-login))
 
 (use-package orcl
   :after timfel
@@ -2009,6 +2013,7 @@ input means nil arguments."
   :ensure t
   :functions (agent-shell-make-environment-variables
               agent-shell-openai-make-authentication
+              agent-shell-make-goose-authentication
               agent-shell-opencode-make-authentication
               agent-shell-rename-buffer
               org-link-set-parameters
@@ -2033,7 +2038,7 @@ input means nil arguments."
   (agent-shell-session-strategy 'latest)
   (agent-shell-highlight-blocks nil)
   (agent-shell-prefer-viewport-interaction nil)
-  (agent-shell-preferred-agent-config 'opencode)
+  (agent-shell-preferred-agent-config 'goose)
   (agent-shell-show-config-icons nil)
   (agent-shell-show-usage-at-turn-end t)
   (agent-shell-text-file-capabilities t)
@@ -2097,6 +2102,8 @@ input means nil arguments."
   (setq
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-codex-login)
+   agent-shell-goose-authentication (agent-shell-make-goose-authentication :openai-api-key #'oca-key)
+   agent-shell-goose-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :none t)))
 
 (use-package timfel-agent-shell-unstick
