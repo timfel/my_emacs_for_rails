@@ -519,7 +519,14 @@
                 ((org-agenda-overriding-header "Unscheduled")
                  (org-agenda-skip-function
                   '(or (org-agenda-skip-entry-if 'nottodo '("TODO"))
-                       (org-agenda-skip-entry-if 'scheduled 'deadline)))))))))
+                       (org-agenda-skip-entry-if 'scheduled 'deadline)))))
+       (agenda ""
+               ((org-agenda-start-day "-7d")
+                (org-agenda-span 7)
+                (org-agenda-overriding-header "Recently done")
+                (org-agenda-skip-function
+                 '(or (org-agenda-skip-entry-if 'nottodo '("DONE" "WONT DO"))
+                      (org-agenda-skip-entry-if 'nottimestamp)))))))))
   (org-clock-idle-time 15)
   (org-agenda-files (list (expand-file-name "SyncFolder/todo.org" timfel/cloud-storage)
                           (expand-file-name "SyncFolder/notes.org" timfel/cloud-storage)))
