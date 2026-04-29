@@ -1387,20 +1387,13 @@
                                                       (region-end))
                     (buffer-substring-no-properties (point-min)
                                                     (point))))
-           (gptel-use-tools nil)
+           (gptel-tools (append timfel/gptel-tool--custom-tools
+                                timfel/gptel-tool--collection-tools))
+           (gptel-use-tools t)
            (gptel-include-reasoning nil))
        (gptel-request query
-                      :callback (lambda (response info)
-                                  (let* ((start-marker (plist-get info :position))
-                                         (tracking-marker (plist-get info :tracking-marker)))
-                                    (if (stringp response)
-                                        (save-excursion
-                                          (with-current-buffer (marker-buffer start-marker)
-                                            (goto-char (or tracking-marker start-marker))
-                                            (insert response)
-                                            (plist-put info :tracking-marker (setq tracking-marker (point-marker))))))))
-                      :stream gptel-stream
-                      :system "Continue writing until the current control flow is completed or the task described in the last comment is done. Only write code, no markup, no communication, no explanations, do not repeat parts of the request, just continue writing the code."))))
+         :stream gptel-stream
+         :system "Continue writing until the current control flow is completed or the task described in the last comment is done. Only write code, no markup, no communication, no explanations, do not repeat parts of the request, just continue writing the code."))))
 
   (defun timfel/gptel--prompt-metadata (key)
     "Return prompt metadata KEY from comment headers in the current buffer."
