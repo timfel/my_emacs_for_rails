@@ -407,6 +407,7 @@
 
 (use-package org
   :commands org-mode
+  :functions org-agenda-files
   :mode (("\\.org$" . org-mode))
   :init
   :bind (("C-c c" . org-capture)
@@ -619,13 +620,14 @@
               icomplete-fido-backward-updir
               icomplete-forward-completions
               icomplete-backward-completions
+              icomplete-fido-exit
               icomplete-minibuffer-setup
-              icomplete-ret
-              icomplete-force-complete)
+              icomplete-ret)
   :bind (:map icomplete-minibuffer-map
               ("RET" . #'icomplete-fido-ret)
+              ("M-j" . #'icomplete-fido-exit)
               ("C-<return>" . #'icomplete-ret)
-              ("TAB" . #'icomplete-force-complete)
+              ("TAB" . #'minibuffer-complete)
               ("DEL" . #'icomplete-fido-backward-updir)
               ("C-d" . #'icomplete-fido-delete-char)
               ("<right>" . #'icomplete-forward-completions)
@@ -1051,6 +1053,17 @@
   (enable-remote-dir-locals nil)
   (tramp-copy-size-limit (* 1024 1024))
   (tramp-verbose 2)
+  :preface
+  (defun memoize-remote (key cache orig-fn &rest args)
+  "Memoize a value if the key is a remote path."
+  (if (and key
+           (file-remote-p key))
+      (if-let ((current (assoc key (symbol-value cache))))
+          (cdr current)
+        (let ((current (apply orig-fn args)))
+          (set cache (cons (cons key current) (symbol-value cache)))
+          current))
+    (apply orig-fn args)))
   :config
   (connection-local-set-profile-variables
    'my-remote-profile
@@ -1061,17 +1074,6 @@
   (connection-local-set-profiles
    '(:application tramp)
    'my-remote-profile)
-
-  (defun memoize-remote (key cache orig-fn &rest args)
-    "Memoize a value if the key is a remote path."
-    (if (and key
-             (file-remote-p key))
-        (if-let ((current (assoc key (symbol-value cache))))
-            (cdr current)
-          (let ((current (apply orig-fn args)))
-            (set cache (cons (cons key current) (symbol-value cache)))
-            current))
-      (apply orig-fn args)))
 
   (with-eval-after-load 'magit
     (connection-local-set-profile-variables
@@ -1089,7 +1091,7 @@
     (defun memoize-magit-toplevel (orig &optional directory)
       (memoize-remote (or directory default-directory)
                       'magit-toplevel-cache orig directory))
-    (advice-add 'magit-toplevel :around #'memoize-magit-toplevel)
+    (advice-add 'magit-toplevel :around 'memoize-magit-toplevel)
     
     (setq magit-tramp-pipe-stty-settings 'pty))
 
@@ -1106,10 +1108,10 @@
         (when (null (cdr (car vc-git-root-cache)))
           (setq vc-git-root-cache (cdr vc-git-root-cache)))
         value))
-    (advice-add 'vc-git-root :around #'memoize-vc-git-root))
+    (advice-add 'vc-git-root :around 'memoize-vc-git-root))
 
   (with-eval-after-load 'compile
-    (remove-hook 'compilation-mode-hook #'tramp-compile-disable-ssh-controlmaster-options))
+    (remove-hook 'compilation-mode-hook 'tramp-compile-disable-ssh-controlmaster-options))
 
   (with-eval-after-load 'project
     ;; Memoize current project
@@ -1119,7 +1121,7 @@
                           project-current-directory-override
                           default-directory)
                       'project-current-cache orig prompt directory))
-    (advice-add 'project-current :around #'memoize-project-current))
+    (advice-add 'project-current :around 'memoize-project-current))
 
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
@@ -2031,7 +2033,7 @@ input means nil arguments."
   (agent-shell-session-strategy 'latest)
   (agent-shell-highlight-blocks nil)
   (agent-shell-prefer-viewport-interaction nil)
-  (agent-shell-preferred-agent-config 'codex)
+  (agent-shell-preferred-agent-config 'opencode)
   (agent-shell-show-config-icons nil)
   (agent-shell-show-usage-at-turn-end t)
   (agent-shell-text-file-capabilities t)
@@ -2089,10 +2091,13 @@ input means nil arguments."
                        (copy-file src dst t t t)
                      (error nil)))))))))))
 
+  ;; trigger loading of oca if we have it
+  (ignore-errors (oca-key))
+
   (setq
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-codex-login)
-   agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :api-key #'oca-key)))
+   agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :none t)))
 
 (use-package timfel-agent-shell-unstick
   :after agent-shell)
@@ -2261,6 +2266,8 @@ input means nil arguments."
                           (if prefix
                               key
                             (concat (jira-api--get-current-url) "/browse/" key))))))
+         :map jira-detail-mode-map
+              ("C-x a i" . timfel/jira-issues-investigate-marked-with-agent)
          :map jira-issues-mode-map
               ("c" . (lambda (&optional prefix)
                        (interactive "P")
