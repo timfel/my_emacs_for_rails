@@ -45,9 +45,11 @@
     "~/.npmrc"
     "~/.nvm"
     "~/.ol"
+    "~/.ssh"
     "~/.pyenv"
     "~/.rustup"
-    "~/.sdkman")
+    "~/.sdkman"
+    "~/dev")
   "Directories that my agents generally need readable.")
 
 (defconst hidden-dirs
