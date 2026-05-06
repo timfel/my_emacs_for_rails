@@ -268,6 +268,7 @@
 (use-package timfel-agent-shell-extensions
   :commands (timfel/agent-shell-fan-out-worktrees
              timfel/agent-shell-magit-context-source
+             timfel/agent-shell-vc-context-source
              timfel/agent-shell-start-deferred
              timfel/agent-shell-recovery-recover-live-set
              timfel/dired-agent-shell-marked-directories
@@ -288,6 +289,7 @@
   (setq agent-shell-context-sources
         '(files region error
                 timfel/agent-shell-magit-context-source
+                timfel/agent-shell-vc-context-source
                 timfel/agent-shell-context-source
                 line))
   :after timfel)

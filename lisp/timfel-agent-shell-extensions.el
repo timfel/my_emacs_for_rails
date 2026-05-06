@@ -12,6 +12,7 @@
 (require 'timfel-agent-shell-bwrap)
 (require 'timfel-agent-shell-fanout)
 (require 'timfel-agent-shell-magit)
+(require 'timfel-agent-shell-vc)
 (require 'timfel-agent-shell-recovery)
 (require 'timfel-agent-shell-ui)
 (require 'timfel-agent-shell-context)
