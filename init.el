@@ -775,6 +775,7 @@
   :if (memq system-type '(windows-nt android))
   :custom
   (vc-revert-show-diff nil)
+  (vc-handled-backends '(Git))
   :bind (("C-x C-z" . project-vc-dir)))
 
 (use-package diff
@@ -1110,10 +1111,11 @@
     (setq magit-tramp-pipe-stty-settings 'pty))
 
   (with-eval-after-load 'vc
-    (setq vc-ignore-dir-regexp
-          (format "\\(%s\\)\\|\\(%s\\)"
-                  vc-ignore-dir-regexp
-                  tramp-file-name-regexp))
+    ;; setting the below thing will disable VC support for any TRAMP path
+    ;; (setq vc-ignore-dir-regexp
+    ;;       (format "\\(%s\\)\\|\\(%s\\)"
+    ;;               vc-ignore-dir-regexp
+    ;;               tramp-file-name-regexp))
     ;; memoize vc-git-root
     (defvar vc-git-root-cache nil)
     (defun memoize-vc-git-root (orig file)
