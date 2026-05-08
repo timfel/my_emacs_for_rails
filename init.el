@@ -538,8 +538,8 @@
    `(("t" "todo"
       entry (file+olp+datetree ,(expand-file-name "SyncFolder/todo.org" timfel/cloud-storage))
       ,(string-join '("* TODO %i%?"
+                      "DEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+7d\"))"
                       ":Created: %T"
-                      ":DEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+7d\"))"
                       "  %a")
                     "\n")
       :empty-lines 1
