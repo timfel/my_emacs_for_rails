@@ -1334,7 +1334,9 @@
   :ensure t
   :defines (cashpw/gptel-mode-line--indicator-querying
             cashpw/gptel-mode-line--indicator-responding
-            cashpw/gptel-show-progress-in-mode-line)
+            cashpw/gptel-show-progress-in-mode-line
+            timfel/gptel-tool--collection-tools
+            timfel/gptel-tool--custom-tools)
   :functions (timfel/gptel--load-prompt-directive
               timfel/gptel--prompt-metadata
               cashpw/gptel-mode-line cashpw/gptel-mode-line--hide-all
