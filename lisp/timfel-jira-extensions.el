@@ -93,8 +93,8 @@ The return value is a list of `(KEY . SUMMARY)' pairs for issues with label
   "Build the agent investigation task for ISSUE-ID and ISSUE-TITLE."
   (format
    (concat
-    "Investigate recent GraalPy periodic issue %s: %s\n\n"
-    "Please inspect the Jira issue, failing job context, identify "
+    "Investigate GraalPy issue %s: %s\n\n"
+    "Please inspect the Jira issue, any failing job context, identify "
     "if any work on it was already done in this git repository. "
     "If work was done, double check it against the issue context "
     "and report your conclusions. Othewise, try to find the root "
