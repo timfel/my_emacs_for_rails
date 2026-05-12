@@ -8,6 +8,7 @@
 
 (require 'tabulated-list)
 (require 'tablist)
+(require 'subr-x)
 
 (require 'jira)
 
@@ -89,18 +90,33 @@ The return value is a list of `(KEY . SUMMARY)' pairs for issues with label
              (aref entry 1))
         (user-error "No Jira issue summary on this line"))))
 
-(defun timfel/jira--agent-task (issue-id issue-title)
+(defun timfel/jira--agent-task (issue-id issue-title prompt?)
   "Build the agent investigation task for ISSUE-ID and ISSUE-TITLE."
-  (format
-   (concat
-    "Investigate GraalPy issue %s: %s\n\n"
-    "Please inspect the Jira issue, any failing job context, identify "
-    "if any work on it was already done in this git repository. "
-    "If work was done, double check it against the issue context "
-    "and report your conclusions. Othewise, try to find the root "
-    "cause in this repository, and propose a focused fix "
-    "with validation if feasible.")
-   issue-id issue-title))
+  (let ((default (format
+                  (concat
+                   "Investigate GraalPy issue %s: %s\n\n"
+                   "Please inspect the Jira issue, any failing job context, identify "
+                   "if any work on it was already done in this git repository. "
+                   "If work was done, double check it against the issue context "
+                   "and report your conclusions. Otherwise, figure out if the issue may "
+                   "be stale and no longer applicable, and if not, try to find the root "
+                   "cause in this repository, and propose a focused fix "
+                   "with validation if feasible, but WITHOUT doing any code changes "
+                   "for now.")
+                  issue-id issue-title)))
+    (if prompt?
+        (read-from-minibuffer "Prompt: " default)
+      default)))
+
+(defun timfel/jira--worktree-title (issue-id issue-title)
+  "Return a compact worktree title for ISSUE-ID using ISSUE-TITLE."
+  (let ((title (string-trim
+                (replace-regexp-in-string "\\s-+" " " (or issue-title "")))))
+    (if (string-empty-p title)
+        issue-id
+      (when (> (length title) 18)
+        (setq title (concat (substring title 0 15) "...")))
+      (format "%s-%s" title issue-id))))
 
 (defun timfel/jira--read-project-root ()
   "Prompt for the project root to use for agent worktree creation."
@@ -146,12 +162,12 @@ The return value is a list of `(KEY . SUMMARY)' pairs for issues with label
           (forward-line 1)))
       (nreverse issue-ids))))
 
-(defun timfel/jira-periodic-issues-investigate-with-agent ()
+(defun timfel/jira-periodic-issues-investigate-with-agent (&optional prompt?)
   "Start worktree-backed agent investigations for marked periodic Jira issues.
 
 If no issues are marked in `*Jira Periodic Issues*', emit a message and do
 nothing."
-  (interactive)
+  (interactive "P")
   (unless (require 'timfel-agent-shell-extensions nil t)
     (user-error "timfel-agent-shell-extensions is not available"))
   (let ((issues (timfel/jira-periodic-issues--marked-issues)))
@@ -160,17 +176,19 @@ nothing."
       (let ((project-root (timfel/jira--read-project-root)))
         (timfel/agent-shell-fan-out-worktrees
          (mapcar (lambda (issue)
-                   (cons (car issue)
-                         (timfel/jira--agent-task (car issue) (cdr issue))))
+                   (let ((issue-id (car issue))
+                         (issue-title (cdr issue)))
+                     (cons (timfel/jira--worktree-title issue-id issue-title)
+                           (timfel/jira--agent-task issue-id issue-title prompt?))))
                  issues)
          project-root)))))
 
 ;;;###autoload
-(defun timfel/jira-issues-investigate-marked-with-agent ()
+(defun timfel/jira-issues-investigate-marked-with-agent (&optional prompt?)
   "Start worktree-backed agent investigations for marked Jira issues.
 
 If no issues are marked in `*Jira Issues*', emit a message and do nothing."
-  (interactive)
+  (interactive "P")
   (unless (require 'timfel-agent-shell-extensions nil t)
     (user-error "timfel-agent-shell-extensions is not available"))
   (let ((issue-ids (timfel/jira--explicitly-marked-issue-ids)))
@@ -181,7 +199,8 @@ If no issues are marked in `*Jira Issues*', emit a message and do nothing."
          (mapcar (lambda (issue-id)
                    (let ((issue-title (or (gethash issue-id jira-issues-key-summary-map)
                                           "")))
-                     (cons issue-id (timfel/jira--agent-task issue-id issue-title))))
+                     (cons (timfel/jira--worktree-title issue-id issue-title)
+                           (timfel/jira--agent-task issue-id issue-title prompt?))))
                  issue-ids)
          project-root)))))
 

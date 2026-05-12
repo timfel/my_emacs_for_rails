@@ -18,7 +18,7 @@
   :type 'string
   :group 'timfel)
 
-(defcustom timfel/agent-shell-worktree-cleanup-age-days 7
+(defcustom timfel/agent-shell-worktree-cleanup-age-days 14
   "Offer to remove fan-out worktrees untouched for this many days."
   :type 'integer
   :group 'timfel)
