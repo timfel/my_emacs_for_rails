@@ -1176,6 +1176,7 @@
   (term-keys-mode t))
 
 (use-package sixel-graphics
+  :disabled
   :ensure t
   :unless (display-graphic-p)
   :vc (:url "https://github.com/timfel/sixel-graphics.el" :branch "main" :rev :newest)
@@ -1237,6 +1238,13 @@
           (if (file-exists-p script)
               (setq sixel-graphics-encoder-program script)))))
   (sixel-graphics-mode t))
+
+(use-package kitty-graphics
+  :ensure t
+  :unless (display-graphic-p)
+  :vc (:url "https://github.com/timfel/kitty-graphics.el" :branch "master" :rev :newest)
+  :config
+  (kitty-graphics-mode 1))
 
 (use-package cmake-mode
   :ensure t
