@@ -254,7 +254,12 @@
 
 (use-package oca
   :after timfel
-  :commands (oca-key oca-update-codex-config oca-update-opencode-config oca-codex-login))
+  :commands (oca-key
+             oca-update-cline-config
+             oca-update-codex-config
+             oca-update-opencode-config
+             oca-update-goose-config
+             oca-codex-login))
 
 (use-package orcl
   :after timfel
@@ -263,6 +268,7 @@
 (use-package timfel-agent-shell-extensions
   :commands (timfel/agent-shell-fan-out-worktrees
              timfel/agent-shell-magit-context-source
+             timfel/agent-shell-vc-context-source
              timfel/agent-shell-start-deferred
              timfel/agent-shell-recovery-recover-live-set
              timfel/dired-agent-shell-marked-directories
@@ -283,6 +289,7 @@
   (setq agent-shell-context-sources
         '(files region error
                 timfel/agent-shell-magit-context-source
+                timfel/agent-shell-vc-context-source
                 timfel/agent-shell-context-source
                 line))
   :after timfel)
@@ -514,7 +521,16 @@
                 ((org-agenda-overriding-header "Unscheduled")
                  (org-agenda-skip-function
                   '(or (org-agenda-skip-entry-if 'nottodo '("TODO"))
-                       (org-agenda-skip-entry-if 'scheduled 'deadline)))))))))
+                       (org-agenda-skip-entry-if 'scheduled 'deadline)))))
+       (agenda ""
+               ((org-agenda-start-day "-7d")
+                (org-agenda-span 8)
+                (org-agenda-overriding-header "Recently done")
+                (org-agenda-show-log 'only)
+                (org-agenda-use-time-grid nil)
+                (org-agenda-log-mode-items '(closed))
+                (org-agenda-skip-function
+                 '(or (org-agenda-skip-entry-if 'nottodo '("DONE" "WONT DO"))))))))))
   (org-clock-idle-time 15)
   (org-agenda-files (list (expand-file-name "SyncFolder/todo.org" timfel/cloud-storage)
                           (expand-file-name "SyncFolder/notes.org" timfel/cloud-storage)))
@@ -761,6 +777,7 @@
   :if (memq system-type '(windows-nt android))
   :custom
   (vc-revert-show-diff nil)
+  (vc-handled-backends '(Git))
   :bind (("C-x C-z" . project-vc-dir)))
 
 (use-package diff
@@ -1096,10 +1113,11 @@
     (setq magit-tramp-pipe-stty-settings 'pty))
 
   (with-eval-after-load 'vc
-    (setq vc-ignore-dir-regexp
-          (format "\\(%s\\)\\|\\(%s\\)"
-                  vc-ignore-dir-regexp
-                  tramp-file-name-regexp))
+    ;; setting the below thing will disable VC support for any TRAMP path
+    ;; (setq vc-ignore-dir-regexp
+    ;;       (format "\\(%s\\)\\|\\(%s\\)"
+    ;;               vc-ignore-dir-regexp
+    ;;               tramp-file-name-regexp))
     ;; memoize vc-git-root
     (defvar vc-git-root-cache nil)
     (defun memoize-vc-git-root (orig file)
@@ -1383,20 +1401,13 @@
                                                       (region-end))
                     (buffer-substring-no-properties (point-min)
                                                     (point))))
-           (gptel-use-tools nil)
+           (gptel-tools (append timfel/gptel-tool--custom-tools
+                                timfel/gptel-tool--collection-tools))
+           (gptel-use-tools t)
            (gptel-include-reasoning nil))
        (gptel-request query
-                      :callback (lambda (response info)
-                                  (let* ((start-marker (plist-get info :position))
-                                         (tracking-marker (plist-get info :tracking-marker)))
-                                    (if (stringp response)
-                                        (save-excursion
-                                          (with-current-buffer (marker-buffer start-marker)
-                                            (goto-char (or tracking-marker start-marker))
-                                            (insert response)
-                                            (plist-put info :tracking-marker (setq tracking-marker (point-marker))))))))
-                      :stream gptel-stream
-                      :system "Continue writing until the current control flow is completed or the task described in the last comment is done. Only write code, no markup, no communication, no explanations, do not repeat parts of the request, just continue writing the code."))))
+         :stream gptel-stream
+         :system "Continue writing until the current control flow is completed or the task described in the last comment is done. Only write code, no markup, no communication, no explanations, do not repeat parts of the request, just continue writing the code."))))
 
   (defun timfel/gptel--prompt-metadata (key)
     "Return prompt metadata KEY from comment headers in the current buffer."
@@ -2009,6 +2020,7 @@ input means nil arguments."
   :ensure t
   :functions (agent-shell-make-environment-variables
               agent-shell-openai-make-authentication
+              agent-shell-make-goose-authentication
               agent-shell-opencode-make-authentication
               agent-shell-rename-buffer
               org-link-set-parameters
@@ -2033,7 +2045,7 @@ input means nil arguments."
   (agent-shell-session-strategy 'latest)
   (agent-shell-highlight-blocks nil)
   (agent-shell-prefer-viewport-interaction nil)
-  (agent-shell-preferred-agent-config 'opencode)
+  (agent-shell-preferred-agent-config 'codex)
   (agent-shell-show-config-icons nil)
   (agent-shell-show-usage-at-turn-end t)
   (agent-shell-text-file-capabilities t)
@@ -2095,8 +2107,11 @@ input means nil arguments."
   (ignore-errors (oca-key))
 
   (setq
+   agent-shell-cline-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-codex-login)
+   agent-shell-goose-authentication (agent-shell-make-goose-authentication :openai-api-key #'oca-key)
+   agent-shell-goose-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :none t)))
 
 (use-package timfel-agent-shell-unstick
@@ -2379,7 +2394,7 @@ input means nil arguments."
                     (clipetty-cut last-copied-text)
                   (make-process :name "wl-copy"
                                 :buffer nil
-                                :command '("wl-copy" "-t" "text" last-copied-text))))
+                                :command `("wl-copy" "-t" "text" ,last-copied-text))))
               interprogram-paste-function
               (lambda ()
                 (let* ((raw (shell-command-to-string "wl-paste -t text -n 2>/dev/null | tr -d '\r'"))

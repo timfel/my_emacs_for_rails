@@ -12,7 +12,11 @@
 
 (defconst write-dirs
   '("~/.cache"
+    "~/.cline"
     "~/.codex"
+    "~/.config/goose"
+    "~/.local/share/goose"
+    "~/.local/state/goose"
     "~/.local/share/opencode/"
     "~/.eclipse"
     "~/.gradle"
@@ -41,9 +45,11 @@
     "~/.npmrc"
     "~/.nvm"
     "~/.ol"
+    "~/.ssh"
     "~/.pyenv"
     "~/.rustup"
-    "~/.sdkman")
+    "~/.sdkman"
+    "~/dev")
   "Directories that my agents generally need readable.")
 
 (defconst hidden-dirs
@@ -57,79 +63,99 @@
 ;;;###autoload
 (defun timfel/agent-shell-command-prefix-bwrap (_buffer)
   "Return a `bwrap' command prefix for `agent-shell', or nil when unavailable."
-  (when (executable-find "bwrap")
-    (cl-flet ((git-common-root (directory)
-                (let ((default-directory
-                       (file-name-as-directory (expand-file-name directory))))
-                  (with-temp-buffer
-                    (if (zerop (process-file "git" nil t nil "rev-parse" "--git-common-dir"))
-                        (let ((gitdir (string-trim (buffer-string))))
-                          (if (string-empty-p gitdir)
-                              directory
-                            (file-name-directory
-                             (directory-file-name
-                              (expand-file-name gitdir default-directory)))))
-                      directory)))))
-      ;; delete older tmp dirs
-      (let ((cutoff (time-subtract (current-time) (days-to-time 6))))
-        (dolist (path (directory-files "/tmp" t "\\`bcodex-session"))
-          (when (and (file-directory-p path)
-                     (time-less-p
-                      (file-attribute-modification-time
-                       (file-attributes path))
-                      cutoff))
-            (ignore-errors
-              (delete-directory path t)))))
-      ;; figure out all the worktree dirs we may need
-      (let* ((tmpdir (make-temp-file "/tmp/bcodex-session" t (replace-regexp-in-string "[^[:alnum:]]" "" default-directory)))
-             (common-root (git-common-root default-directory))
-             (graal-dir (expand-file-name "../graal"))
-             (extra-dir-to-bind (if (file-directory-p graal-dir) graal-dir default-directory))
-             (graal-common-root (if (file-directory-p graal-dir) (git-common-root graal-dir) extra-dir-to-bind))
-             (real-config-toml (file-truename "~/.codex/config.toml"))
-             (real-config-jsonc (file-truename "~/.config/opencode/opencode.jsonc"))
-             (extra-write-dirs (list default-directory
-                                     common-root
-                                     extra-dir-to-bind
-                                     graal-common-root
-                                     tmpdir)))
-        (append
-         `("bwrap" "--die-with-parent" "--new-session"
-           "--ro-bind" "/" "/"
-           "--tmpfs" "/tmp"
-           "--tmpfs" ,(getenv "HOME"))
-         ;; expose some others as read-only
-         (thread-last
-           (seq-map #'expand-file-name read-dirs)
-           (seq-filter #'file-exists-p)
-           (seq-filter (lambda (e) (not (seq-some (lambda (e2) (file-equal-p e e2)) extra-write-dirs))))
-           (seq-mapcat (lambda (p) `("--ro-bind" ,p ,p))))
-         ;; expose select folders as writable
-         (thread-last
-           (seq-map #'expand-file-name
-                    (append write-dirs
-                            (list real-config-toml
-                                  real-config-jsonc)
-                            extra-write-dirs))
-           (seq-filter #'file-exists-p)
-           (seq-mapcat (lambda (p) `("--bind" ,p ,p))))
-         ;; some hide completely and make tmpfs
-         (thread-last
-           (seq-map #'expand-file-name hidden-dirs)
-           (seq-filter #'file-exists-p)
-           (seq-mapcat (lambda (p) `("--tmpfs" ,p))))
-         `("--proc" "/proc"
-           "--dev" "/dev"
-           "--chdir" ,default-directory
-           "--setenv" "HTTP_PROXY" ,(or (getenv "HTTP_PROXY") "")
-           "--setenv" "HTTPS_PROXY" ,(or (getenv "HTTPS_PROXY") "")
-           "--setenv" "NO_PROXY" ,(or (getenv "NO_PROXY") "")
-           "--setenv" "HOME" ,(getenv "HOME")
-           "--setenv" "TMPDIR" ,tmpdir
-           "--setenv" "XDG_CACHE_INNER" ,(expand-file-name ".agent-shell/xdgcache")
-           "--setenv" "XDG_STATE_INNER" ,(expand-file-name ".agent-shell/xdgstate")
-           "--setenv" "XDG_RUNTIME_INNER" ,(expand-file-name ".agent-shell/xdgruntime")
-           "--"))))))
+  (let ((num-cpus (min 4 (/ (num-processors) 2)))
+        (memory (min 32 (floor (* 0.8 (/ (car (memory-info)) 1024 1024)))))
+        (prefix (when (executable-find "systemd-run")
+                  `("systemd-run"
+                    "--user"
+                    "--scope"
+                    "-p"
+                    ,(format "CPUQuota=%d00%%" num-cpus)
+                    "-p"
+                    ,(format "MemoryMax=%dG" memory)
+                    "--"))))
+    (when (executable-find "bwrap")
+      (cl-flet ((git-common-root (directory)
+                  (let ((default-directory
+                         (file-name-as-directory (expand-file-name directory))))
+                    (with-temp-buffer
+                      (if (zerop (process-file "git" nil t nil "rev-parse" "--git-common-dir"))
+                          (let ((gitdir (string-trim (buffer-string))))
+                            (if (string-empty-p gitdir)
+                                directory
+                              (file-name-directory
+                               (directory-file-name
+                                (expand-file-name gitdir default-directory)))))
+                        directory)))))
+        ;; delete older tmp dirs
+        (let ((cutoff (time-subtract (current-time) (days-to-time 6))))
+          (dolist (path (directory-files "/tmp" t "\\`bcodex-session"))
+            (when (and (file-directory-p path)
+                       (time-less-p
+                        (file-attribute-modification-time
+                         (file-attributes path))
+                        cutoff))
+              (ignore-errors
+                (delete-directory path t)))))
+        ;; figure out all the worktree dirs we may need
+        (let* ((tmpdir (make-temp-file "/tmp/bcodex-session" t (replace-regexp-in-string "[^[:alnum:]]" "" default-directory)))
+               (common-root (git-common-root default-directory))
+               (graal-dir (expand-file-name "../graal"))
+               (extra-dir-to-bind (if (file-directory-p graal-dir) graal-dir default-directory))
+               (graal-common-root (if (file-directory-p graal-dir) (git-common-root graal-dir) extra-dir-to-bind))
+               (real-codex-config (file-truename "~/.codex/config.toml"))
+               (real-goose-config (file-truename "~/.config/goose/config.yaml"))
+               (real-goose-adversary-config (file-truename "~/.config/goose/adversary.md"))
+               (real-cline-config (file-truename "~/.cline/data/globalState.json"))
+               (real-cline-config-mcp (file-truename "~/.cline/data/settings/cline_mcp_settings.json"))
+               (real-opencode-config (file-truename "~/.config/opencode/opencode.jsonc"))
+               (extra-write-dirs (list default-directory
+                                       common-root
+                                       extra-dir-to-bind
+                                       graal-common-root
+                                       tmpdir)))
+          (append
+           prefix
+           `("bwrap" "--die-with-parent" "--new-session"
+             "--ro-bind" "/" "/"
+             "--tmpfs" "/tmp"
+             "--tmpfs" ,(getenv "HOME"))
+           ;; expose some others as read-only
+           (thread-last
+             (seq-map #'expand-file-name read-dirs)
+             (seq-filter #'file-exists-p)
+             (seq-filter (lambda (e) (not (seq-some (lambda (e2) (file-equal-p e e2)) extra-write-dirs))))
+             (seq-mapcat (lambda (p) `("--ro-bind" ,p ,p))))
+           ;; expose select folders as writable
+           (thread-last
+             (seq-map #'expand-file-name
+                      (append write-dirs
+                              (list real-codex-config
+                                    real-goose-config
+                                    real-goose-adversary-config
+                                    real-opencode-config
+                                    real-cline-config
+                                    real-cline-config-mcp)
+                              extra-write-dirs))
+             (seq-filter #'file-exists-p)
+             (seq-mapcat (lambda (p) `("--bind" ,p ,p))))
+           ;; some hide completely and make tmpfs
+           (thread-last
+             (seq-map #'expand-file-name hidden-dirs)
+             (seq-filter #'file-exists-p)
+             (seq-mapcat (lambda (p) `("--tmpfs" ,p))))
+           `("--proc" "/proc"
+             "--dev" "/dev"
+             "--chdir" ,default-directory
+             "--setenv" "HTTP_PROXY" ,(or (getenv "HTTP_PROXY") "")
+             "--setenv" "HTTPS_PROXY" ,(or (getenv "HTTPS_PROXY") "")
+             "--setenv" "NO_PROXY" ,(or (getenv "NO_PROXY") "")
+             "--setenv" "HOME" ,(getenv "HOME")
+             "--setenv" "TMPDIR" ,tmpdir
+             "--setenv" "XDG_CACHE_INNER" ,(expand-file-name ".agent-shell/xdgcache")
+             "--setenv" "XDG_STATE_INNER" ,(expand-file-name ".agent-shell/xdgstate")
+             "--setenv" "XDG_RUNTIME_INNER" ,(expand-file-name ".agent-shell/xdgruntime")
+             "--")))))))
 
 (provide 'timfel-agent-shell-bwrap)
 
