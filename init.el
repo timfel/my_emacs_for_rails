@@ -2394,7 +2394,7 @@ input means nil arguments."
                     (clipetty-cut last-copied-text)
                   (make-process :name "wl-copy"
                                 :buffer nil
-                                :command `("wl-copy" "-t" "text" ,last-copied-text))))
+                                :command `("wl-copy" "-t" "text/plain" ,last-copied-text))))
               interprogram-paste-function
               (lambda ()
                 (let* ((raw (shell-command-to-string "wl-paste -t text -n 2>/dev/null | tr -d '\r'"))
