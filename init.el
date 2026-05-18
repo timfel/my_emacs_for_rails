@@ -451,7 +451,7 @@
   :custom
   (org-image-actual-width (list 600))
   (org-log-done 'time)
-  (org-export-backends '(ascii md html latex odt confluence))
+  (org-export-backends '(ascii md html latex))
   (org-hide-emphasis-markers t)
   (org-link-elisp-skip-confirm-regexp
    (concat
