@@ -36,6 +36,7 @@
   '("~/.agents"
     "~/.bun"
     "~/.bundle"
+    "~/.cargo"
     "~/.config"
     "~/.docker"
     "~/.emacs.d"
