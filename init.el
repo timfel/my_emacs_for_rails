@@ -252,15 +252,6 @@
 (use-package timfel-ci-extensions
   :after (timfel emacs-ci))
 
-(use-package oca
-  :after timfel
-  :commands (oca-key
-             oca-update-cline-config
-             oca-update-codex-config
-             oca-update-opencode-config
-             oca-update-goose-config
-             oca-codex-login))
-
 (use-package orcl
   :after timfel
   :commands (timfel/git-merges-jira-html timfel/install-ol-cli))
@@ -1351,21 +1342,17 @@
               cashpw/gptel-mode-line--indicator gptel-abort)
   :commands (gptel gptel-request)
   :custom
-  (gptel-model 'gemma3n:latest)
+  (gptel-model 'ggml-org/gemma-4-E2B-it-GGUF)
   (gptel-include-tool-results t)
   (gptel-include-reasoning t)
   :config
-  (gptel-make-ollama "Ollama"
-    :host "localhost:11434"
-    :stream t
-    :models '(gemma3n:latest gemma3n-tools))
-  (gptel-make-openai "llama-cpp"
-    :host "127.0.0.1:8080"
-    :protocol "http"
-    :stream t
-    :models '(TeichAI/Qwen3.5-4B-Claude-Opus-Reasoning-GGUF:Q4_K_M)
-    :key "none")
-  (ignore-errors (oca-key))
+  (setq gptel-backend 
+        (gptel-make-openai "llama-cpp"
+          :host "127.0.0.1:8080"
+          :protocol "http"
+          :stream t
+          :models '(ggml-org/gemma-4-E2B-it-GGUF)
+          :key "none"))
   (setq
    cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
    cashpw/gptel-mode-line--indicator-responding "↓GPTEL↓ "
@@ -2036,8 +2023,6 @@ input means nil arguments."
               org-link-set-parameters
               org-link-store-props
               shell-maker-submit
-              oca-key
-              oca-codex-login
               timfel/org-store-agent-shell-link
               timfel/agent-shell-return-dwim
               timfel/agent-shell-command-prefix-bwrap)
@@ -2113,14 +2098,10 @@ input means nil arguments."
                        (copy-file src dst t t t)
                      (error nil)))))))))))
 
-  ;; trigger loading of oca if we have it
-  (ignore-errors (oca-key))
-
   (setq
+   agent-shell-openai-authentication (agent-shell-openai-make-authentication :login t)
    agent-shell-cline-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
-   agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-codex-login)
-   agent-shell-goose-authentication (agent-shell-make-goose-authentication :openai-api-key #'oca-key)
    agent-shell-goose-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :none t)))
 
@@ -2158,7 +2139,7 @@ input means nil arguments."
           "say" nil
           (string-replace "\n" ""
                           (format "$sp = New-Object -ComObject SAPI.SpVoice;
-                                   $sp.Volume = 100;
+                                   $sp.Volume = 20;
                                    $sp.Rate   = 4;
                                    $sp.Speak(\"
                                    <speak>
