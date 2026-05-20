@@ -252,15 +252,6 @@
 (use-package timfel-ci-extensions
   :after (timfel emacs-ci))
 
-(use-package oca
-  :after timfel
-  :commands (oca-key
-             oca-update-cline-config
-             oca-update-codex-config
-             oca-update-opencode-config
-             oca-update-goose-config
-             oca-codex-login))
-
 (use-package orcl
   :after timfel
   :commands (timfel/git-merges-jira-html timfel/install-ol-cli))
@@ -451,7 +442,7 @@
   :custom
   (org-image-actual-width (list 600))
   (org-log-done 'time)
-  (org-export-backends '(ascii md html latex odt confluence))
+  (org-export-backends '(ascii md html latex))
   (org-hide-emphasis-markers t)
   (org-link-elisp-skip-confirm-regexp
    (concat
@@ -538,8 +529,8 @@
    `(("t" "todo"
       entry (file+olp+datetree ,(expand-file-name "SyncFolder/todo.org" timfel/cloud-storage))
       ,(string-join '("* TODO %i%?"
+                      "DEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+7d\"))"
                       ":Created: %T"
-                      ":DEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+7d\"))"
                       "  %a")
                     "\n")
       :empty-lines 1
@@ -1176,6 +1167,7 @@
   (term-keys-mode t))
 
 (use-package sixel-graphics
+  :disabled
   :ensure t
   :unless (display-graphic-p)
   :vc (:url "https://github.com/timfel/sixel-graphics.el" :branch "main" :rev :newest)
@@ -1237,6 +1229,13 @@
           (if (file-exists-p script)
               (setq sixel-graphics-encoder-program script)))))
   (sixel-graphics-mode t))
+
+(use-package kitty-graphics
+  :ensure t
+  :unless (display-graphic-p)
+  :vc (:url "https://github.com/timfel/kitty-graphics.el" :branch "master" :rev :newest)
+  :config
+  (kitty-graphics-mode 1))
 
 (use-package cmake-mode
   :ensure t
@@ -1334,28 +1333,26 @@
   :ensure t
   :defines (cashpw/gptel-mode-line--indicator-querying
             cashpw/gptel-mode-line--indicator-responding
-            cashpw/gptel-show-progress-in-mode-line)
+            cashpw/gptel-show-progress-in-mode-line
+            timfel/gptel-tool--collection-tools
+            timfel/gptel-tool--custom-tools)
   :functions (timfel/gptel--load-prompt-directive
               timfel/gptel--prompt-metadata
               cashpw/gptel-mode-line cashpw/gptel-mode-line--hide-all
               cashpw/gptel-mode-line--indicator gptel-abort)
   :commands (gptel gptel-request)
   :custom
-  (gptel-model 'gemma3n:latest)
+  (gptel-model 'ggml-org/gemma-4-E2B-it-GGUF)
   (gptel-include-tool-results t)
   (gptel-include-reasoning t)
   :config
-  (gptel-make-ollama "Ollama"
-    :host "localhost:11434"
-    :stream t
-    :models '(gemma3n:latest gemma3n-tools))
-  (gptel-make-openai "llama-cpp"
-    :host "127.0.0.1:8080"
-    :protocol "http"
-    :stream t
-    :models '(TeichAI/Qwen3.5-4B-Claude-Opus-Reasoning-GGUF:Q4_K_M)
-    :key "none")
-  (ignore-errors (oca-key))
+  (setq gptel-backend 
+        (gptel-make-openai "llama-cpp"
+          :host "127.0.0.1:8080"
+          :protocol "http"
+          :stream t
+          :models '(ggml-org/gemma-4-E2B-it-GGUF)
+          :key "none"))
   (setq
    cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
    cashpw/gptel-mode-line--indicator-responding "↓GPTEL↓ "
@@ -2026,8 +2023,6 @@ input means nil arguments."
               org-link-set-parameters
               org-link-store-props
               shell-maker-submit
-              oca-key
-              oca-codex-login
               timfel/org-store-agent-shell-link
               timfel/agent-shell-return-dwim
               timfel/agent-shell-command-prefix-bwrap)
@@ -2103,14 +2098,10 @@ input means nil arguments."
                        (copy-file src dst t t t)
                      (error nil)))))))))))
 
-  ;; trigger loading of oca if we have it
-  (ignore-errors (oca-key))
-
   (setq
+   agent-shell-openai-authentication (agent-shell-openai-make-authentication :login t)
    agent-shell-cline-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
-   agent-shell-openai-authentication (agent-shell-openai-make-authentication :codex-api-key #'oca-codex-login)
-   agent-shell-goose-authentication (agent-shell-make-goose-authentication :openai-api-key #'oca-key)
    agent-shell-goose-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :none t)))
 
@@ -2148,7 +2139,7 @@ input means nil arguments."
           "say" nil
           (string-replace "\n" ""
                           (format "$sp = New-Object -ComObject SAPI.SpVoice;
-                                   $sp.Volume = 100;
+                                   $sp.Volume = 20;
                                    $sp.Rate   = 4;
                                    $sp.Speak(\"
                                    <speak>
@@ -2394,7 +2385,7 @@ input means nil arguments."
                     (clipetty-cut last-copied-text)
                   (make-process :name "wl-copy"
                                 :buffer nil
-                                :command `("wl-copy" "-t" "text" ,last-copied-text))))
+                                :command `("wl-copy" "-t" "text/plain" ,last-copied-text))))
               interprogram-paste-function
               (lambda ()
                 (let* ((raw (shell-command-to-string "wl-paste -t text -n 2>/dev/null | tr -d '\r'"))

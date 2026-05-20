@@ -18,6 +18,11 @@
   :type 'string
   :group 'timfel)
 
+(defcustom timfel/agent-shell-worktree-cleanup-age-days 14
+  "Offer to remove fan-out worktrees untouched for this many days."
+  :type 'integer
+  :group 'timfel)
+
 (defun timfel/agent-shell--initial-request (task)
   "Return the initial queued request for TASK."
   (let ((planning-request (string-trim (or timfel/agent-shell-planning-request "")))
@@ -47,6 +52,55 @@
                            "HEAD"))
       "HEAD"))))
 
+(defun timfel/agent-shell--worktrees-base-dir (repo-root)
+  "Return the fan-out worktrees base directory for REPO-ROOT."
+  (let* ((default-directory (file-name-as-directory repo-root))
+         (transcript-dir (funcall agent-shell-transcript-file-path-function)))
+    (file-name-concat
+     (file-name-parent-directory
+      (file-name-parent-directory transcript-dir))
+     "worktrees")))
+
+(defun timfel/agent-shell--directory-latest-mtime (directory max-depth)
+  "Return latest modification time below DIRECTORY, descending MAX-DEPTH levels."
+  (let ((latest (file-attribute-modification-time (file-attributes directory))))
+    (cl-labels ((scan (dir depth)
+                  (when (and (> depth 0) (file-directory-p dir))
+                    (dolist (entry (directory-files dir t directory-files-no-dot-files-regexp))
+                      (when-let* ((attrs (file-attributes entry))
+                                  (mtime (file-attribute-modification-time attrs)))
+                        (when (time-less-p latest mtime)
+                          (setq latest mtime))
+                        (when (eq t (file-attribute-type attrs))
+                          (scan entry (1- depth))))))))
+      (scan directory max-depth))
+    latest))
+
+(defun timfel/agent-shell--worktree-parent-in-use-p (directory)
+  "Return non-nil when an `agent-shell' buffer is rooted below DIRECTORY."
+  (seq-some (lambda (buffer)
+              (with-current-buffer buffer
+                (file-in-directory-p default-directory directory)))
+            (agent-shell-buffers)))
+
+(defun timfel/agent-shell--cleanup-stale-worktrees (base-dir)
+  "Offer to remove fan-out worktree parents under BASE-DIR that look stale."
+  (when (file-directory-p base-dir)
+    (let* ((cutoff (time-subtract (current-time)
+                                  (days-to-time timfel/agent-shell-worktree-cleanup-age-days)))
+           (worktree-parents
+            (seq-filter #'file-directory-p
+                        (directory-files base-dir t directory-files-no-dot-files-regexp))))
+      (dolist (worktree-parent worktree-parents)
+        (let ((last-touched (timfel/agent-shell--directory-latest-mtime worktree-parent 3)))
+          (when (and (time-less-p last-touched cutoff)
+                     (not (timfel/agent-shell--worktree-parent-in-use-p worktree-parent))
+                     (yes-or-no-p
+                      (format "Remove stale agent worktree %s (last touched %s)? "
+                              worktree-parent
+                              (format-time-string "%Y-%m-%d %H:%M" last-touched))))
+            (delete-directory worktree-parent t nil)))))))
+
 (defun timfel/agent-shell--worktrees-create (repo-root title)
   "Create or reuse an agent-shell worktree below REPO-ROOT for TITLE."
   (let* ((repo-root (expand-file-name repo-root))
@@ -60,11 +114,7 @@
                                (seq-filter #'file-directory-p)
                                (seq-filter (lambda (p) (not (file-equal-p repo-root p))))))))
          (default-directory repo-root)
-         (transcript-dir (funcall agent-shell-transcript-file-path-function))
-         (base-dir (file-name-concat
-                    (file-name-parent-directory
-                     (file-name-parent-directory transcript-dir))
-                    "worktrees"))
+         (base-dir (timfel/agent-shell--worktrees-base-dir repo-root))
          (slug (thread-last
                  (if (string-match "\\`[A-Z][A-Z]+-[0-9]+\\b" title) ;; looks like an issue ID?
                      (match-string 0 title)
@@ -161,6 +211,10 @@ buffer to TITLE, and queue TASK. When DIRECTORY is nil, use
 
     (unless config
       (user-error "No preferred agent-shell config is available"))
+
+    (when needs-repo-root
+      (timfel/agent-shell--cleanup-stale-worktrees
+       (timfel/agent-shell--worktrees-base-dir repo-root)))
 
     (cl-loop for (title-or-dir . task) in task-specs
              for i from 3 by 3

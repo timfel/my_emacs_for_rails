@@ -30,6 +30,9 @@
 (defconst timfel/gptel-orchestration-buffer-name "*gptel-agents*"
   "Default buffer name for the AGENTS.md orchestration chat.")
 
+(defvar timfel/gptel-orchestration-tools nil
+  "GPTel tools registered for agent orchestration.")
+
 (defun timfel/gptel-orchestration--buffer-summary (buffer)
   "Return a compact plist describing BUFFER."
   (with-current-buffer buffer

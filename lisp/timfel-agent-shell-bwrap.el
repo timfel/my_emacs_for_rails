@@ -36,6 +36,7 @@
   '("~/.agents"
     "~/.bun"
     "~/.bundle"
+    "~/.cargo"
     "~/.config"
     "~/.docker"
     "~/.emacs.d"
@@ -63,17 +64,17 @@
 ;;;###autoload
 (defun timfel/agent-shell-command-prefix-bwrap (_buffer)
   "Return a `bwrap' command prefix for `agent-shell', or nil when unavailable."
-  (let ((num-cpus (min 4 (/ (num-processors) 2)))
-        (memory (min 32 (floor (* 0.8 (/ (car (memory-info)) 1024 1024)))))
-        (prefix (when (executable-find "systemd-run")
-                  `("systemd-run"
-                    "--user"
-                    "--scope"
-                    "-p"
-                    ,(format "CPUQuota=%d00%%" num-cpus)
-                    "-p"
-                    ,(format "MemoryMax=%dG" memory)
-                    "--"))))
+  (let* ((num-cpus (min 4 (/ (num-processors) 2)))
+         (memory (min 32 (floor (* 0.8 (/ (car (memory-info)) 1024 1024)))))
+         (prefix (when (executable-find "systemd-run")
+                   `("systemd-run"
+                     "--user"
+                     "--scope"
+                     "-p"
+                     ,(format "CPUQuota=%d00%%" num-cpus)
+                     "-p"
+                     ,(format "MemoryMax=%dG" memory)
+                     "--"))))
     (when (executable-find "bwrap")
       (cl-flet ((git-common-root (directory)
                   (let ((default-directory
