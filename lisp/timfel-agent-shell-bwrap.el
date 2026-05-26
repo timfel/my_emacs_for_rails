@@ -10,6 +10,9 @@
 (require 'subr-x)
 (require 'timfel)
 
+(defvar timfel/agent-shell-bwrap t
+  "Use bwrap to encase agent-shell")
+
 (defconst write-dirs
   '("~/.cache"
     "~/.cline"
@@ -75,7 +78,8 @@
                      "-p"
                      ,(format "MemoryMax=%dG" memory)
                      "--"))))
-    (when (executable-find "bwrap")
+    (if (not (and (executable-find "bwrap") timfel/agent-shell-bwrap))
+        prefix
       (cl-flet ((git-common-root (directory)
                   (let ((default-directory
                          (file-name-as-directory (expand-file-name directory))))
