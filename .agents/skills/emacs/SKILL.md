@@ -79,6 +79,13 @@ Use this when the user wants multiple parallel agent shells, especially one per 
 - For reliable automation, first find the target shell buffer by matching its `default-directory`, then call `agent-shell-queue-request` inside that buffer.
 - After loading `timfel-jira-extensions`, this pairs well with `timfel/jira-periodic-python-issues-alist`: fetch issue summaries, convert them into `(TITLE . TASK)` pairs, then fan them out into separate worktrees.
 
+### Agent Shell Cleanup
+
+Worktrees end up under `.agent-shell/worktrees` and may become stale.
+Quite often, the folder names include Jira ticket ids, Bitbucket PR ids, or Github issue or PR ids.
+When the user asks to clean out old worktrees, check the folders, check for git repositories inside and try to relate them to issues and PRs.
+If you can, check if those issues and/or PRs are closed/merged, and report back to the user about what you found out.
+
 ### Agent Shell Examples
 
 - Use the local fan-out helper with titles and tasks:
