@@ -2100,6 +2100,13 @@ input means nil arguments."
 (use-package timfel-agent-shell-unstick
   :after agent-shell)
 
+(use-package agent-shell-dashboard
+  :after agent-shell
+  :commands agent-shell-dashboard
+  :custom
+  (agent-shell-dashboard-worktree-search-directories (list user-emacs-directory "~/dev/graalpython" "~/dev/graalos" "~/tmp"))
+  :bind (("C-x a d" . agent-shell-dashboard)))
+
 (use-package agent-shell-attention
   :vc (:url "https://github.com/ultronozm/agent-shell-attention.el" :rev :newest)
   :ensure t
