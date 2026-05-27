@@ -1342,7 +1342,7 @@
               cashpw/gptel-mode-line--indicator gptel-abort)
   :commands (gptel gptel-request)
   :custom
-  (gptel-model 'ggml-org/gemma-4-E2B-it-GGUF)
+  (gptel-model 'unsloth/Qwen3.6-35B-A3B-GGUF)
   (gptel-include-tool-results t)
   (gptel-include-reasoning t)
   :config
@@ -1351,7 +1351,7 @@
           :host "127.0.0.1:8080"
           :protocol "http"
           :stream t
-          :models '(ggml-org/gemma-4-E2B-it-GGUF)
+          :models '(ggml-org/gemma-4-E2B-it-GGUF unsloth/Qwen3.6-35B-A3B-GGUF)
           :key "none"))
   (setq
    cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
@@ -2077,7 +2077,7 @@ input means nil arguments."
                                             (apply orig-fun args)))
 
   ;; If any .agents/skills from this repo do not exist in $HOME/.agents/skills/ (Unix) or $Env:USERPROFILE/.agents/skills (Windows)
-  ;; then symlink them there
+  ;; then copy them there
   (let* ((repo-root (locate-user-emacs-file ""))
          (skills-src-dir (expand-file-name ".agents/skills" repo-root))
          (skills-dst-dir (expand-file-name ".agents/skills" (or (getenv "USERPROFILE") "~"))))
@@ -2086,17 +2086,9 @@ input means nil arguments."
         (unless (file-directory-p src)
           (let* ((rel (file-relative-name src skills-src-dir))
                  (dst (expand-file-name rel skills-dst-dir)))
-            (let ((src (expand-file-name src))
-                  (dst (expand-file-name dst)))
-              (when (and (file-exists-p src)
-                         (not (file-exists-p dst)))
-                (make-directory (file-name-directory dst) t)
-                (condition-case _
-                    (make-symbolic-link src dst t)
-                  (error
-                   (condition-case _
-                       (copy-file src dst t t t)
-                     (error nil)))))))))))
+            (make-directory (file-name-directory dst) t)
+            (when (file-newer-than-file-p src dst)
+              (copy-file src dst t t)))))))
 
   (setq
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :login t)
