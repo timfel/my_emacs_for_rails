@@ -2394,18 +2394,23 @@ input means nil arguments."
     (when (or (eq window-system 'pgtk)
               (and (not window-system) (getenv "WAYLAND_DISPLAY")))
       (declare-function clipetty-cut "clipetty" (text))
-      (let ((last-copied-text))
+      (let ((last-copied-text)
+            (wl-copy-process))
         (setq interprogram-cut-function
               (lambda (text)
                 (setq last-copied-text (substring-no-properties text))
                 (if (and (fboundp #'clipetty-cut) (not window-system))
                     (clipetty-cut last-copied-text)
-                  (make-process :name "wl-copy"
-                                :buffer nil
-                                :command `("wl-copy" "-t" "text/plain" ,last-copied-text))))
+                  (when wl-copy-process
+                    (ignore-errors
+                      (kill-process wl-copy-process)))
+                  (setq wl-copy-process
+                        (make-process :name "wl-copy"
+                                      :buffer nil
+                                      :command `("wl-copy" "-f" "-t" "text/plain" ,last-copied-text)))))
               interprogram-paste-function
               (lambda ()
-                (let* ((raw (shell-command-to-string "wl-paste -t text -n 2>/dev/null | tr -d '\r'"))
+                (let* ((raw (shell-command-to-string "wl-paste -n 2>/dev/null | tr -d '\r'"))
                        (s (and raw (not (string-empty-p raw)) raw)))
                   (if (and s last-copied-text (string= s last-copied-text))
                       nil
