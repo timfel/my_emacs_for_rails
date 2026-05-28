@@ -2070,11 +2070,6 @@ input means nil arguments."
 
   (keymap-unset agent-shell-mode-map "p")
   (keymap-unset agent-shell-mode-map "n")
-  ;; Remove once upstream includes the session strategy snapshot fix.
-  (advice-add 'agent-shell--start :around (lambda (orig-fun &rest args)
-                                            (unless (plist-member args :session-strategy)
-                                              (setq args (append args (list :session-strategy agent-shell-session-strategy))))
-                                            (apply orig-fun args)))
 
   ;; If any .agents/skills from this repo do not exist in $HOME/.agents/skills/ (Unix) or $Env:USERPROFILE/.agents/skills (Windows)
   ;; then copy them there
