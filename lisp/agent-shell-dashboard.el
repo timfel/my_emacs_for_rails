@@ -35,8 +35,9 @@
   (list user-emacs-directory)
   "Directories searched by `agent-shell-dashboard'.
 
-Each directory is checked for its own `.agent-shell/worktrees' directory
-and for one level of child directories containing `.agent-shell/worktrees'."
+Each directory is checked for its own `.agent-shell/transcripts' and
+`.agent-shell/worktrees' directories, and for one level of child
+directories containing those folders."
   :type '(repeat directory)
   :group 'agent-shell-dashboard)
 
@@ -160,6 +161,9 @@ and for one level of child directories containing `.agent-shell/worktrees'."
            (t
             (let ((worktrees (expand-file-name ".agent-shell/worktrees"
                                                candidate)))
+              (when (file-directory-p
+                     (expand-file-name ".agent-shell/transcripts" candidate))
+                (push (agent-shell-dashboard--directory candidate) folders))
               (setq folders
                     (append (agent-shell-dashboard--worktree-children worktrees)
                             folders))))))))
