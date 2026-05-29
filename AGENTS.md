@@ -40,5 +40,5 @@ I usually have a `d:/` drive or a `~/dev` folder where I keep my main git checko
 So when I ask to work on something, chances are I want you to ask me (interactively with emacs' `(read-directory-name "work where: ")`) what repository that work should be based on under these folders.
 I might then respond with a non-existent folder, in which case it's a fresh project and I expect you to create it and call `git init` in the new folder.
 
-The next step for you is to call `(timfel/agent-shell-fan-out-worktrees '(TITLE-OF-TASK . INITIAL-QUESTION-AND-CONTEXT-FOR-AGENT) CHOSEN-DIRECTORY-FROM-PREVIOUS-STEP)`.
+The next step for you is to call `(agent-shell-fanout-worktrees '(TITLE-OF-TASK . INITIAL-QUESTION-AND-CONTEXT-FOR-AGENT) CHOSEN-DIRECTORY-FROM-PREVIOUS-STEP)`.
 It may be prudent to write the initial question/task and context into a file and just put something like "read [FILE] and act on it" as task.

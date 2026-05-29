@@ -18,7 +18,7 @@
 (declare-function agent-shell-buffers "agent-shell" ())
 (declare-function ci-dashboard "emacs-ci" ())
 (declare-function org-agenda "org-agenda" (&optional arg keys restriction-lock))
-(declare-function timfel/agent-shell-fan-out-worktrees
+(declare-function agent-shell-fanout-worktrees
                   "timfel-agent-shell-extensions"
                   (task-specs &optional directory session-strategy))
 (declare-function timfel/jira "timfel-jira-extensions" ())
@@ -190,7 +190,7 @@
   "Return non-nil when TASK-SPECS should target DIRECTORY directly.
 
 When EXPLICIT-DIRECTORY-P is non-nil, this tool should treat the
-directory as the task-spec title so `timfel/agent-shell-fan-out-worktrees'
+directory as the task-spec title so `agent-shell-fanout-worktrees'
 starts the task in that exact directory."
   (when explicit-directory-p
     (when (> (length task-specs) 1)
@@ -265,7 +265,7 @@ Return a plist describing whether anything was created."
                            "the repository needs a base branch or commit first")
                    directory))
                 (list (cons directory (cdar task-specs))))))))
-    (timfel/agent-shell-fan-out-worktrees effective-task-specs directory (if resume-p 'latest 'new))
+    (agent-shell-fanout-worktrees effective-task-specs directory (if resume-p 'latest 'new))
     (list :ok t
           :directory directory
           :used_worktrees used-worktrees

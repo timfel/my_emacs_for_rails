@@ -249,47 +249,58 @@
      :follow #'timfel/org-follow-ci-link
      :store #'timfel/org-store-ci-link)))
 
-(use-package timfel-ci-extensions
-  :after (timfel emacs-ci))
-
 (use-package orcl
   :after timfel
   :commands (timfel/git-merges-jira-html timfel/install-ol-cli))
 
-(use-package timfel-agent-shell-extensions
-  :commands (timfel/agent-shell-fan-out-worktrees
-             timfel/agent-shell-magit-context-source
-             timfel/agent-shell-vc-context-source
-             timfel/agent-shell-start-deferred
-             timfel/agent-shell-recovery-recover-live-set
-             timfel/dired-agent-shell-marked-directories
-             timfel/agent-shell-context-source
-             timfel/agent-shell-return-dwim
-             timfel/agent-shell-continue-configure
-             timfel/agent-shell-continue-run-now
-             timfel-agent-shell-continue-mode
-             timfel/agent-shell-tile-buffers-grid)
-  :hook ((agent-shell-mode . timfel/agent-shell-recovery-track-live-set)
-         (agent-shell-mode . timfel/agent-shell-retry-on-hitting-rate-limit)
-         (agent-shell-mode . hack-dir-local-variables-non-file-buffer)
-         (dired-mode . (lambda ()
-                         (keymap-set dired-mode-map "C-x a i" #'timfel/dired-agent-shell-marked-directories))))
-  :bind (("C-x a t" . timfel/agent-shell-tile-buffers-grid)
-         ("C-x a s" . timfel/agent-shell-start-deferred))
+(use-package agent-shell-bookmark
+  :vc (:url "https://github.com/dcluna/agent-shell-bookmark" :branch "main" :rev :newest)
+  :after agent-shell
   :config
-  (setq agent-shell-context-sources
-        '(files region error
-                timfel/agent-shell-magit-context-source
-                timfel/agent-shell-vc-context-source
-                timfel/agent-shell-context-source
-                line))
-  :after timfel)
+  (require 'agent-shell-ol))
 
-(use-package timfel-jira-extensions
-  :commands (timfel/jira-periodic-issues
-             timfel/jira
-             timfel/jira-issues-investigate-marked-with-agent)
-  :after timfel)
+(use-package agent-shell-utils
+  :after agent-shell
+  :vc (:url "https://github.com/timfel/agent-shell-utils.el.git" :branch "master" :rev :newest))
+
+(use-package agent-shell-bwrap
+  :after agent-shell-utils
+  :config
+  (agent-shell-bwrap-mode 1))
+
+(use-package agent-shell-context
+  :after agent-shell-utils
+  :config
+  (agent-shell-context-mode 1))
+
+(use-package agent-shell-fanout
+  :after agent-shell-utils
+  :hook (agent-shell-mode . hack-dir-local-variables-non-file-buffer))
+
+(use-package agent-shell-ralph
+  :after agent-shell-utils
+  :hook
+  (agent-shell-mode . agent-shell-ralph-rate-limit-retry-mode))
+
+(use-package agent-shell-jira
+  :after jira
+  :defines (jira-detail-mode-map jira-issues-mode-map)
+  :bind (:map jira-detail-mode-map
+         ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent)
+         :map jira-issues-mode-map
+         ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent)))
+
+(use-package agent-shell-desktop
+  :vc (:url "https://github.com/timfel/agent-shell-desktop.el" :branch "main" :rev :newest)
+  :after (agent-shell desktop)
+  :hook
+  (agent-shell-mode . (lambda () (run-with-idle-timer 5 nil #'desktop-save (locate-user-emacs-file "."))))
+  :config
+  (agent-shell-desktop-mode 1))
+
+(use-package agent-shell-dashboard
+  :after agent-shell
+  :bind ("C-x a a" . agent-shell-dashboard))
 
 (use-package timfel-lsp-java-extensions
   :commands (timfel/my/lsp/find-eclipse-projects-recursively
@@ -307,6 +318,7 @@
   (presentation-default-text-scale 4))
 
 (use-package wsl-interop
+  :vc (:url "https://github.com/timfel/wsl-interop.el" :branch "main" :rev :newest)
   :commands (wsl-p
              wsl-powershell-command wsl-powershell-command-to-string
              wsl-cmd-command wsl-cmd-command-to-string
@@ -751,6 +763,7 @@
   (add-to-list 'vc-directory-exclusion-list "eln-cache"))
 
 (use-package vscode-project
+  :vc (:url "https://github.com/timfel/vscode-project.el" :branch "master" :rev :newest)
   :after project)
 
 (use-package company
@@ -868,14 +881,14 @@
   :unless (memq system-type '(windows-nt android))
   :bind (("C-x C-z" . magit-status)
          :map magit-mode-map
-         ("C-x a s" . timfel/agent-shell-start-deferred))
+         ("C-x a s" . agent-shell))
   :ensure t
   :custom
   (magit-auto-revert-tracked-only t)
   :config
   (defvar-keymap timfel/magit-ctl-x-a-map
     :doc "Prefix map for `C-x a' in Magit diff sections."
-    "s" #'timfel/agent-shell-start-deferred
+    "s" #'agent-shell
     "a" #'magit-add-change-log-entry
     "4 a" #'magit-add-change-log-entry-other-window)
   (keymap-set magit-diff-section-map "C-x a" timfel/magit-ctl-x-a-map)
@@ -923,6 +936,7 @@
                                        "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
                                        "\\)$"))
   :config
+  (desktop-save-mode)
   (add-to-list 'desktop-globals-to-save 'file-name-history)
   (add-to-list 'desktop-modes-not-to-save 'dired-mode)
   (add-to-list 'desktop-modes-not-to-save 'Info-mode)
@@ -1166,70 +1180,6 @@
   (global-set-key (kbd "M-[ 1 ; 5 c") (kbd "C-<right>"))
   (term-keys-mode t))
 
-(use-package sixel-graphics
-  :disabled
-  :ensure t
-  :unless (display-graphic-p)
-  :vc (:url "https://github.com/timfel/sixel-graphics.el" :branch "main" :rev :newest)
-  :config
-  (when (getenv "WT_SESSION")
-    (setq sixel-graphics-cell-width 10
-          sixel-graphics-cell-height 20))
-  (if (eq system-type 'windows-nt)
-      ;; uses https://github.com/trackd/Sixel, installed via Install-Module Sixel
-      (let* ((script-dir (locate-user-emacs-file "bin/"))
-             (script (expand-file-name "img2sixel.bat" script-dir))
-             (script-not-found (expand-file-name "img2sixel.notfound" script-dir))
-             (img2sixel (executable-find "img2sixel")))
-        (unless img2sixel
-          (mkdir script-dir t)
-          (unless (or (file-exists-p script) (file-exists-p script-not-found))
-            (if (zerop (process-file (executable-find "powershell.exe")
-                                     nil nil nil
-                                     "-Command" "Get-Command ConvertTo-Sixel"))
-                (with-temp-file script
-                  (insert "@echo off
-                           setlocal EnableDelayedExpansion
-                           
-                           set \"PSCMD=ConvertTo-Sixel -Force -Protocol Sixel\"
-                           
-                           :loop
-                           if \"%~1\"==\"\" goto done
-                           set \"A=%~1\"
-                           if /I \"!A!\"==\"-w\" goto width
-                           if /I \"!A!\"==\"-h\" goto height
-                           
-                           rem append a normal argument and escape single quotes for PowerShell
-                           set \"ARG=%~1\"
-                           set \"ARG=!ARG:'=''!\"
-                           set \"PSCMD=!PSCMD! '!ARG!'\"
-                           
-                           shift
-                           goto loop
-                           
-                           :width
-                           shift
-                           set /a V=%~1/10
-                           set \"PSCMD=!PSCMD! -Width !V!\"
-                           shift
-                           goto loop
-                           
-                           :height
-                           shift
-                           set /a V=%~1/20
-                           set \"PSCMD=!PSCMD! -Height !V!\"
-                           shift
-                           goto loop
-                           
-                           :done
-                           powershell.exe -NoLogo -NoProfile -NonInteractive -Command \"$s = & { %PSCMD% }; $bytes = [System.Text.Encoding]::ASCII.GetBytes([string]$s); $stdout = [System.Console]::OpenStandardOutput(); $stdout.Write($bytes, 0, $bytes.Length)\"
-                           endlocal"))
-              (with-temp-file script-not-found
-                (insert "missing ConvertTo-Sixel"))))
-          (if (file-exists-p script)
-              (setq sixel-graphics-encoder-program script)))))
-  (sixel-graphics-mode t))
-
 (use-package kitty-graphics
   :ensure t
   :unless (display-graphic-p)
@@ -1303,6 +1253,11 @@
   (if (eq system-type 'windows-nt)
       (require 'exec-path-from-powershell))
   (exec-path-from-shell-initialize))
+
+(use-package exec-path-from-powershell
+  :vc (:url "https://github.com/timfel/exec-path-from-powershell" :branch "main" :rev :newest)
+  :if (eq system-type 'windows-nt)
+  :defer t)
 
 (use-package rustic
   :ensure t
@@ -2023,12 +1978,11 @@ input means nil arguments."
               org-link-set-parameters
               org-link-store-props
               shell-maker-submit
-              timfel/org-store-agent-shell-link
-              timfel/agent-shell-return-dwim
-              timfel/agent-shell-command-prefix-bwrap)
+              timfel/agent-shell-return-dwim)
   :commands agent-shell
   :pin melpa
-  :bind (:map agent-shell-mode-map
+  :bind (("C-x a s" . agent-shell)
+         :map agent-shell-mode-map
          ("RET" . timfel/agent-shell-return-dwim)
          ("C-c RET" . shell-maker-submit)
          ("C-x a R" . agent-shell-restart)
@@ -2037,37 +1991,15 @@ input means nil arguments."
   (agent-shell-busy-indicator-frames 'dots-round)
   (agent-shell-header-style 'text)
   (agent-shell-buffer-name-format (lambda (_agent-name project-name) (format "%s agent" project-name)))
-  (agent-shell-session-strategy 'latest)
+  (agent-shell-session-strategy 'prompt)
   (agent-shell-highlight-blocks nil)
   (agent-shell-prefer-viewport-interaction nil)
   (agent-shell-preferred-agent-config 'codex)
   (agent-shell-show-config-icons nil)
   (agent-shell-show-usage-at-turn-end t)
   (agent-shell-text-file-capabilities t)
-  (agent-shell-command-prefix #'timfel/agent-shell-command-prefix-bwrap)
   :config
-
-  (defun timfel/org-store-agent-shell-link (&optional _interactive?)
-    (when (derived-mode-p 'agent-shell-mode)
-      (let* ((directory (file-name-as-directory (expand-file-name default-directory)))
-             (link (concat "agent-shell:" directory))
-             (description (format "agent shell in %s"
-                                  (abbreviate-file-name directory))))
-        (org-link-store-props
-         :type "agent-shell"
-         :link link
-         :description description)
-        link)))
-
-  (with-eval-after-load 'org
-    (org-link-set-parameters
-     "agent-shell"
-     :follow (lambda (d) (let ((default-directory d)
-                               (agent-shell-session-strategy 'prompt)
-                               (agent-shell-context-sources nil))
-                           (call-interactively #'agent-shell)))
-     :store #'timfel/org-store-agent-shell-link))
-
+  (require 'timfel-markdown-overlays-extensions)
   (keymap-unset agent-shell-mode-map "p")
   (keymap-unset agent-shell-mode-map "n")
 
@@ -2092,66 +2024,13 @@ input means nil arguments."
    agent-shell-goose-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :none t)))
 
-(use-package timfel-agent-shell-unstick
-  :after agent-shell)
-
 (use-package agent-shell-dashboard
   :after agent-shell
   :commands agent-shell-dashboard
   :custom
-  (agent-shell-dashboard-worktree-search-directories (list user-emacs-directory "~/dev/graalpython" "~/dev/graalos" "~/tmp"))
+  (agent-shell-dashboard-worktree-search-directories
+   (list user-emacs-directory "~/dev/graalpython" "~/dev/graal" "~/dev/graalos" "~/tmp"))
   :bind (("C-x a d" . agent-shell-dashboard)))
-
-(use-package agent-shell-attention
-  :vc (:url "https://github.com/ultronozm/agent-shell-attention.el" :rev :newest)
-  :ensure t
-  :functions (agent-shell-attention-dashboard-refresh)
-  :after (agent-shell)
-  :bind (("C-x a a" . #'agent-shell-attention-dashboard)
-         :map agent-shell-attention-dashboard-mode-map
-         ("k" . (lambda ()
-                  (interactive)
-                  (let ((buffer (tabulated-list-get-id)))
-                    (if (buffer-live-p buffer)
-                        (kill-buffer buffer)))))
-         ("R" . (lambda ()
-                  (interactive)
-                  (if-let ((buffer (tabulated-list-get-id)))
-                      (with-current-buffer buffer
-                        (call-interactively #'agent-shell-rename-buffer))
-                    (message "No live agent-shell buffer on this line"))
-                  (agent-shell-attention-dashboard-refresh))))
-  :config
-  (agent-shell-attention-mode 1)
-  :custom
-  (agent-shell-attention-show-zeros t)
-  (agent-shell-attention-render-function #'agent-shell-attention-render-active)
-  (agent-shell-attention-notify-function
-   (lambda (_buffer title body)
-     (if (or (eq system-type 'windows-nt) (wsl-p))
-         (wsl-powershell-start-process
-          "say" nil
-          (string-replace "\n" ""
-                          (format "$sp = New-Object -ComObject SAPI.SpVoice;
-                                   $sp.Volume = 20;
-                                   $sp.Rate   = 4;
-                                   $sp.Speak(\"
-                                   <speak>
-                                     <emph><pitch middle='+10'>Check Your Agent! %s %s</pitch></emph>
-                                   </speak>
-                                   \", 0)" (replace-regexp-in-string "\\<agent\\>" "" title t t) (replace-regexp-in-string "\\<agent\\>" "" body t t)))))
-     (knockknock-notify
-      :title title
-      :message body
-      :icon "nf-cod-bot"
-      :duration 5))))
-
-(use-package knockknock
-  :vc (:url "https://github.com/konrad1977/knockknock" :rev :newest)
-  :ensure t
-  :custom
-  (knockknock-darken-background-percent 30)
-  :commands (knockknock-notify))
 
 (use-package difftastic
   :ensure t
