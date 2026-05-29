@@ -53,9 +53,9 @@ directories containing those folders."
 
 (defconst agent-shell-dashboard--buffer-name "*agent-shell dashboard*")
 
-(defconst agent-shell-dashboard--folder-column-width 42)
+(defconst agent-shell-dashboard--folder-column-width 72)
 
-(defconst agent-shell-dashboard--jira-column-width 16)
+(defconst agent-shell-dashboard--jira-column-width 20)
 
 (defconst agent-shell-dashboard--pr-regexp
   "\\(?:https?://[^ \t\n\r)>\"]+\\|bitbucket:\\)?/?projects/\\([^/ \t\n\r)>\"]+\\)/repos/\\([^/ \t\n\r)>\"]+\\)/pull-requests/\\([0-9]+\\)")

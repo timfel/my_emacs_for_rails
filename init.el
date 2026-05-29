@@ -2024,12 +2024,18 @@ input means nil arguments."
    agent-shell-goose-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-opencode-authentication (agent-shell-opencode-make-authentication :none t)))
 
+(use-package agent-shell-tramp
+  :vc (:url "https://github.com/junyi-hou/agent-shell-tramp" :branch "main" :rev :newest)
+  :after agent-shell
+  :config
+  (agent-shell-tramp-mode 1))
+
 (use-package agent-shell-dashboard
   :after agent-shell
   :commands agent-shell-dashboard
   :custom
   (agent-shell-dashboard-worktree-search-directories
-   (list user-emacs-directory "~/dev/graalpython" "~/dev/graal" "~/dev/graalos" "~/tmp"))
+   (list user-emacs-directory "~/dev/graalpython" "~/dev/graal" "~/dev/graalos" "~/tmp" "~/tmp/workloads" "~/tmp/graalos-apps/"))
   :bind (("C-x a d" . agent-shell-dashboard)))
 
 (use-package difftastic
