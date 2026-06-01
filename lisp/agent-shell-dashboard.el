@@ -917,6 +917,31 @@ When FILTER-TEXT is non-nil, cache the filtered query separately."
        (append fetched pr)))
    prs))
 
+(defun agent-shell-dashboard--merge-preserved-items
+    (items preserved-items key-fn &optional keep-preserved-only)
+  "Return ITEMS enriched with PRESERVED-ITEMS matched by KEY-FN.
+When KEEP-PRESERVED-ONLY is non-nil, also retain preserved items
+with no current local match."
+  (let ((merged nil))
+    (dolist (item items)
+      (let* ((key (funcall key-fn item))
+             (preserved
+              (seq-find (lambda (candidate)
+                          (equal key (funcall key-fn candidate)))
+                        preserved-items)))
+        (push (if preserved
+                  (append preserved item)
+                item)
+              merged)))
+    (when keep-preserved-only
+      (dolist (item preserved-items)
+        (unless (seq-find (lambda (candidate)
+                            (equal (funcall key-fn item)
+                                   (funcall key-fn candidate)))
+                          merged)
+          (push item merged))))
+    (nreverse merged)))
+
 (defun agent-shell-dashboard--async-map (items worker callback)
   "Call WORKER for each item in ITEMS and collect results in CALLBACK.
 WORKER receives an item and a per-item callback."
@@ -1240,9 +1265,11 @@ When FILTER-TEXT is non-nil, ask Bitbucket to filter PRs by it."
                          :prs fetched-prs)))))))))))))
 
 (defun agent-shell-dashboard--make-row
-    (folder &optional full-refresh jira-cache pr-cache repo-pr-cache)
+    (folder &optional full-refresh jira-cache pr-cache repo-pr-cache preserved-row)
   "Build row plist for FOLDER.
-When FULL-REFRESH is non-nil, refresh Jira and PR metadata using CACHES."
+When FULL-REFRESH is non-nil, refresh Jira and PR metadata using CACHES.
+When PRESERVED-ROW is non-nil and FULL-REFRESH is nil, keep fetched
+metadata already present on that row."
   (let* ((buffers (agent-shell-dashboard--folder-buffers folder))
          (state (agent-shell-dashboard--agent-state buffers))
          (links (agent-shell-dashboard--extract-local-links folder))
@@ -1262,6 +1289,18 @@ When FULL-REFRESH is non-nil, refresh Jira and PR metadata using CACHES."
       (setq jiras (agent-shell-dashboard--merge-fetched-jiras
                    jiras jira-cache))
       (setq prs (agent-shell-dashboard--merge-fetched-prs prs pr-cache)))
+    (when (and (not full-refresh) preserved-row)
+      (setq jiras
+            (agent-shell-dashboard--merge-preserved-items
+             jiras
+             (plist-get preserved-row :jiras)
+             (lambda (jira) (plist-get jira :key))))
+      (setq prs
+            (agent-shell-dashboard--merge-preserved-items
+             prs
+             (plist-get preserved-row :prs)
+             #'agent-shell-dashboard--pr-key
+             t)))
     (list :folder (agent-shell-dashboard--directory folder)
           :buffers buffers
           :agent-state state
@@ -1476,15 +1515,20 @@ When FULL-REFRESH is non-nil, refresh Jira and PR metadata using CACHES."
 When FULL-REFRESH is non-nil, also fetch Jira and PR metadata.
 When FOLDERS is non-nil, build rows for those folders instead of
 discovering them."
-  (let ((rows (make-hash-table :test #'equal))
+  (let ((preserved-rows (and (not full-refresh)
+                             (hash-table-p agent-shell-dashboard--rows)
+                             agent-shell-dashboard--rows))
+        (rows (make-hash-table :test #'equal))
         (entries nil)
         (jira-cache (make-hash-table :test #'equal))
         (pr-cache (make-hash-table :test #'equal))
         (repo-pr-cache (make-hash-table :test #'equal)))
     (dolist (folder (or folders (agent-shell-dashboard--discover-folders)))
-      (let ((row (agent-shell-dashboard--make-row
-                  folder full-refresh jira-cache pr-cache repo-pr-cache)))
-        (puthash (agent-shell-dashboard--row-id folder) row rows)
+      (let* ((id (agent-shell-dashboard--row-id folder))
+             (row (agent-shell-dashboard--make-row
+                   folder full-refresh jira-cache pr-cache repo-pr-cache
+                   (and preserved-rows (gethash id preserved-rows)))))
+        (puthash id row rows)
         (push (agent-shell-dashboard--entry row) entries)))
     (list :rows rows :entries (nreverse entries))))
 
