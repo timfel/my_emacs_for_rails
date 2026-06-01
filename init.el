@@ -276,6 +276,23 @@
 
 (use-package agent-shell-fanout
   :after agent-shell-utils
+  :functions (agent-shell-fanout-default-repositories
+              timfel/agent-shell-fanout-graal-repositories)
+  :custom
+  (agent-shell-fanout-adjacent-repository-names
+   '("graal" "graal-enterprise"))
+  :config
+  (defun timfel/agent-shell-fanout-graal-repositories (repo-root)
+    "Return fan-out repositories for REPO-ROOT, preserving Graal suite siblings."
+    (let* ((repo-root (file-name-as-directory (expand-file-name repo-root)))
+           (repo-name (file-name-nondirectory (directory-file-name repo-root)))
+           (mx-dir (expand-file-name (format "mx.%s" repo-name) repo-root))
+           (agent-shell-fanout-adjacent-repository-names
+            (when (file-directory-p mx-dir)
+              agent-shell-fanout-adjacent-repository-names)))
+      (agent-shell-fanout-default-repositories repo-root)))
+  (setq agent-shell-fanout-repositories-function
+        #'timfel/agent-shell-fanout-graal-repositories)
   :hook (agent-shell-mode . hack-dir-local-variables-non-file-buffer))
 
 (use-package agent-shell-ralph

@@ -74,7 +74,7 @@ Use this flow when the user wants Codex to inspect or drive `agent-shell` sessio
 
 Use this when the user wants multiple parallel agent shells, especially one per git worktree.
 
-- `timfel/agent-shell-fan-out-worktrees` is the preferred local helper for creating one worktree-backed shell per task, renaming each shell buffer to a title, and queueing each task automatically.
+- `agent-shell-fanout-worktrees` is the preferred local helper for creating one worktree-backed shell per task, renaming each shell buffer to a title, and queueing each task automatically.
 - `agent-shell-queue-request` only works inside an `agent-shell-mode` buffer. It submits immediately when idle and enqueues when busy.
 - For reliable automation, first find the target shell buffer by matching its `default-directory`, then call `agent-shell-queue-request` inside that buffer.
 - After loading `timfel-jira-extensions`, this pairs well with `timfel/jira-periodic-python-issues-alist`: fetch issue summaries, convert them into `(TITLE . TASK)` pairs, then fan them out into separate worktrees.
@@ -89,11 +89,9 @@ If you can, check if those issues and/or PRs are closed/merged, and report back 
 ### Agent Shell Examples
 
 - Use the local fan-out helper with titles and tasks:
-  `emacsclient --eval '(timfel/agent-shell-fan-out-worktrees (list (cons "Task A" "Implement feature A") (cons "Task B" "Fix bug B")))'`
-- Strings still work and are treated as `(TASK . TASK)`:
-  `emacsclient --eval '(timfel/agent-shell-fan-out-worktrees (list "Task A" "Task B"))'`
+  `emacsclient --eval '(progn (require (quote agent-shell-fanout)) (agent-shell-fanout-worktrees (list (cons "Task A" "Implement feature A") (cons "Task B" "Fix bug B"))))'`
 - Combine Jira search with worktree fan-out, loading the non-command helper first:
-  `emacsclient --eval '(progn (require (quote timfel-jira-extensions)) (timfel/agent-shell-fan-out-worktrees (mapcar (lambda (issue) (cons (car issue) (concat "Investigate and propose a fix for " (car issue) ": " (cdr issue)))) (timfel/jira-periodic-python-issues-alist 90))))'`
+  `emacsclient --eval '(progn (require (quote agent-shell-fanout)) (require (quote timfel-jira-extensions)) (agent-shell-fanout-worktrees (mapcar (lambda (issue) (cons (car issue) (concat "Investigate and propose a fix for " (car issue) ": " (cdr issue)))) (timfel/jira-periodic-python-issues-alist 90))))'`
 - Start a shell in a specific worktree:
   `emacsclient --eval '(let ((default-directory "/path/to/worktree/")) (agent-shell (list 4)))'`
 - Start a shell programmatically with the preferred config:
