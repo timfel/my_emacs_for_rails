@@ -69,9 +69,6 @@ directories containing those folders."
 (defvar-local agent-shell-dashboard--refresh-timers nil
   "Pending incremental dashboard refresh timers.")
 
-(defvar-local agent-shell-dashboard--agent-status-timer nil
-  "Timer that updates live agent-shell status icons.")
-
 (defvar agent-shell-cwd-function)
 (defvar agent-shell-session-strategy)
 (defvar agent-shell--state)
@@ -1296,32 +1293,16 @@ When FILTER-TEXT is non-nil, ask Bitbucket to filter PRs by it."
                          :prs fetched-prs)))))))))))))
 
 (defun agent-shell-dashboard--make-row
-    (folder &optional full-refresh jira-cache pr-cache repo-pr-cache preserved-row
-            folders)
+    (folder preserved-row folders)
   "Build row plist for FOLDER.
-When FULL-REFRESH is non-nil, refresh Jira and PR metadata using CACHES.
-When PRESERVED-ROW is non-nil and FULL-REFRESH is nil, keep fetched
+When PRESERVED-ROW is non-nil, keep fetched
 metadata already present on that row."
   (let* ((buffers (agent-shell-dashboard--folder-buffers folder folders))
          (state (agent-shell-dashboard--agent-state buffers))
          (links (agent-shell-dashboard--extract-local-links folder))
          (jiras (plist-get links :jiras))
          (prs (plist-get links :prs)))
-    (when full-refresh
-      (setq prs
-            (seq-reduce
-             (lambda (items pr)
-               (agent-shell-dashboard--push-unique
-                pr #'agent-shell-dashboard--pr-key items))
-             (agent-shell-dashboard--discover-branch-prs
-              folder jiras
-              (or repo-pr-cache
-                  (make-hash-table :test #'equal)))
-             prs))
-      (setq jiras (agent-shell-dashboard--merge-fetched-jiras
-                   jiras jira-cache))
-      (setq prs (agent-shell-dashboard--merge-fetched-prs prs pr-cache)))
-    (when (and (not full-refresh) preserved-row)
+    (when preserved-row
       (setq jiras
             (agent-shell-dashboard--merge-preserved-items
              jiras
@@ -1550,26 +1531,17 @@ metadata already present on that row."
                     (string-lessp (car left) (car right))))))
     (agent-shell-dashboard--print)))
 
-(defun agent-shell-dashboard--build-refresh-data
-    (&optional full-refresh folders)
-  "Return dashboard data.
-When FULL-REFRESH is non-nil, also fetch Jira and PR metadata.
-When FOLDERS is non-nil, build rows for those folders instead of
-discovering them."
-  (let ((preserved-rows (and (not full-refresh)
-                             (hash-table-p agent-shell-dashboard--rows)
+(defun agent-shell-dashboard--build-refresh-data ()
+  "Return dashboard data."
+  (let ((preserved-rows (and (hash-table-p agent-shell-dashboard--rows)
                              agent-shell-dashboard--rows))
-        (discovered-folders (or folders
-                                (agent-shell-dashboard--discover-folders)))
+        (discovered-folders (agent-shell-dashboard--discover-folders))
         (rows (make-hash-table :test #'equal))
-        (entries nil)
-        (jira-cache (make-hash-table :test #'equal))
-        (pr-cache (make-hash-table :test #'equal))
-        (repo-pr-cache (make-hash-table :test #'equal)))
+        (entries nil))
     (dolist (folder discovered-folders)
       (let* ((id (agent-shell-dashboard--row-id folder))
              (row (agent-shell-dashboard--make-row
-                   folder full-refresh jira-cache pr-cache repo-pr-cache
+                   folder
                    (and preserved-rows (gethash id preserved-rows))
                    discovered-folders)))
         (puthash id row rows)
@@ -1597,15 +1569,11 @@ discovering them."
                                 id)))
           (forward-line 1))))))
 
-(defun agent-shell-dashboard--refresh (&optional full-refresh)
-  "Refresh the dashboard synchronously.
-When FULL-REFRESH is non-nil, also refresh Jira and PR metadata."
-  (when full-refresh
-    (message "Refreshing agent-shell dashboard..."))
+(defun agent-shell-dashboard--refresh ()
+  "Refresh the dashboard synchronously."
   (agent-shell-dashboard--apply-refresh-data
-   (agent-shell-dashboard--build-refresh-data full-refresh))
-  (when full-refresh
-    (message "Refreshing agent-shell dashboard...done")))
+   (agent-shell-dashboard--build-refresh-data))
+  (agent-shell-dashboard--refresh-agent-status-buffer (current-buffer)))
 
 (defun agent-shell-dashboard--refresh-agent-status ()
   "Refresh live agent-shell status icons without fetching remote metadata."
@@ -1661,27 +1629,12 @@ When FULL-REFRESH is non-nil, also refresh Jira and PR metadata."
       (when (derived-mode-p 'agent-shell-dashboard-mode)
         (agent-shell-dashboard--refresh-agent-status)))))
 
-(defun agent-shell-dashboard--cancel-agent-status-timer ()
-  "Cancel this dashboard buffer's live status timer."
-  (when (timerp agent-shell-dashboard--agent-status-timer)
-    (cancel-timer agent-shell-dashboard--agent-status-timer)
-    (setq agent-shell-dashboard--agent-status-timer nil)))
-
 (defun agent-shell-dashboard--cancel-refresh-timers ()
   "Cancel pending incremental dashboard refresh timers."
   (dolist (timer agent-shell-dashboard--refresh-timers)
     (when (timerp timer)
       (cancel-timer timer)))
   (setq agent-shell-dashboard--refresh-timers nil))
-
-(defun agent-shell-dashboard--start-agent-status-timer ()
-  "Start this dashboard buffer's live status timer."
-  (agent-shell-dashboard--cancel-agent-status-timer)
-  (setq agent-shell-dashboard--agent-status-timer
-        (run-at-time
-         1 2
-         #'agent-shell-dashboard--refresh-agent-status-buffer
-         (current-buffer))))
 
 (defun agent-shell-dashboard--refresh-progress (progress)
   "Advance dashboard refresh PROGRESS and update the minibuffer."
@@ -1724,6 +1677,7 @@ When FULL-REFRESH is non-nil, also refresh Jira and PR metadata."
 
 (defun agent-shell-dashboard--refresh-incremental ()
   "Refresh the dashboard incrementally with one idle timer per folder."
+  (agent-shell-dashboard--refresh-agent-status-buffer (current-buffer))
   (let* ((buffer (current-buffer))
          (folders (agent-shell-dashboard--discover-folders))
          (total (length folders))
@@ -1814,7 +1768,7 @@ one to use."
       (progn
         (with-current-buffer buffer
           (call-interactively #'agent-shell-rename-buffer))
-        (agent-shell-dashboard--refresh nil))
+        (agent-shell-dashboard--refresh))
     (user-error "No live agent-shell buffer on this row")))
 
 (defun agent-shell-dashboard--read-jira (row)
@@ -2161,7 +2115,7 @@ one to use."
         (delete-directory folder t))
       (agent-shell-dashboard--remove-row-id
        (agent-shell-dashboard--row-id folder))
-      (agent-shell-dashboard--refresh nil)
+      (agent-shell-dashboard--refresh)
       (message "Deleted %s" (abbreviate-file-name folder)))))
 
 (transient-define-prefix agent-shell-dashboard-dispatch ()
@@ -2220,22 +2174,21 @@ one to use."
               (lambda (_ignore-auto _noconfirm)
                 (agent-shell-dashboard--refresh-incremental)))
   (add-hook 'kill-buffer-hook
-            #'agent-shell-dashboard--cancel-agent-status-timer nil t)
-  (add-hook 'kill-buffer-hook
             #'agent-shell-dashboard--cancel-refresh-timers nil t)
-  (agent-shell-dashboard--start-agent-status-timer)
   (tabulated-list-init-header))
 
 ;;;###autoload
 (defun agent-shell-dashboard ()
   "Open the agent-shell worktree dashboard."
   (interactive)
-  (let ((buffer (get-buffer-create agent-shell-dashboard--buffer-name)))
-    (with-current-buffer buffer
-      (agent-shell-dashboard-mode)
-      (agent-shell-dashboard--ensure-mode-map)
-      (agent-shell-dashboard--refresh nil))
-    (pop-to-buffer buffer)))
+  (if-let ((buffer (get-buffer agent-shell-dashboard--buffer-name)))
+      (pop-to-buffer buffer)
+    (let ((buffer (get-buffer-create agent-shell-dashboard--buffer-name)))
+      (with-current-buffer buffer
+        (agent-shell-dashboard-mode)
+        (agent-shell-dashboard--ensure-mode-map)
+        (agent-shell-dashboard--refresh))
+      (pop-to-buffer buffer))))
 
 (provide 'agent-shell-dashboard)
 
