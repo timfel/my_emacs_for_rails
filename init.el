@@ -781,6 +781,7 @@
   (add-to-list 'vc-directory-exclusion-list "eln-cache"))
 
 (use-package vscode-project
+  :disabled
   :vc (:url "https://github.com/timfel/vscode-project.el" :branch "master" :rev :newest)
   :after project)
 
