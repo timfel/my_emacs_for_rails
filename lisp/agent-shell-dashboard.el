@@ -57,9 +57,6 @@ directories containing those folders."
 
 (defconst agent-shell-dashboard--jira-column-width 20)
 
-(defconst agent-shell-dashboard--pr-regexp
-  "\\(?:https?://[^ \t\n\r)>\"]+\\|bitbucket:\\)?/?projects/\\([^/ \t\n\r)>\"]+\\)/repos/\\([^/ \t\n\r)>\"]+\\)/pull-requests/\\([0-9]+\\)")
-
 (defvar-local agent-shell-dashboard--rows nil
   "Hash table mapping row ids to row plists in the current dashboard.")
 
@@ -227,23 +224,20 @@ FOLDERS is the complete list of candidate dashboard folders."
            (length (directory-file-name
                     (agent-shell-dashboard--directory right)))))))))
 
-(defun agent-shell-dashboard--buffer-in-folder-p (buffer folder &optional folders)
+(defun agent-shell-dashboard--buffer-in-folder-p (buffer folder folders)
   "Return non-nil if BUFFER belongs to dashboard FOLDER.
-When FOLDERS is non-nil, use it as the complete dashboard folder
-set so buffers below a more specific folder are not associated with
-their broader parent folder."
+FOLDERS is the complete dashboard folder set, so buffers below a
+more specific folder are not associated with their broader parent
+folder."
   (when-let* ((directory (agent-shell-dashboard--buffer-directory buffer))
               (owner (agent-shell-dashboard--folder-for-directory
-                      directory
-                      (or folders (agent-shell-dashboard--discover-folders)))))
+                      directory folders)))
     (string= (agent-shell-dashboard--row-id owner)
              (agent-shell-dashboard--row-id folder))))
 
-(defun agent-shell-dashboard--folder-buffers (folder &optional folders)
+(defun agent-shell-dashboard--folder-buffers (folder folders)
   "Return live agent-shell buffers assigned to FOLDER.
-Assignment uses the most specific containing folder from FOLDERS,
-or from `agent-shell-dashboard--discover-folders' when FOLDERS is
-nil."
+Assignment uses the most specific containing folder from FOLDERS."
   (seq-filter (lambda (buffer)
                 (agent-shell-dashboard--buffer-in-folder-p buffer folder folders))
               (agent-shell-dashboard--shell-buffers)))
@@ -350,15 +344,11 @@ Signal an error when the process exits non-zero."
       (buffer-string))))
 
 (defun agent-shell-dashboard--run-string
-    (program args callback &optional error-callback)
+    (program args callback error-callback)
   "Run PROGRAM with ARGS asynchronously and call CALLBACK with stdout.
-When the command fails, call ERROR-CALLBACK with an error string if
-non-nil, otherwise log the error with `message'."
+When the command fails, call ERROR-CALLBACK with an error string."
   (if (not (executable-find program))
-      (let ((error (format "Executable not found: %s" program)))
-        (if error-callback
-            (funcall error-callback error)
-          (message "%s" error)))
+      (funcall error-callback (format "Executable not found: %s" program))
     (let* ((buffer (generate-new-buffer
                     (format " *agent-shell-dashboard-%s*" program)))
            (command (cons program args))
@@ -380,14 +370,11 @@ non-nil, otherwise log the error with `message'."
                    (when (buffer-live-p buffer)
                      (kill-buffer buffer))
                    (if failed
-                       (let ((error
-                              (format "%s %s failed: %s"
-                                      program
-                                      (string-join args " ")
-                                      (string-trim (or output "")))))
-                         (if error-callback
-                             (funcall error-callback error)
-                           (message "%s" error)))
+                       (funcall error-callback
+                                (format "%s %s failed: %s"
+                                        program
+                                        (string-join args " ")
+                                        (string-trim (or output ""))))
                      (funcall callback (or output "")))))))))
       process)))
 
@@ -407,13 +394,8 @@ non-nil, otherwise log the error with `message'."
     (when (string-match "[[{]" string)
       (json-read-from-string (substring string (match-beginning 0))))))
 
-(defun agent-shell-dashboard--run-json-sync (program &rest args)
-  "Run PROGRAM with ARGS and parse JSON output."
-  (agent-shell-dashboard--json-from-string
-   (apply #'agent-shell-dashboard--run-string-sync program args)))
-
 (defun agent-shell-dashboard--run-json
-    (program args callback &optional error-callback)
+    (program args callback error-callback)
   "Run PROGRAM with ARGS asynchronously and call CALLBACK with JSON."
   (agent-shell-dashboard--run-string
    program args
@@ -422,10 +404,7 @@ non-nil, otherwise log the error with `message'."
          (funcall callback
                   (agent-shell-dashboard--json-from-string output))
        (error
-        (let ((error (error-message-string err)))
-          (if error-callback
-              (funcall error-callback error)
-            (message "%s" error))))))
+        (funcall error-callback (error-message-string err)))))
    error-callback))
 
 (defun agent-shell-dashboard--git-directories (folder)
@@ -450,11 +429,6 @@ non-nil, otherwise log the error with `message'."
   "Return origin remote URL in DIRECTORY, or nil."
   (agent-shell-dashboard--git-output directory
                                     "config" "--get" "remote.origin.url"))
-
-(defun agent-shell-dashboard--git-head (directory)
-  "Return HEAD commit in DIRECTORY, or nil."
-  (agent-shell-dashboard--git-output directory
-                                    "rev-parse" "--verify" "HEAD"))
 
 (defun agent-shell-dashboard--git-remote-coordinates-from-url (remote)
   "Infer Bitbucket project/repo coordinates from REMOTE URL."
@@ -486,9 +460,8 @@ non-nil, otherwise log the error with `message'."
          (file-directory-p (expand-file-name ".agent-shell" directory)))
        (agent-shell-dashboard--directory-subdirs folder))))))
 
-(defun agent-shell-dashboard--launch-directory (folder &optional prompt)
-  "Return agent-shell launch directory for FOLDER.
-When PROMPT is non-nil, ask if multiple one-level candidates exist."
+(defun agent-shell-dashboard--launch-directory (folder)
+  "Return agent-shell launch directory for FOLDER, prompting if ambiguous."
   (let ((candidates (agent-shell-dashboard--agent-shell-candidates folder)))
     (pcase candidates
       ('nil
@@ -496,21 +469,17 @@ When PROMPT is non-nil, ask if multiple one-level candidates exist."
          (pcase git-candidates
            ('nil (agent-shell-dashboard--directory folder))
            (`(,only) only)
-           (_ (if prompt
-                  (agent-shell-dashboard--directory
-                   (completing-read
-                    "Launch agent-shell in Git worktree: "
-                    (mapcar #'agent-shell-dashboard--directory git-candidates)
-                    nil t))
-                (car git-candidates))))))
+           (_ (agent-shell-dashboard--directory
+               (completing-read
+                "Launch agent-shell in Git worktree: "
+                (mapcar #'agent-shell-dashboard--directory git-candidates)
+                nil t))))))
       (`(,only) only)
-      (_ (if prompt
-             (agent-shell-dashboard--directory
-              (completing-read
-               "Launch agent-shell in: "
-               (mapcar #'agent-shell-dashboard--directory candidates)
-               nil t))
-           (car candidates))))))
+      (_ (agent-shell-dashboard--directory
+          (completing-read
+           "Launch agent-shell in: "
+           (mapcar #'agent-shell-dashboard--directory candidates)
+           nil t))))))
 
 (defun agent-shell-dashboard--push-unique (item key-fn items)
   "Add ITEM to ITEMS when KEY-FN does not already identify an existing item."
@@ -544,28 +513,6 @@ When PROMPT is non-nil, ask if multiple one-level candidates exist."
           (setq entries
                 (agent-shell-dashboard--push-unique
                  entry (lambda (jira) (plist-get jira :key)) entries)))))
-    (nreverse entries)))
-
-(defun agent-shell-dashboard--extract-prs-from-text (text)
-  "Return PR entries found in TEXT."
-  (let (entries)
-    (with-temp-buffer
-      (insert text)
-      (goto-char (point-min))
-      (while (re-search-forward agent-shell-dashboard--pr-regexp nil t)
-        (let* ((project (match-string 1))
-               (repo (match-string 2))
-               (id (match-string 3))
-               (url (match-string 0))
-               (entry (list :project project
-                            :repo repo
-                            :id id
-                            :url (if (string-prefix-p "http" url)
-                                     url
-                                   nil))))
-          (setq entries
-                (agent-shell-dashboard--push-unique
-                 entry #'agent-shell-dashboard--pr-key entries)))))
     (nreverse entries)))
 
 (defun agent-shell-dashboard--pr-key (pr)
@@ -616,37 +563,6 @@ When PROMPT is non-nil, ask if multiple one-level candidates exist."
           :resolution (map-elt resolution 'name)
           :url (or (map-elt data 'url)
                    (agent-shell-dashboard--jira-url key)))))
-
-(defun agent-shell-dashboard--fetch-jira-via-api (key)
-  "Fetch Jira KEY through jira.el, returning a Jira entry plist."
-  (when (require 'jira-api nil t)
-    (let* ((response
-            (jira-api-call
-             "GET" (format "issue/%s" key)
-             :params '(("fields" . "summary,status,resolution"))
-             :sync t))
-           (data (request-response-data response)))
-      (agent-shell-dashboard--jira-info-from-data key data))))
-
-(defun agent-shell-dashboard--fetch-jira-via-gdev (key)
-  "Fetch Jira KEY through gdev-cli, returning a Jira entry plist."
-  (when (executable-find "gdev-cli")
-    (let ((data (agent-shell-dashboard--run-json-sync
-                 "gdev-cli" "jira" "get-issue"
-                 "--json" "--skip-cache" (concat "-id=" key))))
-      (agent-shell-dashboard--jira-info-from-data key data))))
-
-(defun agent-shell-dashboard--fetch-jira (key)
-  "Fetch Jira KEY status/title."
-  (condition-case err
-      (or (condition-case nil
-              (agent-shell-dashboard--fetch-jira-via-api key)
-            (error nil))
-          (agent-shell-dashboard--fetch-jira-via-gdev key))
-    (error
-     (list :key key
-           :status "error"
-           :error (error-message-string err)))))
 
 (defun agent-shell-dashboard--json-map-p (object)
   "Return non-nil when OBJECT is an alist-like JSON object."
@@ -735,38 +651,6 @@ When PROMPT is non-nil, ask if multiple one-level candidates exist."
       (list :project project :repo repo :id (format "%s" id))
       object))))
 
-(defun agent-shell-dashboard--fetch-repo-prs (project repo &optional filter-text)
-  "Return PR plists for PROJECT and REPO from Bitbucket.
-When FILTER-TEXT is non-nil, ask Bitbucket to filter PRs by that text."
-  (let* ((args (append
-                (list "bitbucket" "list-prs"
-                      "--json"
-                      (concat "--project=" project)
-                      (concat "--repos=" repo)
-                      "--state=ALL"
-                      "--pageSize=100")
-                (when filter-text
-                  (list (concat "--filterText=" filter-text)))))
-         (data (apply #'agent-shell-dashboard--run-json-sync
-                      "gdev-cli" args))
-         (objects (agent-shell-dashboard--collect-pr-objects data)))
-    (delq nil
-          (mapcar (lambda (object)
-                    (agent-shell-dashboard--pr-from-object
-                     project repo object))
-                  objects))))
-
-(defun agent-shell-dashboard--repo-prs (project repo cache &optional filter-text)
-  "Return cached Bitbucket PRs for PROJECT and REPO using CACHE.
-When FILTER-TEXT is non-nil, cache the filtered query separately."
-  (let ((key (format "%s/%s:%s" project repo (or filter-text ""))))
-    (agent-shell-dashboard--cache-get-or-put
-     cache key
-     (lambda ()
-       (condition-case nil
-           (agent-shell-dashboard--fetch-repo-prs project repo filter-text)
-         (error nil))))))
-
 (defun agent-shell-dashboard--pr-matches-branch-p (pr branch head)
   "Return non-nil when PR matches local BRANCH or HEAD."
   (or (and branch
@@ -814,27 +698,6 @@ When FILTER-TEXT is non-nil, cache the filtered query separately."
        acc))
    prs
    items))
-
-(defun agent-shell-dashboard--discover-branch-prs (folder jiras cache)
-  "Discover PRs for Git branches and JIRAS below FOLDER using CACHE."
-  (let (prs)
-    (dolist (directory (agent-shell-dashboard--git-directories folder))
-      (when-let* ((coords (agent-shell-dashboard--git-remote-coordinates directory))
-                  (project (plist-get coords :project))
-                  (repo (plist-get coords :repo)))
-        (let ((branch (agent-shell-dashboard--git-branch directory))
-              (head (agent-shell-dashboard--git-head directory)))
-          (dolist (pr (agent-shell-dashboard--repo-prs project repo cache))
-            (setq prs
-                  (agent-shell-dashboard--push-matching-prs
-                   (list pr) branch head jiras prs)))
-          (dolist (jira jiras)
-            (when-let ((key (plist-get jira :key)))
-              (setq prs
-                    (agent-shell-dashboard--push-matching-prs
-                     (agent-shell-dashboard--repo-prs project repo cache key)
-                     branch head jiras prs)))))))
-    (nreverse prs)))
 
 (defun agent-shell-dashboard--first-http-url (object)
   "Return the first HTTP URL found in OBJECT."
@@ -890,63 +753,8 @@ When FILTER-TEXT is non-nil, cache the filtered query separately."
                      (map-elt object 'links))))
      pr)))
 
-(defun agent-shell-dashboard--fetch-pr (pr)
-  "Fetch status/title for PR plist."
-  (condition-case err
-      (let* ((project (or (plist-get pr :project)
-                          (error "Missing Bitbucket project")))
-             (repo (or (plist-get pr :repo)
-                       (error "Missing Bitbucket repo")))
-             (data (agent-shell-dashboard--run-json-sync
-                    "gdev-cli" "bitbucket" "list-prs"
-                    "--json"
-                    (concat "--project=" project)
-                    (concat "--repos=" repo)
-                    "--state=ALL"
-                    "--pageSize=100")))
-        (agent-shell-dashboard--pr-info-from-data pr data))
-    (error
-     (append (list :status "error"
-                   :error (error-message-string err))
-             pr))))
-
-(defun agent-shell-dashboard--cache-get-or-put (cache key thunk)
-  "Return CACHE value for KEY, computing it with THUNK if missing."
-  (let ((missing (make-symbol "missing")))
-    (let ((value (gethash key cache missing)))
-      (if (eq value missing)
-          (let ((computed (funcall thunk)))
-            (puthash key computed cache)
-            computed)
-        value))))
-
-(defun agent-shell-dashboard--merge-fetched-jiras (jiras cache)
-  "Fetch and merge JIRAS using CACHE."
-  (mapcar
-   (lambda (jira)
-     (let* ((key (plist-get jira :key))
-            (fetched (agent-shell-dashboard--cache-get-or-put
-                      cache key
-                      (lambda () (agent-shell-dashboard--fetch-jira key)))))
-       (append fetched jira)))
-   jiras))
-
-(defun agent-shell-dashboard--merge-fetched-prs (prs cache)
-  "Fetch and merge PRS using CACHE."
-  (mapcar
-   (lambda (pr)
-     (let* ((key (agent-shell-dashboard--pr-key pr))
-            (fetched (if (and (plist-get pr :title)
-                              (plist-get pr :status))
-                         pr
-                       (agent-shell-dashboard--cache-get-or-put
-                        cache key
-                        (lambda () (agent-shell-dashboard--fetch-pr pr))))))
-       (append fetched pr)))
-   prs))
-
 (defun agent-shell-dashboard--merge-preserved-items
-    (items preserved-items key-fn &optional keep-preserved-only)
+    (items preserved-items key-fn keep-preserved-only)
   "Return ITEMS enriched with PRESERVED-ITEMS matched by KEY-FN.
 When KEEP-PRESERVED-ONLY is non-nil, also retain preserved items
 with no current local match."
@@ -1257,8 +1065,8 @@ When FILTER-TEXT is non-nil, ask Bitbucket to filter PRs by it."
    callback))
 
 (defun agent-shell-dashboard--make-row-async
-    (folder jira-cache pr-cache repo-pr-cache callback &optional folders)
-  "Build dashboard row for FOLDER asynchronously and call CALLBACK."
+    (folder folders jira-cache pr-cache repo-pr-cache callback)
+  "Build dashboard row for FOLDER among FOLDERS and call CALLBACK."
   (let ((buffers (agent-shell-dashboard--folder-buffers folder folders))
         (state nil))
     (setq state (agent-shell-dashboard--agent-state buffers))
@@ -1307,7 +1115,8 @@ metadata already present on that row."
             (agent-shell-dashboard--merge-preserved-items
              jiras
              (plist-get preserved-row :jiras)
-             (lambda (jira) (plist-get jira :key))))
+             (lambda (jira) (plist-get jira :key))
+             nil))
       (setq prs
             (agent-shell-dashboard--merge-preserved-items
              prs
@@ -1573,7 +1382,7 @@ metadata already present on that row."
   "Refresh the dashboard synchronously."
   (agent-shell-dashboard--apply-refresh-data
    (agent-shell-dashboard--build-refresh-data))
-  (agent-shell-dashboard--refresh-agent-status-buffer (current-buffer)))
+  (agent-shell-dashboard--refresh-agent-status))
 
 (defun agent-shell-dashboard--refresh-agent-status ()
   "Refresh live agent-shell status icons without fetching remote metadata."
@@ -1622,13 +1431,6 @@ metadata already present on that row."
           (agent-shell-dashboard--print)
           (agent-shell-dashboard--goto-row-id id))))))
 
-(defun agent-shell-dashboard--refresh-agent-status-buffer (buffer)
-  "Refresh live agent-shell status icons in BUFFER."
-  (when (buffer-live-p buffer)
-    (with-current-buffer buffer
-      (when (derived-mode-p 'agent-shell-dashboard-mode)
-        (agent-shell-dashboard--refresh-agent-status)))))
-
 (defun agent-shell-dashboard--cancel-refresh-timers ()
   "Cancel pending incremental dashboard refresh timers."
   (dolist (timer agent-shell-dashboard--refresh-timers)
@@ -1660,15 +1462,14 @@ metadata already present on that row."
               (agent-shell-dashboard--refresh-progress progress))
           (condition-case err
               (agent-shell-dashboard--make-row-async
-               folder jira-cache pr-cache repo-pr-cache
+               folder folders jira-cache pr-cache repo-pr-cache
                (lambda (row)
                  (when (buffer-live-p buffer)
                    (with-current-buffer buffer
                      (when (and (derived-mode-p 'agent-shell-dashboard-mode)
                                 (= generation agent-shell-dashboard--refresh-generation))
                        (agent-shell-dashboard--upsert-row row)
-                       (agent-shell-dashboard--refresh-progress progress)))))
-               folders)
+                       (agent-shell-dashboard--refresh-progress progress))))))
             (error
              (message "Refreshing agent-shell dashboard row failed for %s: %s"
                       (abbreviate-file-name folder)
@@ -1677,7 +1478,7 @@ metadata already present on that row."
 
 (defun agent-shell-dashboard--refresh-incremental ()
   "Refresh the dashboard incrementally with one idle timer per folder."
-  (agent-shell-dashboard--refresh-agent-status-buffer (current-buffer))
+  (agent-shell-dashboard--refresh-agent-status)
   (let* ((buffer (current-buffer))
          (folders (agent-shell-dashboard--discover-folders))
          (total (length folders))
@@ -1716,28 +1517,26 @@ metadata already present on that row."
   (agent-shell-dashboard--refresh-incremental))
 
 (defun agent-shell-dashboard--row-at-point ()
-  "Return dashboard row at point."
+  "Return dashboard row at point with current live agent-shell buffers."
+  (agent-shell-dashboard--refresh-agent-status)
   (let ((id (tabulated-list-get-id)))
     (or (and id (gethash id agent-shell-dashboard--rows))
         (user-error "No dashboard row at point"))))
 
-(defun agent-shell-dashboard--row-buffer (row &optional prompt)
+(defun agent-shell-dashboard--row-buffer (row)
   "Return preferred live agent-shell buffer for ROW, or nil.
-When PROMPT is non-nil and ROW has multiple live buffers, ask which
-one to use."
+Ask which one to use when ROW has multiple live buffers."
   (let ((buffers (seq-filter #'buffer-live-p (plist-get row :buffers))))
     (pcase buffers
       ('nil nil)
       (`(,only) only)
-      (_ (if prompt
-             (let* ((choices
-                     (mapcar (lambda (buffer)
-                               (cons (buffer-name buffer) buffer))
-                             buffers))
-                    (choice (completing-read
-                             "Agent-shell buffer: " choices nil t)))
-               (cdr (assoc choice choices)))
-           (car buffers))))))
+      (_ (let* ((choices
+                 (mapcar (lambda (buffer)
+                           (cons (buffer-name buffer) buffer))
+                         buffers))
+                (choice (completing-read
+                         "Agent-shell buffer: " choices nil t)))
+           (cdr (assoc choice choices)))))))
 
 ;;;###autoload
 (defun agent-shell-dashboard-visit ()
@@ -1745,10 +1544,10 @@ one to use."
   (interactive)
   (let* ((row (agent-shell-dashboard--row-at-point))
          (folder (plist-get row :folder)))
-    (if-let ((buffer (agent-shell-dashboard--row-buffer row t)))
+    (if-let ((buffer (agent-shell-dashboard--row-buffer row)))
         (pop-to-buffer buffer)
       (let* ((launch-directory
-              (agent-shell-dashboard--launch-directory folder t))
+              (agent-shell-dashboard--launch-directory folder))
              (default-directory launch-directory)
              (agent-shell-session-strategy 'prompt)
              (agent-shell-cwd-function (lambda () launch-directory))
@@ -1763,17 +1562,16 @@ one to use."
   "Rename the live agent-shell buffer on the current row."
   (interactive)
   (if-let ((buffer (agent-shell-dashboard--row-buffer
-                    (agent-shell-dashboard--row-at-point)
-                    t)))
+                    (agent-shell-dashboard--row-at-point))))
       (progn
         (with-current-buffer buffer
           (call-interactively #'agent-shell-rename-buffer))
         (agent-shell-dashboard--refresh))
     (user-error "No live agent-shell buffer on this row")))
 
-(defun agent-shell-dashboard--read-jira (row)
-  "Read a Jira entry from ROW."
-  (let ((jiras (plist-get row :jiras)))
+(defun agent-shell-dashboard--read-jira ()
+  "Read a Jira entry from the current row."
+  (let ((jiras (plist-get (agent-shell-dashboard--row-at-point) :jiras)))
     (pcase jiras
       ('nil (user-error "No Jira issue on this row"))
       (`(,only) only)
@@ -1787,9 +1585,9 @@ one to use."
                 (choice (completing-read "Jira: " choices nil t)))
            (cdr (assoc choice choices)))))))
 
-(defun agent-shell-dashboard--read-pr (row)
-  "Read a PR entry from ROW."
-  (let ((prs (plist-get row :prs)))
+(defun agent-shell-dashboard--read-pr ()
+  "Read a PR entry from the current row."
+  (let ((prs (plist-get (agent-shell-dashboard--row-at-point) :prs)))
     (pcase prs
       ('nil (user-error "No PR on this row"))
       (`(,only) only)
@@ -1806,8 +1604,7 @@ one to use."
 (defun agent-shell-dashboard-open-jira ()
   "Open the Jira issue on the current row."
   (interactive)
-  (let* ((jira (agent-shell-dashboard--read-jira
-                (agent-shell-dashboard--row-at-point)))
+  (let* ((jira (agent-shell-dashboard--read-jira))
          (url (or (plist-get jira :url)
                   (agent-shell-dashboard--jira-url (plist-get jira :key)))))
     (unless url
@@ -1817,18 +1614,18 @@ one to use."
 (defun agent-shell-dashboard-open-pr ()
   "Open the PR on the current row."
   (interactive)
-  (let* ((pr (agent-shell-dashboard--read-pr
-              (agent-shell-dashboard--row-at-point)))
+  (let* ((pr (agent-shell-dashboard--read-pr))
          (url (agent-shell-dashboard--pr-url pr)))
     (unless (and url (not (string-prefix-p "bitbucket:" url)))
       (user-error "No browser URL known for %s"
                   (agent-shell-dashboard--pr-key pr)))
     (browse-url url)))
 
-(defun agent-shell-dashboard--choose-link-kind (row prompt)
-  "Return `jira' or `pr' for ROW using PROMPT when both exist."
-  (let ((has-jira (plist-get row :jiras))
-        (has-pr (plist-get row :prs)))
+(defun agent-shell-dashboard--choose-link-kind (prompt)
+  "Return `jira' or `pr' for the current row using PROMPT when both exist."
+  (let* ((row (agent-shell-dashboard--row-at-point))
+         (has-jira (plist-get row :jiras))
+         (has-pr (plist-get row :prs)))
     (cond
      ((and has-jira has-pr)
       (cdr (assoc
@@ -1845,7 +1642,6 @@ one to use."
   "Open the Jira issue or PR on the current row."
   (interactive)
   (pcase (agent-shell-dashboard--choose-link-kind
-          (agent-shell-dashboard--row-at-point)
           "Open: ")
     ('jira (agent-shell-dashboard-open-jira))
     ('pr (agent-shell-dashboard-open-pr))))
@@ -1854,7 +1650,6 @@ one to use."
   "Close the Jira issue or decline the PR on the current row."
   (interactive)
   (pcase (agent-shell-dashboard--choose-link-kind
-          (agent-shell-dashboard--row-at-point)
           "Close/decline: ")
     ('jira (agent-shell-dashboard-close-jira))
     ('pr (agent-shell-dashboard-decline-pr))))
@@ -1987,8 +1782,7 @@ one to use."
 (defun agent-shell-dashboard-close-jira ()
   "Close or otherwise transition the Jira issue on the current row."
   (interactive)
-  (let* ((jira (agent-shell-dashboard--read-jira
-                (agent-shell-dashboard--row-at-point)))
+  (let* ((jira (agent-shell-dashboard--read-jira))
          (key (plist-get jira :key))
          (transitions (condition-case nil
                           (agent-shell-dashboard--jira-transitions key)
@@ -2037,8 +1831,7 @@ one to use."
 (defun agent-shell-dashboard-decline-pr ()
   "Decline the PR on the current row."
   (interactive)
-  (let* ((pr (agent-shell-dashboard--read-pr
-              (agent-shell-dashboard--row-at-point)))
+  (let* ((pr (agent-shell-dashboard--read-pr))
          (project (or (plist-get pr :project)
                       (user-error "PR is missing project")))
          (repo (or (plist-get pr :repo)
