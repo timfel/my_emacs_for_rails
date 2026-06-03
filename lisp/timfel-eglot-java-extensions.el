@@ -231,6 +231,17 @@ Return non-nil when the launcher is ready to execute."
    "-"
    (directory-file-name (expand-file-name project-root))))
 
+(defun timfel/eglot-jdtls--workspace-roots (project)
+  "Return root directories to advertise as workspace folders for PROJECT."
+  (let (roots)
+    (dolist (root (cons (project-root project)
+                        (project-external-roots project))
+                  (nreverse roots))
+      (when (stringp root)
+        (let ((root (file-name-as-directory (expand-file-name root))))
+          (unless (member root roots)
+            (push root roots)))))))
+
 (defun timfel/eglot-jdtls (is-interactive project)
   "Return the Jdtls command for the current Java project."
   (interactive)
@@ -241,6 +252,7 @@ Return non-nil when the launcher is ready to execute."
                 timfel/eglot-jdtls-install-buffer-name))
   (let* ((project-root (expand-file-name
                         (project-root project)))
+         (workspace-roots (timfel/eglot-jdtls--workspace-roots project))
          (workspace-name (timfel/eglot-jdtls--workspace-name project-root))
          (workspace-dir (expand-file-name
                          workspace-name
@@ -262,7 +274,7 @@ Return non-nil when the launcher is ready to execute."
                     :saveActions (:organizeImports t)
                     :jdt (:ls (:javac (:enabled t)))
                     :project (:importOnFirstTimeStartup t)))
-            :workspaceFolders ,(vconcat (mapcar #'timfel/jdb--file-uri (or external-roots (list project-root))))))))
+            :workspaceFolders ,(vconcat (mapcar #'timfel/jdb--file-uri workspace-roots))))))
 
 (defun timfel/jdb--file-uri (file-name)
   "Return FILE-NAME as a file URI."
