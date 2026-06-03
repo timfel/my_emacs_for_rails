@@ -225,6 +225,12 @@ Return non-nil when the launcher is ready to execute."
     (timfel/eglot-jdtls--install-async)
     nil)))
 
+(defun timfel/eglot-jdtls--workspace-name (project-root)
+  (replace-regexp-in-string
+   "[^[:alnum:]._-]+"
+   "-"
+   (directory-file-name (expand-file-name project-root))))
+
 (defun timfel/eglot-jdtls (is-interactive project)
   "Return the Jdtls command for the current Java project."
   (interactive)
@@ -235,9 +241,10 @@ Return non-nil when the launcher is ready to execute."
                 timfel/eglot-jdtls-install-buffer-name))
   (let* ((project-root (expand-file-name
                         (project-root project)))
-         (external-roots (project-external-roots project))
-         (workspace-dir (expand-file-name ".cache/.jdtls.workspace/"
-                                          project-root))
+         (workspace-name (timfel/eglot-jdtls--workspace-name project-root))
+         (workspace-dir (expand-file-name
+                         workspace-name
+                         "~/.cache/jdtls.workspaces/"))
          (cache-dir (expand-file-name "cache/" workspace-dir)))
     (make-directory cache-dir t)
     (list (timfel/eglot-jdtls--launcher)
