@@ -113,6 +113,7 @@
   :functions (org-capture-kill org-capture-finalize org-capture with-auto-default)
   :after (timfel)
   :config
+  (setq android-intercept-control-space nil)
   (global-visual-line-mode t)
   (setq visual-line-fringe-indicators
         '(left-curly-arrow right-curly-arrow))
