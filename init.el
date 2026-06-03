@@ -1166,6 +1166,13 @@
 
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
+(use-package tramp-rpc
+  :disabled
+  :after tramp
+  :vc (:url "https://github.com/ArthurHeymans/emacs-tramp-rpc"
+       :rev :newest
+       :lisp-dir "lisp"))
+
 (use-package ido
   :disabled
   :functions (ido-everywhere)
