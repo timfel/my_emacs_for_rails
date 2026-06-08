@@ -109,7 +109,7 @@
 (use-package android
   :if (eq system-type 'android)
   :no-require t
-  :defines (timfel/cloud-storage)
+  :defines (timfel/cloud-storage android-intercept-control-space)
   :functions (org-capture-kill org-capture-finalize org-capture with-auto-default)
   :after (timfel)
   :config
@@ -1681,13 +1681,19 @@ input means nil arguments."
   (setq gdb-many-windows t
         gdb-use-separate-io-buffer t))
 
-(use-package timfel-eglot-java-extensions
+(use-package eglot-jdtls
   :after eglot
-  :functions (timfel/eglot-jdtls)
+  :functions (eglot-jdtls)
   :config
+  (let ((jdtls (expand-file-name (locate-user-emacs-file "lsp-servers/jdtls/bin/"))))
+    (add-to-list 'exec-path jdtls)
+    (setenv "PATH" (string-join exec-path path-separator)))
   (add-to-list 'eglot-server-programs
-               (cons '(java-mode java-ts-mode) #'timfel/eglot-jdtls)))
+               (cons '(java-mode java-ts-mode) #'eglot-jdtls)))
 
+(use-package eglot-jdb
+  :after eglot
+  :commands (eglot-jdb))
 
 (use-package yasnippet
   :ensure t
@@ -1937,22 +1943,19 @@ input means nil arguments."
                                      :projectName "com.oracle.graal.python"
                                      :port 8000))
 
-  (defun my/jdtls-workspace-name (project-root)
-    (let ((name (string-trim
-                 (replace-regexp-in-string
-                  "[^[:alnum:]]+" "-"
-                  (directory-file-name (expand-file-name project-root)))
-                 "-+"
-                 "-+")))
-      (if (string= name "") "root" name)))
-
   (defun my/setup-java-workspace-dir ()
     (unless (lsp-find-workspace 'jdtls nil)
       (if-let* ((p (project-current))
                 (r (project-root p))
+                (name (string-trim
+                       (replace-regexp-in-string
+                        "[^[:alnum:]]+" "-"
+                        (directory-file-name (expand-file-name r)))
+                       "-+"
+                       "-+"))
                 (wsuserdir
                  (expand-file-name
-                  (my/jdtls-workspace-name r)
+                  (if (string= name "") "root" name)
                   (expand-file-name "jdtls.workspaces/" "~/.cache/"))))
           (unless (equal lsp-java-workspace-dir wsuserdir)
             (->> (lsp-session)
