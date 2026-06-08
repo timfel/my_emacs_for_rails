@@ -2246,6 +2246,20 @@ input means nil arguments."
      "https://xkcd.com/rss.xml"
      "https://www.osnews.com/feed/")))
 
+(use-package hide-mode-line
+  :ensure t
+  :hook ((completion-list-mode . hide-mode-line-mode)
+         (eww-mode . hide-mode-line-mode)
+         (org-tree-slide-mode . hide-mode-line-mode)
+         (vterm-mode . hide-mode-line-mode)
+         (eshell-mode . hide-mode-line-mode)))
+
+(use-package zone-rainbow
+  :ensure t
+  :after zone
+  :config
+  (setq zone-programs (vconcat [zone-rainbow] zone-programs)))
+
 (use-package custom
   :config
   (if (eq system-type 'android)
