@@ -212,6 +212,8 @@
 
 (use-package timfel
   :config
+  (ignore-errors
+    (require 'orcl))
   (add-to-list 'load-path (expand-file-name "lisp" timfel/gist-location)))
 
 (use-package emacs-ci
@@ -249,10 +251,6 @@
      "bitbucket"
      :follow #'timfel/org-follow-ci-link
      :store #'timfel/org-store-ci-link)))
-
-(use-package orcl
-  :after timfel
-  :commands (timfel/git-merges-jira-html timfel/install-ol-cli))
 
 (use-package agent-shell-bookmark
   :vc (:url "https://github.com/dcluna/agent-shell-bookmark" :branch "main" :rev :newest)
@@ -482,7 +480,7 @@
     "\\|"
     "^(browse-url-default-browser \"slack:[^\"]+\")$"
     "\\|"
-    "^(timfel/jira)$"
+    "^(jira-issues)$"
     "\\|"
     "^(ci-dashboard)$"
     "\\|"
@@ -2190,7 +2188,7 @@ input means nil arguments."
                               key
                             (concat (jira-api--get-current-url) "/browse/" key))))))
          :map jira-detail-mode-map
-              ("C-x a i" . timfel/jira-issues-investigate-marked-with-agent)
+              ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent)
          :map jira-issues-mode-map
               ("c" . (lambda (&optional prefix)
                        (interactive "P")
@@ -2199,14 +2197,14 @@ input means nil arguments."
                           (if prefix
                               key
                             (concat (jira-api--get-current-url) "/browse/" key))))))
-              ("C-x a i" . timfel/jira-issues-investigate-marked-with-agent))
+              ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent))
   :config
   (add-to-list 'transient-values
                '(jira-issues-menu "--myself" "--resolution=Unresolved"))
   (with-eval-after-load 'jira-issues
     (transient-append-suffix 'jira-issues-actions-menu "W"
       '("a" "Investigate marked issues with agent"
-        timfel/jira-issues-investigate-marked-with-agent)))
+        agent-shell-jira-issues-investigate-marked-with-agent)))
 
   (with-eval-after-load 'org
     (defun timfel/org-store-jira-link (&optional _interactive?)
@@ -2251,6 +2249,7 @@ input means nil arguments."
   :hook ((completion-list-mode . hide-mode-line-mode)
          (eww-mode . hide-mode-line-mode)
          (org-tree-slide-mode . hide-mode-line-mode)
+         (org-agenda-mode . hide-mode-line-mode)
          (vterm-mode . hide-mode-line-mode)
          (eshell-mode . hide-mode-line-mode)))
 
