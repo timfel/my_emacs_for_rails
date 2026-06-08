@@ -1939,11 +1939,23 @@ input means nil arguments."
                                      :projectName "com.oracle.graal.python"
                                      :port 8000))
 
+  (defun my/jdtls-workspace-name (project-root)
+    (let ((name (string-trim
+                 (replace-regexp-in-string
+                  "[^[:alnum:]]+" "-"
+                  (directory-file-name (expand-file-name project-root)))
+                 "-+"
+                 "-+")))
+      (if (string= name "") "root" name)))
+
   (defun my/setup-java-workspace-dir ()
     (unless (lsp-find-workspace 'jdtls nil)
       (if-let* ((p (project-current))
                 (r (project-root p))
-                (wsuserdir (expand-file-name ".cache/.jdtls.workspace" r)))
+                (wsuserdir
+                 (expand-file-name
+                  (my/jdtls-workspace-name r)
+                  (expand-file-name "jdtls.workspaces/" "~/.cache/"))))
           (unless (equal lsp-java-workspace-dir wsuserdir)
             (->> (lsp-session)
                  (lsp-session-folder->servers)
