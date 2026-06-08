@@ -1114,6 +1114,14 @@
    '(:application tramp)
    'my-remote-profile)
 
+  (connection-local-set-profile-variables
+   'my-podman-no-direct-async-profile
+   '((tramp-direct-async-process . nil)))
+
+  (connection-local-set-profiles
+   '(:application tramp :protocol "podman")
+   'my-podman-no-direct-async-profile)
+
   (with-eval-after-load 'magit
     (connection-local-set-profile-variables
      'my-remote-magit-profile
