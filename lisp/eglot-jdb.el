@@ -9,7 +9,7 @@
 (require 'gud)
 (require 'eglot)
 
-(defun timfel/jdb--normalize-path (path)
+(defun eglot-jdb--normalize-path (path)
   "Normalize a PATH returned by JDTLS."
   (cond
    ((not (stringp path)) nil)
@@ -17,13 +17,13 @@
     (eglot-uri-to-path path))
    (t path)))
 
-(defun timfel/jdb--normalize-path-list (paths)
+(defun eglot-jdb--normalize-path-list (paths)
   "Normalize PATHS returned by JDTLS into a deduplicated list."
   (delete-dups
    (delq nil
-         (mapcar #'timfel/jdb--normalize-path (append paths nil)))))
+         (mapcar #'eglot-jdb--normalize-path (append paths nil)))))
 
-(defun timfel/jdb--project-paths ()
+(defun eglot-jdb--project-paths ()
   "Return classpath and sourcepath data for the current Java project."
   (if-let* ((n buffer-file-name)
             (uri (eglot-path-to-uri n))
@@ -34,12 +34,12 @@
                                                          (vector uri "{\"scope\":\"runtime\"}"))))
             (sourcepath-reply (eglot-execute server '(:command "java.project.listSourcePaths")))
             (classpath-list
-             (timfel/jdb--normalize-path-list
+             (eglot-jdb--normalize-path-list
               (append (plist-get classpath-reply :classpaths)
                       (plist-get classpath-reply :modulepaths)
                       nil)))
             (sourcepath-list
-             (timfel/jdb--normalize-path-list
+             (eglot-jdb--normalize-path-list
               (mapcar (lambda (entry) (plist-get entry :path))
                       (append (plist-get sourcepath-reply :data) nil)))))
       (list :classpath-list classpath-list
@@ -47,7 +47,7 @@
             :classpath (mapconcat #'identity classpath-list path-separator)
             :sourcepath (mapconcat #'identity sourcepath-list path-separator))))
 
-(defun timfel/jdb--java-debug-address (args)
+(defun eglot-jdb--java-debug-address (args)
   "Extract a JDWP attach address from Java process ARGS."
   (when (and (stringp args)
              (or (string-match "-agentlib:jdwp=[^[:space:]]*address=\\([^,[:space:]]+\\)" args)
@@ -61,14 +61,14 @@
         (concat "localhost:" (substring address 8)))
        (t address)))))
 
-(defun timfel/jdb--java-process-candidates ()
+(defun eglot-jdb--java-process-candidates ()
   "Return running Java processes that expose a JDWP attach address."
   (let (candidates)
     (dolist (pid (list-system-processes))
       (let* ((attrs (process-attributes pid))
              (comm (alist-get 'comm attrs))
              (args (alist-get 'args attrs))
-             (address (timfel/jdb--java-debug-address args)))
+             (address (eglot-jdb--java-debug-address args)))
         (when address
           (push (cons (format "%s [%s] %s"
                               address pid
@@ -78,9 +78,9 @@
                 candidates))))
     (nreverse candidates)))
 
-(defun timfel/jdb--read-attach-address ()
+(defun eglot-jdb--read-attach-address ()
   "Prompt for a JDWP attach address from running Java processes."
-  (let* ((candidates (timfel/jdb--java-process-candidates))
+  (let* ((candidates (eglot-jdb--java-process-candidates))
          (launch-choice "[Start jdb without attach]")
          (choice
           (completing-read
@@ -91,7 +91,7 @@
     (unless (equal choice launch-choice)
       (cdr (assoc choice candidates)))))
 
-(defun timfel/jdb--command-line (paths attach-address extra-args)
+(defun eglot-jdb--command-line (paths attach-address extra-args)
   "Build a jdb command line from PATHS, ATTACH-ADDRESS and EXTRA-ARGS."
   (let ((extra-args (or extra-args "")))
     (combine-and-quote-strings
@@ -116,14 +116,14 @@
   (interactive)
   (require 'gud)
   (unless (derived-mode-p 'java-mode 'java-ts-mode)
-    (user-error "Run `timfel/jdb' from a Java buffer"))
-  (let* ((paths (timfel/jdb--project-paths))
-         (attach-address (timfel/jdb--read-attach-address))
+    (user-error "Run `eglot-jdb' from a Java buffer"))
+  (let* ((paths (eglot-jdb--project-paths))
+         (attach-address (eglot-jdb--read-attach-address))
          (extra-args (read-from-minibuffer
                       (if attach-address
                           "Additional jdb arguments (optional): "
                         "Class or additional jdb arguments (optional): ")))
-         (command-line (timfel/jdb--command-line paths attach-address extra-args)))
+         (command-line (eglot-jdb--command-line paths attach-address extra-args)))
     (jdb command-line)
     (when (buffer-live-p gud-comint-buffer)
       (with-current-buffer gud-comint-buffer
