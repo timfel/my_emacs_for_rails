@@ -57,6 +57,9 @@ directories containing those folders."
 
 (defconst agent-shell-dashboard--jira-column-width 20)
 
+(defconst agent-shell-dashboard--print-idle-delay 0.2
+  "Idle seconds used to coalesce dashboard redisplay.")
+
 (defvar-local agent-shell-dashboard--rows nil
   "Hash table mapping row ids to row plists in the current dashboard.")
 
@@ -65,6 +68,9 @@ directories containing those folders."
 
 (defvar-local agent-shell-dashboard--refresh-timers nil
   "Pending incremental dashboard refresh timers.")
+
+(defvar-local agent-shell-dashboard--print-timer nil
+  "Pending debounced dashboard print timer.")
 
 (defvar agent-shell-cwd-function)
 (defvar agent-shell-session-strategy)
@@ -206,23 +212,64 @@ directories containing those folders."
                               default-directory)))
       (agent-shell-dashboard--directory directory))))
 
+(defun agent-shell-dashboard--directory-prefix-p (directory folder)
+  "Return non-nil when DIRECTORY is FOLDER or below it."
+  (let ((directory (agent-shell-dashboard--directory directory))
+        (folder (agent-shell-dashboard--directory folder)))
+    (when (eq system-type 'windows-nt)
+      (setq directory (downcase directory)
+            folder (downcase folder)))
+    (string-prefix-p folder directory)))
+
+(defun agent-shell-dashboard--folder-records (folders)
+  "Return FOLDERS as row records, most specific folder first."
+  (sort
+   (mapcar (lambda (folder)
+             (let ((directory (agent-shell-dashboard--directory folder)))
+               (list (agent-shell-dashboard--row-id directory)
+                     directory
+                     folder)))
+           folders)
+   (lambda (left right)
+     (> (length (cadr left))
+        (length (cadr right))))))
+
+(defun agent-shell-dashboard--folder-record-for-directory (directory records)
+  "Return the most specific folder record containing DIRECTORY."
+  (when directory
+    (let ((directory (agent-shell-dashboard--directory directory))
+          found)
+      (while (and records (not found))
+        (let ((record (car records)))
+          (when (agent-shell-dashboard--directory-prefix-p directory
+                                                           (cadr record))
+            (setq found record)))
+        (setq records (cdr records)))
+      found)))
+
 (defun agent-shell-dashboard--folder-for-directory (directory folders)
   "Return the most specific dashboard folder containing DIRECTORY.
 FOLDERS is the complete list of candidate dashboard folders."
-  (when directory
-    (car
-     (sort
-      (seq-filter
-       (lambda (folder)
-         (file-in-directory-p
-          (agent-shell-dashboard--directory directory)
-          (agent-shell-dashboard--directory folder)))
-       folders)
-      (lambda (left right)
-        (> (length (directory-file-name
-                    (agent-shell-dashboard--directory left)))
-           (length (directory-file-name
-                    (agent-shell-dashboard--directory right)))))))))
+  (caddr
+   (agent-shell-dashboard--folder-record-for-directory
+    directory
+    (agent-shell-dashboard--folder-records folders))))
+
+(defun agent-shell-dashboard--buffer-folder-index (folders)
+  "Return a hash table mapping row ids in FOLDERS to live buffers."
+  (let ((records (agent-shell-dashboard--folder-records folders))
+        (index (make-hash-table :test #'equal)))
+    (dolist (folder folders)
+      (puthash (agent-shell-dashboard--row-id folder) nil index))
+    (dolist (buffer (agent-shell-dashboard--shell-buffers))
+      (when-let* ((directory (agent-shell-dashboard--buffer-directory buffer))
+                  (record (agent-shell-dashboard--folder-record-for-directory
+                           directory records)))
+        (push buffer (gethash (car record) index))))
+    (maphash (lambda (id buffers)
+               (puthash id (nreverse buffers) index))
+             index)
+    index))
 
 (defun agent-shell-dashboard--buffer-in-folder-p (buffer folder folders)
   "Return non-nil if BUFFER belongs to dashboard FOLDER.
@@ -235,12 +282,15 @@ folder."
     (string= (agent-shell-dashboard--row-id owner)
              (agent-shell-dashboard--row-id folder))))
 
-(defun agent-shell-dashboard--folder-buffers (folder folders)
+(defun agent-shell-dashboard--folder-buffers (folder folders &optional buffer-index)
   "Return live agent-shell buffers assigned to FOLDER.
 Assignment uses the most specific containing folder from FOLDERS."
-  (seq-filter (lambda (buffer)
-                (agent-shell-dashboard--buffer-in-folder-p buffer folder folders))
-              (agent-shell-dashboard--shell-buffers)))
+  (if buffer-index
+      (copy-sequence (gethash (agent-shell-dashboard--row-id folder)
+                              buffer-index))
+    (seq-filter (lambda (buffer)
+                  (agent-shell-dashboard--buffer-in-folder-p buffer folder folders))
+                (agent-shell-dashboard--shell-buffers))))
 
 (defun agent-shell-dashboard--tool-call-awaits-permission-p (tool-call)
   "Return non-nil when TOOL-CALL has an unanswered permission request."
@@ -1065,9 +1115,10 @@ When FILTER-TEXT is non-nil, ask Bitbucket to filter PRs by it."
    callback))
 
 (defun agent-shell-dashboard--make-row-async
-    (folder folders jira-cache pr-cache repo-pr-cache callback)
+    (folder folders buffer-index jira-cache pr-cache repo-pr-cache callback)
   "Build dashboard row for FOLDER among FOLDERS and call CALLBACK."
-  (let ((buffers (agent-shell-dashboard--folder-buffers folder folders))
+  (let ((buffers (agent-shell-dashboard--folder-buffers folder folders
+                                                        buffer-index))
         (state nil))
     (setq state (agent-shell-dashboard--agent-state buffers))
     (agent-shell-dashboard--git-directory-info-async
@@ -1101,11 +1152,12 @@ When FILTER-TEXT is non-nil, ask Bitbucket to filter PRs by it."
                          :prs fetched-prs)))))))))))))
 
 (defun agent-shell-dashboard--make-row
-    (folder preserved-row folders)
+    (folder preserved-row folders buffer-index)
   "Build row plist for FOLDER.
 When PRESERVED-ROW is non-nil, keep fetched
 metadata already present on that row."
-  (let* ((buffers (agent-shell-dashboard--folder-buffers folder folders))
+  (let* ((buffers (agent-shell-dashboard--folder-buffers folder folders
+                                                        buffer-index))
          (state (agent-shell-dashboard--agent-state buffers))
          (links (agent-shell-dashboard--extract-local-links folder))
          (jiras (plist-get links :jiras))
@@ -1287,6 +1339,21 @@ metadata already present on that row."
     (tabulated-list-print)
     (agent-shell-dashboard--goto-row-id id)))
 
+(defun agent-shell-dashboard--schedule-print ()
+  "Schedule a debounced dashboard print in the current buffer."
+  (when (timerp agent-shell-dashboard--print-timer)
+    (cancel-timer agent-shell-dashboard--print-timer))
+  (let ((buffer (current-buffer)))
+    (setq agent-shell-dashboard--print-timer
+          (run-with-idle-timer
+           agent-shell-dashboard--print-idle-delay nil
+           (lambda ()
+             (when (buffer-live-p buffer)
+               (with-current-buffer buffer
+                 (setq agent-shell-dashboard--print-timer nil)
+                 (when (derived-mode-p 'agent-shell-dashboard-mode)
+                   (agent-shell-dashboard--print)))))))))
+
 (defun agent-shell-dashboard--remove-row-id (id)
   "Remove row ID from the current dashboard table."
   (when (hash-table-p agent-shell-dashboard--rows)
@@ -1338,21 +1405,24 @@ metadata already present on that row."
             (sort (cons entry tabulated-list-entries)
                   (lambda (left right)
                     (string-lessp (car left) (car right))))))
-    (agent-shell-dashboard--print)))
+    (agent-shell-dashboard--schedule-print)))
 
 (defun agent-shell-dashboard--build-refresh-data ()
   "Return dashboard data."
-  (let ((preserved-rows (and (hash-table-p agent-shell-dashboard--rows)
-                             agent-shell-dashboard--rows))
-        (discovered-folders (agent-shell-dashboard--discover-folders))
-        (rows (make-hash-table :test #'equal))
-        (entries nil))
+  (let* ((preserved-rows (and (hash-table-p agent-shell-dashboard--rows)
+                              agent-shell-dashboard--rows))
+         (discovered-folders (agent-shell-dashboard--discover-folders))
+         (buffer-index (agent-shell-dashboard--buffer-folder-index
+                        discovered-folders))
+         (rows (make-hash-table :test #'equal))
+         (entries nil))
     (dolist (folder discovered-folders)
       (let* ((id (agent-shell-dashboard--row-id folder))
              (row (agent-shell-dashboard--make-row
                    folder
                    (and preserved-rows (gethash id preserved-rows))
-                   discovered-folders)))
+                   discovered-folders
+                   buffer-index)))
         (puthash id row rows)
         (push (agent-shell-dashboard--entry row) entries)))
     (list :rows rows :entries (nreverse entries))))
@@ -1390,14 +1460,17 @@ metadata already present on that row."
              (hash-table-p agent-shell-dashboard--rows))
     (let ((changed nil)
           (changed-ids (make-hash-table :test #'equal))
-          folders)
+          folders
+          buffer-index)
       (maphash (lambda (_id row)
                  (push (plist-get row :folder) folders))
                agent-shell-dashboard--rows)
+      (setq buffer-index (agent-shell-dashboard--buffer-folder-index folders))
       (maphash
        (lambda (id row)
          (let* ((folder (plist-get row :folder))
-                (buffers (agent-shell-dashboard--folder-buffers folder folders))
+                (buffers (agent-shell-dashboard--folder-buffers
+                          folder folders buffer-index))
                 (state (agent-shell-dashboard--agent-state buffers)))
            (unless (and (equal buffers (plist-get row :buffers))
                         (eq state (plist-get row :agent-state)))
@@ -1409,34 +1482,35 @@ metadata already present on that row."
              (setq changed t))))
        agent-shell-dashboard--rows)
       (when changed
-        (let ((id (tabulated-list-get-id)))
-          (setq tabulated-list-entries
-                (delq
-                 nil
-                 (mapcar
-                  (lambda (entry)
-                    (let* ((row (gethash (car entry)
-                                          agent-shell-dashboard--rows))
-                           (columns (and row
-                                         (copy-sequence (cadr entry)))))
-                      (when row
-                        (aset columns 0
-                              (agent-shell-dashboard--agent-icon
-                               (plist-get row :agent-state)))
-                        (when (gethash (car entry) changed-ids)
-                          (aset columns 4
-                                (agent-shell-dashboard--title-display row)))
-                        (list (car entry) columns))))
-                  tabulated-list-entries)))
-          (agent-shell-dashboard--print)
-          (agent-shell-dashboard--goto-row-id id))))))
+        (setq tabulated-list-entries
+              (delq
+               nil
+               (mapcar
+                (lambda (entry)
+                  (let* ((row (gethash (car entry)
+                                        agent-shell-dashboard--rows))
+                         (columns (and row
+                                       (copy-sequence (cadr entry)))))
+                    (when row
+                      (aset columns 0
+                            (agent-shell-dashboard--agent-icon
+                             (plist-get row :agent-state)))
+                      (when (gethash (car entry) changed-ids)
+                        (aset columns 4
+                              (agent-shell-dashboard--title-display row)))
+                      (list (car entry) columns))))
+                tabulated-list-entries)))
+        (agent-shell-dashboard--schedule-print)))))
 
 (defun agent-shell-dashboard--cancel-refresh-timers ()
   "Cancel pending incremental dashboard refresh timers."
   (dolist (timer agent-shell-dashboard--refresh-timers)
     (when (timerp timer)
       (cancel-timer timer)))
-  (setq agent-shell-dashboard--refresh-timers nil))
+  (when (timerp agent-shell-dashboard--print-timer)
+    (cancel-timer agent-shell-dashboard--print-timer))
+  (setq agent-shell-dashboard--refresh-timers nil
+        agent-shell-dashboard--print-timer nil))
 
 (defun agent-shell-dashboard--refresh-progress (progress)
   "Advance dashboard refresh PROGRESS and update the minibuffer."
@@ -1449,7 +1523,8 @@ metadata already present on that row."
       (message "Refreshing agent-shell dashboard...done"))))
 
 (defun agent-shell-dashboard--refresh-folder
-    (buffer generation folder folders jira-cache pr-cache repo-pr-cache progress)
+    (buffer generation folder folders buffer-index
+            jira-cache pr-cache repo-pr-cache progress)
   "Refresh one dashboard FOLDER in BUFFER for GENERATION."
   (when (buffer-live-p buffer)
     (with-current-buffer buffer
@@ -1462,7 +1537,7 @@ metadata already present on that row."
               (agent-shell-dashboard--refresh-progress progress))
           (condition-case err
               (agent-shell-dashboard--make-row-async
-               folder folders jira-cache pr-cache repo-pr-cache
+               folder folders buffer-index jira-cache pr-cache repo-pr-cache
                (lambda (row)
                  (when (buffer-live-p buffer)
                    (with-current-buffer buffer
@@ -1481,6 +1556,7 @@ metadata already present on that row."
   (agent-shell-dashboard--refresh-agent-status)
   (let* ((buffer (current-buffer))
          (folders (agent-shell-dashboard--discover-folders))
+         (buffer-index (agent-shell-dashboard--buffer-folder-index folders))
          (total (length folders))
          (generation (cl-incf agent-shell-dashboard--refresh-generation))
          (jira-cache (make-hash-table :test #'equal))
@@ -1503,7 +1579,7 @@ metadata already present on that row."
                     agent-shell-dashboard-refresh-idle-step))
               nil
               #'agent-shell-dashboard--refresh-folder
-              buffer generation folder folders
+              buffer generation folder folders buffer-index
               jira-cache pr-cache repo-pr-cache
               progress))))))
 
@@ -1517,8 +1593,7 @@ metadata already present on that row."
   (agent-shell-dashboard--refresh-incremental))
 
 (defun agent-shell-dashboard--row-at-point ()
-  "Return dashboard row at point with current live agent-shell buffers."
-  (agent-shell-dashboard--refresh-agent-status)
+  "Return cached dashboard row at point."
   (let ((id (tabulated-list-get-id)))
     (or (and id (gethash id agent-shell-dashboard--rows))
         (user-error "No dashboard row at point"))))
