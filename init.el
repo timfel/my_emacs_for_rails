@@ -902,6 +902,7 @@
   :ensure t
   :custom
   (magit-auto-revert-tracked-only t)
+  (magit-process-apply-ansi-colors t)
   :config
   (defvar-keymap timfel/magit-ctl-x-a-map
     :doc "Prefix map for `C-x a' in Magit diff sections."
