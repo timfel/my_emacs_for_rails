@@ -28,10 +28,11 @@
   (if-let* ((n buffer-file-name)
             (uri (eglot-path-to-uri n))
             (server (eglot-current-server))
-            (classpath-reply (eglot-execute server (list :command
-                                                         "java.project.getClasspaths"
-                                                         :arguments
-                                                         (vector uri "{\"scope\":\"runtime\"}"))))
+            (classpath-reply (ignore-errors
+                               (eglot-execute server (list :command
+                                                           "java.project.getClasspaths"
+                                                           :arguments
+                                                           (vector uri "{\"scope\":\"runtime\"}")))))
             (sourcepath-reply (eglot-execute server '(:command "java.project.listSourcePaths")))
             (classpath-list
              (eglot-jdb--normalize-path-list
