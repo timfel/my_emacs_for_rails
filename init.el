@@ -312,7 +312,8 @@
   :hook
   (agent-shell-mode . (lambda () (run-with-idle-timer 5 nil #'desktop-save (locate-user-emacs-file "."))))
   :config
-  (agent-shell-desktop-mode 1))
+  (if desktop-save-mode
+      (agent-shell-desktop-mode 1)))
 
 (use-package agent-shell-dashboard
   :after agent-shell
