@@ -790,7 +790,9 @@
   :config (global-company-mode t)
   :custom
   (company-dabbrev-code-everywhere t)
-  (company-dabbrev-other-buffers 'all)
+  ;; compat-31 defines all as a function; company-dabbrev checks functions
+  ;; before the literal all sentinel.
+  (company-dabbrev-other-buffers (lambda (_) (quote all)))
   (company-dabbrev-ignore-case 'keep-prefix)
   (company-dabbrev-downcase 0)
   (company-idle-delay (if (eq system-type 'windows-nt) 10 0.2)))
