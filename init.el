@@ -779,11 +779,6 @@
   (add-to-list 'vc-directory-exclusion-list "site-packages")
   (add-to-list 'vc-directory-exclusion-list "eln-cache"))
 
-(use-package vscode-project
-  :disabled
-  :vc (:url "https://github.com/timfel/vscode-project.el" :branch "master" :rev :newest)
-  :after project)
-
 (use-package company
   :ensure t
   :bind (("M-?" . company-complete))
@@ -2043,7 +2038,7 @@ input means nil arguments."
   (agent-shell-header-style 'text)
   (agent-shell-buffer-name-format (lambda (_agent-name project-name) (format "%s agent" project-name)))
   (agent-shell-session-strategy 'prompt)
-  (agent-shell-highlight-blocks nil)
+  (agent-shell-session-restore-verbosity 'full)
   (agent-shell-prefer-viewport-interaction nil)
   (agent-shell-preferred-agent-config 'codex)
   (agent-shell-show-config-icons nil)
