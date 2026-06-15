@@ -310,7 +310,9 @@
   :vc (:url "https://github.com/timfel/agent-shell-desktop.el" :branch "main" :rev :newest)
   :after (agent-shell desktop)
   :hook
-  (agent-shell-mode . (lambda () (run-with-idle-timer 5 nil #'desktop-save (locate-user-emacs-file "."))))
+  (agent-shell-mode . (lambda ()
+                        (when (and desktop-save-mode desktop-dirname desktop-file-modtime)
+                          (run-with-idle-timer 5 nil #'desktop-save desktop-dirname nil t))))
   :config
   (if desktop-save-mode
       (agent-shell-desktop-mode 1)))
