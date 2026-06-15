@@ -21,11 +21,11 @@
 (declare-function agent-shell-cwd "agent-shell-project" ())
 (declare-function agent-shell-rename-buffer "agent-shell" ())
 (declare-function agent-shell-select-config "agent-shell" (&key prompt))
+(declare-function agent-shell-status "agent-shell" (&key shell-buffer))
 (declare-function agent-shell--resolve-preferred-config "agent-shell" ())
 (declare-function agent-shell--start "agent-shell" (&rest args))
 (declare-function jira-api-call "jira-api" (verb endpoint &rest args))
 (declare-function request-response-data "request" (response))
-(declare-function shell-maker-busy "shell-maker" ())
 
 (defgroup agent-shell-dashboard nil
   "Dashboard for agent-shell worktree folders."
@@ -74,7 +74,6 @@ directories containing those folders."
 
 (defvar agent-shell-cwd-function)
 (defvar agent-shell-session-strategy)
-(defvar agent-shell--state)
 (defvar agent-shell-attention--pending)
 (defvar ci-dashboard-base-url)
 (defvar jira-base-url)
@@ -292,43 +291,11 @@ Assignment uses the most specific containing folder from FOLDERS."
                   (agent-shell-dashboard--buffer-in-folder-p buffer folder folders))
                 (agent-shell-dashboard--shell-buffers))))
 
-(defun agent-shell-dashboard--tool-call-awaits-permission-p (tool-call)
-  "Return non-nil when TOOL-CALL has an unanswered permission request."
-  (when tool-call
-    (let ((permission-id (or (map-elt tool-call :permission-request-id)
-                             (map-elt tool-call 'permissionRequestId)
-                             (map-elt tool-call 'permission-request-id)))
-          (status (or (map-elt tool-call :status)
-                      (map-elt tool-call 'status))))
-      (and permission-id
-           (or (null status)
-               (equal status "pending"))))))
-
-(defun agent-shell-dashboard--permission-pending-p (buffer)
-  "Return non-nil when BUFFER has an unanswered permission prompt."
-  (with-current-buffer buffer
-    (or
-     (when (and (boundp 'agent-shell--state) agent-shell--state)
-       (let ((tool-calls (map-elt agent-shell--state :tool-calls)))
-         (when tool-calls
-           (catch 'pending
-             (map-do (lambda (_id tool-call)
-                       (when (agent-shell-dashboard--tool-call-awaits-permission-p
-                              tool-call)
-                         (throw 'pending t)))
-                     tool-calls)
-             nil))))
-     (save-excursion
-       (save-restriction
-         (widen)
-         (goto-char (point-min))
-         (re-search-forward "Tool Permission" nil t))))))
-
-(defun agent-shell-dashboard--buffer-busy-p (buffer)
-  "Return non-nil when BUFFER is busy."
-  (with-current-buffer buffer
-    (and (fboundp 'shell-maker-busy)
-         (ignore-errors (shell-maker-busy)))))
+(defun agent-shell-dashboard--buffer-status (buffer)
+  "Return the public `agent-shell-status' for BUFFER, or nil on failure."
+  (when (buffer-live-p buffer)
+    (ignore-errors
+      (agent-shell-status :shell-buffer buffer))))
 
 (defun agent-shell-dashboard--attention-pending-entry (buffer)
   "Return BUFFER's `agent-shell-attention' pending entry, or nil."
@@ -352,17 +319,18 @@ Assignment uses the most specific containing folder from FOLDERS."
 
 (defun agent-shell-dashboard--agent-state (buffers)
   "Return aggregate agent state for BUFFERS."
-  (cond
-   ((seq-some #'agent-shell-dashboard--permission-pending-p buffers)
-    'permission)
-   ((seq-some #'agent-shell-dashboard--buffer-busy-p buffers)
-    'busy)
-   ((seq-some #'agent-shell-dashboard--finished-unseen-p buffers)
-    'finished-unseen)
-   (buffers
-    'idle)
-   (t
-    'none)))
+  (let ((statuses (mapcar #'agent-shell-dashboard--buffer-status buffers)))
+    (cond
+     ((memq 'blocked statuses)
+      'permission)
+     ((memq 'busy statuses)
+      'busy)
+     ((seq-some #'agent-shell-dashboard--finished-unseen-p buffers)
+      'finished-unseen)
+     (buffers
+      'idle)
+     (t
+      'none))))
 
 (defun agent-shell-dashboard--agent-icon (state)
   "Return a propertized icon for aggregate STATE."
