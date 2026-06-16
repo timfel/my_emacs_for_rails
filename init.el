@@ -299,7 +299,8 @@
   (agent-shell-mode . agent-shell-ralph-rate-limit-retry-mode))
 
 (use-package agent-shell-jira
-  :after jira
+  :after agent-shell
+  :demand t
   :defines (jira-detail-mode-map jira-issues-mode-map)
   :bind (:map jira-detail-mode-map
          ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent)
@@ -365,45 +366,9 @@
 
 (use-package markdown-mode
   :ensure t
-  :functions (markdown-overlays--parse-local-link)
   :mode ("\\.md$")
   :config
-  (setq markdown-command "cmark-gfm --extension table")
-  (with-eval-after-load 'markdown-overlays
-    (advice-add 'markdown-overlays--parse-local-link :around
-                (lambda (original-fn url)
-                  "Treat an existing plain local path URL as a local file link."
-                  (or (funcall original-fn url)
-                      (when (string-match (rx bos "/" alpha ":/") url)
-                        (markdown-overlays--parse-local-link (substring url 1)))
-                      (when-let ((match
-                                  (cond
-                                   ;; path#L123 (GitHub-style line)
-                                   ((string-match
-                                     (rx bos
-                                         (group (? (optional "/") alpha ":/") ;; Windows drive letter
-                                                (one-or-more (not (any ":#"))))
-                                         "#L" (group (one-or-more digit))
-                                         eos)
-                                     url)
-                                    (cons (match-string 1 url) (match-string 2 url)))
-                                   ;; path:123 (colon line number)
-                                   ((string-match
-                                     (rx bos
-                                         (group (? (optional "/") alpha ":/") ;; Windows drive letter
-                                                (one-or-more (not (any ":#"))))
-                                         ":" (group (one-or-more digit))
-                                         eos)
-                                     url)
-                                    (cons (match-string 1 url) (match-string 2 url)))
-                                   ;; plain local path with no line suffix
-                                   ((not (string-empty-p url))
-                                    (cons url nil))))
-                                 (filepath (expand-file-name (car match))))
-                        (when (file-exists-p filepath)
-                          (list (cons :file filepath)
-                                (cons :line (when (cdr match)
-                                              (string-to-number (cdr match))))))))))))
+  (setq markdown-command "cmark-gfm --extension table"))
 
 (use-package lua-mode
   :ensure t
@@ -2047,7 +2012,6 @@ input means nil arguments."
   (agent-shell-show-usage-at-turn-end t)
   (agent-shell-text-file-capabilities t)
   :config
-  (require 'timfel-markdown-overlays-extensions)
   (keymap-unset agent-shell-mode-map "p")
   (keymap-unset agent-shell-mode-map "n")
 
