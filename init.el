@@ -1294,20 +1294,24 @@
   :functions (timfel/gptel--load-prompt-directive
               timfel/gptel--prompt-metadata
               cashpw/gptel-mode-line cashpw/gptel-mode-line--hide-all
-              cashpw/gptel-mode-line--indicator gptel-abort)
-  :commands (gptel gptel-request)
+              cashpw/gptel-mode-line--indicator gptel-abort
+              gptel-make-openai-oauth)
+  :commands (gptel gptel-request gptel-openai-oauth-login)
+  :pin melpa
   :custom
-  (gptel-model 'unsloth/Qwen3.6-35B-A3B-GGUF)
+  (gptel-model 'gpt-5.4-mini)
   (gptel-include-tool-results t)
   (gptel-include-reasoning t)
   :config
-  (setq gptel-backend 
-        (gptel-make-openai "llama-cpp"
-          :host "127.0.0.1:8080"
-          :protocol "http"
-          :stream t
-          :models '(ggml-org/gemma-4-E2B-it-GGUF unsloth/Qwen3.6-35B-A3B-GGUF)
-          :key "none"))
+  (require 'gptel-openai-oauth)
+  (setq gptel-backend
+        (gptel-make-openai-oauth "OpenAI"))
+  (gptel-make-openai "llama-cpp"
+    :host "127.0.0.1:8080"
+    :protocol "http"
+    :stream t
+    :models '(ggml-org/gemma-4-E2B-it-GGUF unsloth/Qwen3.6-35B-A3B-GGUF)
+    :key "none")
   (setq
    cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
    cashpw/gptel-mode-line--indicator-responding "↓GPTEL↓ "
