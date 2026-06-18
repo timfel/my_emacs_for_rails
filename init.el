@@ -911,6 +911,7 @@
   (doom-modeline-buffer-modified ((t (:foreground "#444" :weight bold)))))
 
 (use-package desktop
+  :if (eq system-type 'gnu/linux)
   :custom
   (history-length 10)
   (desktop-restore-eager 5)
