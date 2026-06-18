@@ -2209,6 +2209,10 @@ input means nil arguments."
      "https://xkcd.com/rss.xml"
      "https://www.osnews.com/feed/")))
 
+(use-package codespaces
+  :ensure t
+  :config (codespaces-setup))
+
 (use-package custom
   :config
   (if (eq system-type 'android)
