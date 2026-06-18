@@ -52,7 +52,7 @@
          ("C-z" . (lambda () (interactive) (beep))))
 
   :custom
-  (browse-url-generic-program (or (executable-find "wslview") "xdg-open"))
+  (browse-url-generic-program (if (eq system-type 'gnu/linux) (or (executable-find "wslview") "xdg-open")))
   (browse-url-browser-function (lambda (url &rest args)
                                  (if (and (not (string-match-p
                                                 (rx (or "github.com"
@@ -680,6 +680,7 @@
 (use-package grep
   :defines (find-name-arg)
   :functions (grep-apply-setting)
+  :defer t
   :custom
   (find-program (if (eq system-type 'windows-nt)
                     (shell-quote-argument
@@ -2305,25 +2306,21 @@ input means nil arguments."
                        (s (and raw (not (string-empty-p raw)) raw)))
                   (if (and s last-copied-text (string= s last-copied-text))
                       nil
-                    s)))))))
+                    s))))))
 
-  (when-let* ((nvm "~/.nvm/versions/node/")
-              (_ (file-exists-p nvm)))
-    (add-to-list 'exec-path (string-join (list nvm (car (sort (directory-files nvm) #'string-greaterp)) "bin") "/"))
-    (setenv "PATH" (string-join exec-path path-separator)))
+    (when-let* ((nvm "~/.nvm/versions/node/")
+                (_ (file-exists-p nvm)))
+      (add-to-list 'exec-path (string-join (list nvm (car (sort (directory-files nvm) #'string-greaterp)) "bin") "/"))
+      (setenv "PATH" (string-join exec-path path-separator)))
 
-  (when-let* ((jdk21 (expand-file-name "~/.mx/jdks/labsjdk-ce-21/"))
-              (_ (and (file-exists-p jdk21) (not (getenv "JAVA_HOME")))))
-    (setenv "JAVA_HOME" jdk21))
+    (when-let* ((sdkman (getenv "SDKMAN_DIR"))
+                (jdk21 (expand-file-name (concat sdkman "candidates/java/21.0.4-oracle")))
+                (_ (and (file-exists-p jdk21) (not (getenv "JAVA_HOME")))))
+      (setenv "JAVA_HOME" jdk21))
 
-  (when-let* ((sdkman (getenv "SDKMAN_DIR"))
-              (jdk21 (expand-file-name (concat sdkman "candidates/java/21.0.4-oracle")))
-              (_ (and (file-exists-p jdk21) (not (getenv "JAVA_HOME")))))
-    (setenv "JAVA_HOME" jdk21))
-
-  (when-let* ((eclipse (expand-file-name "~/dev/eclipse/eclipse"))
-              (_ (and (file-exists-p eclipse) (not (getenv "ECLIPSE_EXE")))))
-    (setenv "ECLIPSE_EXE" eclipse))
+    (when-let* ((eclipse (expand-file-name "~/dev/eclipse/eclipse"))
+                (_ (and (file-exists-p eclipse) (not (getenv "ECLIPSE_EXE")))))
+      (setenv "ECLIPSE_EXE" eclipse)))
 
   (server-start nil t)
 
