@@ -109,7 +109,7 @@
 (use-package android
   :if (eq system-type 'android)
   :no-require t
-  :defines (timfel/cloud-storage)
+  :defines (timfel/cloud-storage android-intercept-control-space)
   :functions (org-capture-kill org-capture-finalize org-capture with-auto-default)
   :after (timfel)
   :config
@@ -212,6 +212,8 @@
 
 (use-package timfel
   :config
+  (ignore-errors
+    (require 'orcl))
   (add-to-list 'load-path (expand-file-name "lisp" timfel/gist-location)))
 
 (use-package emacs-ci
@@ -250,10 +252,6 @@
      :follow #'timfel/org-follow-ci-link
      :store #'timfel/org-store-ci-link)))
 
-(use-package orcl
-  :after timfel
-  :commands (timfel/git-merges-jira-html timfel/install-ol-cli))
-
 (use-package agent-shell-bookmark
   :vc (:url "https://github.com/dcluna/agent-shell-bookmark" :branch "main" :rev :newest)
   :after agent-shell
@@ -276,6 +274,23 @@
 
 (use-package agent-shell-fanout
   :after agent-shell-utils
+  :functions (agent-shell-fanout-default-repositories
+              timfel/agent-shell-fanout-graal-repositories)
+  :custom
+  (agent-shell-fanout-adjacent-repository-names
+   '("graal" "graal-enterprise"))
+  :config
+  (defun timfel/agent-shell-fanout-graal-repositories (repo-root)
+    "Return fan-out repositories for REPO-ROOT, preserving Graal suite siblings."
+    (let* ((repo-root (file-name-as-directory (expand-file-name repo-root)))
+           (repo-name (file-name-nondirectory (directory-file-name repo-root)))
+           (mx-dir (expand-file-name (format "mx.%s" repo-name) repo-root))
+           (agent-shell-fanout-adjacent-repository-names
+            (when (file-directory-p mx-dir)
+              agent-shell-fanout-adjacent-repository-names)))
+      (agent-shell-fanout-default-repositories repo-root)))
+  (setq agent-shell-fanout-repositories-function
+        #'timfel/agent-shell-fanout-graal-repositories)
   :hook (agent-shell-mode . hack-dir-local-variables-non-file-buffer))
 
 (use-package agent-shell-ralph
@@ -284,7 +299,8 @@
   (agent-shell-mode . agent-shell-ralph-rate-limit-retry-mode))
 
 (use-package agent-shell-jira
-  :after jira
+  :after agent-shell
+  :demand t
   :defines (jira-detail-mode-map jira-issues-mode-map)
   :bind (:map jira-detail-mode-map
          ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent)
@@ -295,9 +311,12 @@
   :vc (:url "https://github.com/timfel/agent-shell-desktop.el" :branch "main" :rev :newest)
   :after (agent-shell desktop)
   :hook
-  (agent-shell-mode . (lambda () (run-with-idle-timer 5 nil #'desktop-save (locate-user-emacs-file "."))))
+  (agent-shell-mode . (lambda ()
+                        (when (and desktop-save-mode desktop-dirname desktop-file-modtime)
+                          (run-with-idle-timer 5 nil #'desktop-save desktop-dirname nil t))))
   :config
-  (agent-shell-desktop-mode 1))
+  (if desktop-save-mode
+      (agent-shell-desktop-mode 1)))
 
 (use-package agent-shell-dashboard
   :after agent-shell
@@ -347,45 +366,9 @@
 
 (use-package markdown-mode
   :ensure t
-  :functions (markdown-overlays--parse-local-link)
   :mode ("\\.md$")
   :config
-  (setq markdown-command "cmark-gfm --extension table")
-  (with-eval-after-load 'markdown-overlays
-    (advice-add 'markdown-overlays--parse-local-link :around
-                (lambda (original-fn url)
-                  "Treat an existing plain local path URL as a local file link."
-                  (or (funcall original-fn url)
-                      (when (string-match (rx bos "/" alpha ":/") url)
-                        (markdown-overlays--parse-local-link (substring url 1)))
-                      (when-let ((match
-                                  (cond
-                                   ;; path#L123 (GitHub-style line)
-                                   ((string-match
-                                     (rx bos
-                                         (group (? (optional "/") alpha ":/") ;; Windows drive letter
-                                                (one-or-more (not (any ":#"))))
-                                         "#L" (group (one-or-more digit))
-                                         eos)
-                                     url)
-                                    (cons (match-string 1 url) (match-string 2 url)))
-                                   ;; path:123 (colon line number)
-                                   ((string-match
-                                     (rx bos
-                                         (group (? (optional "/") alpha ":/") ;; Windows drive letter
-                                                (one-or-more (not (any ":#"))))
-                                         ":" (group (one-or-more digit))
-                                         eos)
-                                     url)
-                                    (cons (match-string 1 url) (match-string 2 url)))
-                                   ;; plain local path with no line suffix
-                                   ((not (string-empty-p url))
-                                    (cons url nil))))
-                                 (filepath (expand-file-name (car match))))
-                        (when (file-exists-p filepath)
-                          (list (cons :file filepath)
-                                (cons :line (when (cdr match)
-                                              (string-to-number (cdr match))))))))))))
+  (setq markdown-command "cmark-gfm --extension table"))
 
 (use-package lua-mode
   :ensure t
@@ -424,7 +407,9 @@
   :bind (("C-c c" . org-capture)
          ("C-c m" . (lambda () (interactive) (org-capture nil "m")))
          ("C-c t" . (lambda () (interactive) (org-capture nil "t")))
-         ("C-c a" . org-agenda)
+         ("C-c a" . (lambda () (interactive)
+                      (require 'jira) (require 'emacs-ci)
+                      (call-interactively #'org-agenda)))
          ("C-c l" . org-store-link)
          ("C-c b" . (lambda ()
                       (interactive)
@@ -465,7 +450,7 @@
     "\\|"
     "^(browse-url-default-browser \"slack:[^\"]+\")$"
     "\\|"
-    "^(timfel/jira)$"
+    "^(jira-issues)$"
     "\\|"
     "^(ci-dashboard)$"
     "\\|"
@@ -763,17 +748,15 @@
   (add-to-list 'vc-directory-exclusion-list "site-packages")
   (add-to-list 'vc-directory-exclusion-list "eln-cache"))
 
-(use-package vscode-project
-  :vc (:url "https://github.com/timfel/vscode-project.el" :branch "master" :rev :newest)
-  :after project)
-
 (use-package company
   :ensure t
   :bind (("M-?" . company-complete))
   :config (global-company-mode t)
   :custom
   (company-dabbrev-code-everywhere t)
-  (company-dabbrev-other-buffers 'all)
+  ;; compat-31 defines all as a function; company-dabbrev checks functions
+  ;; before the literal all sentinel.
+  (company-dabbrev-other-buffers (lambda (_) (quote all)))
   (company-dabbrev-ignore-case 'keep-prefix)
   (company-dabbrev-downcase 0)
   (company-idle-delay (if (eq system-type 'windows-nt) 10 0.2)))
@@ -886,6 +869,7 @@
   :ensure t
   :custom
   (magit-auto-revert-tracked-only t)
+  (magit-process-apply-ansi-colors t)
   :config
   (defvar-keymap timfel/magit-ctl-x-a-map
     :doc "Prefix map for `C-x a' in Magit diff sections."
@@ -1098,6 +1082,14 @@
    '(:application tramp)
    'my-remote-profile)
 
+  (connection-local-set-profile-variables
+   'my-podman-no-direct-async-profile
+   '((tramp-direct-async-process . nil)))
+
+  (connection-local-set-profiles
+   '(:application tramp :protocol "podman")
+   'my-podman-no-direct-async-profile)
+
   (with-eval-after-load 'magit
     (connection-local-set-profile-variables
      'my-remote-magit-profile
@@ -1148,6 +1140,13 @@
     (advice-add 'project-current :around 'memoize-project-current))
 
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
+
+(use-package tramp-rpc
+  :disabled
+  :after tramp
+  :vc (:url "https://github.com/ArthurHeymans/emacs-tramp-rpc"
+       :rev :newest
+       :lisp-dir "lisp"))
 
 (use-package ido
   :disabled
@@ -1295,20 +1294,24 @@
   :functions (timfel/gptel--load-prompt-directive
               timfel/gptel--prompt-metadata
               cashpw/gptel-mode-line cashpw/gptel-mode-line--hide-all
-              cashpw/gptel-mode-line--indicator gptel-abort)
-  :commands (gptel gptel-request)
+              cashpw/gptel-mode-line--indicator gptel-abort
+              gptel-make-openai-oauth)
+  :commands (gptel gptel-request gptel-openai-oauth-login)
+  :pin melpa
   :custom
-  (gptel-model 'unsloth/Qwen3.6-35B-A3B-GGUF)
+  (gptel-model 'gpt-5.4-mini)
   (gptel-include-tool-results t)
   (gptel-include-reasoning t)
   :config
-  (setq gptel-backend 
-        (gptel-make-openai "llama-cpp"
-          :host "127.0.0.1:8080"
-          :protocol "http"
-          :stream t
-          :models '(ggml-org/gemma-4-E2B-it-GGUF unsloth/Qwen3.6-35B-A3B-GGUF)
-          :key "none"))
+  (require 'gptel-openai-oauth)
+  (setq gptel-backend
+        (gptel-make-openai-oauth "OpenAI"))
+  (gptel-make-openai "llama-cpp"
+    :host "127.0.0.1:8080"
+    :protocol "http"
+    :stream t
+    :models '(ggml-org/gemma-4-E2B-it-GGUF unsloth/Qwen3.6-35B-A3B-GGUF)
+    :key "none")
   (setq
    cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
    cashpw/gptel-mode-line--indicator-responding "↓GPTEL↓ "
@@ -1658,13 +1661,19 @@ input means nil arguments."
   (setq gdb-many-windows t
         gdb-use-separate-io-buffer t))
 
-(use-package timfel-eglot-java-extensions
+(use-package eglot-jdtls
   :after eglot
-  :functions (timfel/eglot-jdtls)
+  :functions (eglot-jdtls)
   :config
+  (let ((jdtls (expand-file-name (locate-user-emacs-file "lsp-servers/jdtls/bin/"))))
+    (add-to-list 'exec-path jdtls)
+    (setenv "PATH" (string-join exec-path path-separator)))
   (add-to-list 'eglot-server-programs
-               (cons '(java-mode java-ts-mode) #'timfel/eglot-jdtls)))
+               (cons '(java-mode java-ts-mode) #'eglot-jdtls)))
 
+(use-package eglot-jdb
+  :after eglot
+  :commands (eglot-jdb))
 
 (use-package yasnippet
   :ensure t
@@ -1918,7 +1927,16 @@ input means nil arguments."
     (unless (lsp-find-workspace 'jdtls nil)
       (if-let* ((p (project-current))
                 (r (project-root p))
-                (wsuserdir (expand-file-name ".cache/.jdtls.workspace" r)))
+                (name (string-trim
+                       (replace-regexp-in-string
+                        "[^[:alnum:]]+" "-"
+                        (directory-file-name (expand-file-name r)))
+                       "-+"
+                       "-+"))
+                (wsuserdir
+                 (expand-file-name
+                  (if (string= name "") "root" name)
+                  (expand-file-name "jdtls.workspaces/" "~/.cache/"))))
           (unless (equal lsp-java-workspace-dir wsuserdir)
             (->> (lsp-session)
                  (lsp-session-folder->servers)
@@ -1993,14 +2011,13 @@ input means nil arguments."
   (agent-shell-header-style 'text)
   (agent-shell-buffer-name-format (lambda (_agent-name project-name) (format "%s agent" project-name)))
   (agent-shell-session-strategy 'prompt)
-  (agent-shell-highlight-blocks nil)
+  (agent-shell-session-restore-verbosity 'full)
   (agent-shell-prefer-viewport-interaction nil)
   (agent-shell-preferred-agent-config 'codex)
   (agent-shell-show-config-icons nil)
   (agent-shell-show-usage-at-turn-end t)
   (agent-shell-text-file-capabilities t)
   :config
-  (require 'timfel-markdown-overlays-extensions)
   (keymap-unset agent-shell-mode-map "p")
   (keymap-unset agent-shell-mode-map "n")
 
@@ -2153,7 +2170,7 @@ input means nil arguments."
                               key
                             (concat (jira-api--get-current-url) "/browse/" key))))))
          :map jira-detail-mode-map
-              ("C-x a i" . timfel/jira-issues-investigate-marked-with-agent)
+              ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent)
          :map jira-issues-mode-map
               ("c" . (lambda (&optional prefix)
                        (interactive "P")
@@ -2162,14 +2179,14 @@ input means nil arguments."
                           (if prefix
                               key
                             (concat (jira-api--get-current-url) "/browse/" key))))))
-              ("C-x a i" . timfel/jira-issues-investigate-marked-with-agent))
+              ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent))
   :config
   (add-to-list 'transient-values
                '(jira-issues-menu "--myself" "--resolution=Unresolved"))
   (with-eval-after-load 'jira-issues
     (transient-append-suffix 'jira-issues-actions-menu "W"
       '("a" "Investigate marked issues with agent"
-        timfel/jira-issues-investigate-marked-with-agent)))
+        agent-shell-jira-issues-investigate-marked-with-agent)))
 
   (with-eval-after-load 'org
     (defun timfel/org-store-jira-link (&optional _interactive?)
@@ -2212,6 +2229,21 @@ input means nil arguments."
 (use-package codespaces
   :ensure t
   :config (codespaces-setup))
+
+(use-package hide-mode-line
+  :ensure t
+  :hook ((completion-list-mode . hide-mode-line-mode)
+         (eww-mode . hide-mode-line-mode)
+         (org-tree-slide-mode . hide-mode-line-mode)
+         (org-agenda-mode . hide-mode-line-mode)
+         (vterm-mode . hide-mode-line-mode)
+         (eshell-mode . hide-mode-line-mode)))
+
+(use-package zone-rainbow
+  :ensure t
+  :after zone
+  :config
+  (setq zone-programs (vconcat [zone-rainbow] zone-programs)))
 
 (use-package custom
   :config

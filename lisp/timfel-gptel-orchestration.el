@@ -19,7 +19,7 @@
 (declare-function ci-dashboard "emacs-ci" ())
 (declare-function org-agenda "org-agenda" (&optional arg keys restriction-lock))
 (declare-function agent-shell-fanout-worktrees
-                  "timfel-agent-shell-extensions"
+                  "agent-shell-fanout"
                   (task-specs &optional directory session-strategy))
 (declare-function timfel/jira "timfel-jira-extensions" ())
 
@@ -243,8 +243,8 @@ Return a plist describing whether anything was created."
 
 (defun timfel/gptel-tool-start-worktree-tasks (tasks &optional directory resume-p)
   "Prompt for a work directory when needed and fan out TASKS there."
-  (unless (require 'timfel-agent-shell-extensions nil t)
-    (user-error "timfel-agent-shell-extensions is not available"))
+  (unless (require 'agent-shell-fanout nil t)
+    (user-error "agent-shell-fanout is not available"))
   (let* ((explicit-directory-p (and directory (not (string-blank-p directory))))
          (task-specs (timfel/gptel-orchestration--normalize-task-specs tasks))
          (directory (expand-file-name
