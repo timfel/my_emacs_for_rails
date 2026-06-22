@@ -598,6 +598,16 @@
                                     (expand-file-name "~/bin/wslscr.py %s")))
   (org-download-image-dir "./Screenshots/"))
 
+(use-package ox-pandoc
+  :ensure t
+  :after org
+  :commands (org-pandoc-export-to-pptx
+             org-pandoc-export-to-pptx-and-open)
+  :custom
+  (org-pandoc-options-for-pptx
+   `((reference-doc . ,(expand-file-name "Graal Template.potx" timfel/gist-location))
+     (slide-level . 2))))
+
 (use-package imenu
   :custom
   (imenu-auto-rescan t)
