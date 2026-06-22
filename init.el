@@ -604,6 +604,15 @@
   :commands (org-pandoc-export-to-pptx
              org-pandoc-export-to-pptx-and-open)
   :custom
+  ;; Not, pandoc picks an appropriate template slide from the slide master in the reference file
+  ;; pandoc looks for the standard English name of the template slide
+  ;;   Title Slide
+  ;;   Title and Content
+  ;;   Section Header
+  ;;   Two Content
+  ;;   Content with Caption
+  ;;   Blank
+  ;;   Comparison
   (org-pandoc-options-for-pptx
    `((reference-doc . ,(expand-file-name "Graal Template.potx" timfel/gist-location))
      (slide-level . 2))))
