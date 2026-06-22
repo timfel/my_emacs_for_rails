@@ -274,6 +274,7 @@
 
 (use-package agent-shell-fanout
   :after agent-shell-utils
+  :demand t
   :functions (agent-shell-fanout-default-repositories
               timfel/agent-shell-fanout-graal-repositories)
   :custom
@@ -2229,11 +2230,7 @@ input means nil arguments."
 (use-package hide-mode-line
   :ensure t
   :hook ((completion-list-mode . hide-mode-line-mode)
-         (eww-mode . hide-mode-line-mode)
-         (org-tree-slide-mode . hide-mode-line-mode)
-         (org-agenda-mode . hide-mode-line-mode)
-         (vterm-mode . hide-mode-line-mode)
-         (eshell-mode . hide-mode-line-mode)))
+         (org-tree-slide-mode . hide-mode-line-mode)))
 
 (use-package zone-rainbow
   :ensure t
