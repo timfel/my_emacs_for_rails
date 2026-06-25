@@ -52,7 +52,7 @@
          ("C-z" . (lambda () (interactive) (beep))))
 
   :custom
-  (browse-url-generic-program (or (executable-find "wslview") "xdg-open"))
+  (browse-url-generic-program (if (eq system-type 'gnu/linux) (or (executable-find "wslview") "xdg-open")))
   (browse-url-browser-function (lambda (url &rest args)
                                  (if (and (not (string-match-p
                                                 (rx (or "github.com"
@@ -274,6 +274,7 @@
 
 (use-package agent-shell-fanout
   :after agent-shell-utils
+  :demand t
   :functions (agent-shell-fanout-default-repositories
               timfel/agent-shell-fanout-graal-repositories)
   :custom
@@ -597,6 +598,25 @@
                                     (expand-file-name "~/bin/wslscr.py %s")))
   (org-download-image-dir "./Screenshots/"))
 
+(use-package ox-pandoc
+  :ensure t
+  :after org
+  :commands (org-pandoc-export-to-pptx
+             org-pandoc-export-to-pptx-and-open)
+  :custom
+  ;; Not, pandoc picks an appropriate template slide from the slide master in the reference file
+  ;; pandoc looks for the standard English name of the template slide
+  ;;   Title Slide
+  ;;   Title and Content
+  ;;   Section Header
+  ;;   Two Content
+  ;;   Content with Caption
+  ;;   Blank
+  ;;   Comparison
+  (org-pandoc-options-for-pptx
+   `((reference-doc . ,(expand-file-name "Graal Template.potx" timfel/gist-location))
+     (slide-level . 2))))
+
 (use-package imenu
   :custom
   (imenu-auto-rescan t)
@@ -680,6 +700,7 @@
 (use-package grep
   :defines (find-name-arg)
   :functions (grep-apply-setting)
+  :defer t
   :custom
   (find-program (if (eq system-type 'windows-nt)
                     (shell-quote-argument
@@ -911,6 +932,7 @@
   (doom-modeline-buffer-modified ((t (:foreground "#444" :weight bold)))))
 
 (use-package desktop
+  :if (eq system-type 'gnu/linux)
   :custom
   (history-length 10)
   (desktop-restore-eager 5)
@@ -2233,11 +2255,7 @@ input means nil arguments."
 (use-package hide-mode-line
   :ensure t
   :hook ((completion-list-mode . hide-mode-line-mode)
-         (eww-mode . hide-mode-line-mode)
-         (org-tree-slide-mode . hide-mode-line-mode)
-         (org-agenda-mode . hide-mode-line-mode)
-         (vterm-mode . hide-mode-line-mode)
-         (eshell-mode . hide-mode-line-mode)))
+         (org-tree-slide-mode . hide-mode-line-mode)))
 
 (use-package zone-rainbow
   :ensure t
@@ -2308,25 +2326,21 @@ input means nil arguments."
                        (s (and raw (not (string-empty-p raw)) raw)))
                   (if (and s last-copied-text (string= s last-copied-text))
                       nil
-                    s)))))))
+                    s))))))
 
-  (when-let* ((nvm "~/.nvm/versions/node/")
-              (_ (file-exists-p nvm)))
-    (add-to-list 'exec-path (string-join (list nvm (car (sort (directory-files nvm) #'string-greaterp)) "bin") "/"))
-    (setenv "PATH" (string-join exec-path path-separator)))
+    (when-let* ((nvm "~/.nvm/versions/node/")
+                (_ (file-exists-p nvm)))
+      (add-to-list 'exec-path (string-join (list nvm (car (sort (directory-files nvm) #'string-greaterp)) "bin") "/"))
+      (setenv "PATH" (string-join exec-path path-separator)))
 
-  (when-let* ((jdk21 (expand-file-name "~/.mx/jdks/labsjdk-ce-21/"))
-              (_ (and (file-exists-p jdk21) (not (getenv "JAVA_HOME")))))
-    (setenv "JAVA_HOME" jdk21))
+    (when-let* ((sdkman (getenv "SDKMAN_DIR"))
+                (jdk21 (expand-file-name (concat sdkman "candidates/java/21.0.4-oracle")))
+                (_ (and (file-exists-p jdk21) (not (getenv "JAVA_HOME")))))
+      (setenv "JAVA_HOME" jdk21))
 
-  (when-let* ((sdkman (getenv "SDKMAN_DIR"))
-              (jdk21 (expand-file-name (concat sdkman "candidates/java/21.0.4-oracle")))
-              (_ (and (file-exists-p jdk21) (not (getenv "JAVA_HOME")))))
-    (setenv "JAVA_HOME" jdk21))
-
-  (when-let* ((eclipse (expand-file-name "~/dev/eclipse/eclipse"))
-              (_ (and (file-exists-p eclipse) (not (getenv "ECLIPSE_EXE")))))
-    (setenv "ECLIPSE_EXE" eclipse))
+    (when-let* ((eclipse (expand-file-name "~/dev/eclipse/eclipse"))
+                (_ (and (file-exists-p eclipse) (not (getenv "ECLIPSE_EXE")))))
+      (setenv "ECLIPSE_EXE" eclipse)))
 
   (server-start nil t)
 
