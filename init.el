@@ -2329,6 +2329,11 @@ input means nil arguments."
       (add-to-list 'exec-path (string-join (list nvm (car (sort (directory-files nvm) #'string-greaterp)) "bin") "/"))
       (setenv "PATH" (string-join exec-path path-separator)))
 
+    (when-let* ((rb "~/.rbenv/versions/3.3.1/bin/")
+                (_ (file-exists-p rb)))
+      (add-to-list 'exec-path rb)
+      (setenv "PATH" (string-join exec-path path-separator)))
+
     (when-let* ((sdkman (getenv "SDKMAN_DIR"))
                 (jdk21 (expand-file-name (concat sdkman "candidates/java/21.0.4-oracle")))
                 (_ (and (file-exists-p jdk21) (not (getenv "JAVA_HOME")))))
