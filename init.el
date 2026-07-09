@@ -262,6 +262,11 @@
   :after agent-shell
   :vc (:url "https://github.com/timfel/agent-shell-utils.el.git" :branch "master" :rev :newest))
 
+(use-package agent-shell-slack
+  :after agent-shell
+  :commands agent-shell-slack
+  :vc (:url "https://github.com/timfel/agent-shell-slack.git" :branch "master" :rev :newest))
+
 (use-package agent-shell-bwrap
   :after agent-shell-utils
   :config
