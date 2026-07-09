@@ -2248,6 +2248,10 @@ input means nil arguments."
      "https://xkcd.com/rss.xml"
      "https://www.osnews.com/feed/")))
 
+(use-package codespaces
+  :ensure t
+  :config (codespaces-setup))
+
 (use-package hide-mode-line
   :ensure t
   :hook ((completion-list-mode . hide-mode-line-mode)
