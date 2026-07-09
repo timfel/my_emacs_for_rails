@@ -970,7 +970,7 @@
   (treemacs-width-is-initially-locked t))
 
 (use-package treemacs-nerd-icons
-  :unless (display-graphic-p)
+  :unless (or (daemonp) (display-graphic-p))
   :functions (treemacs-load-theme)
   :after treemacs
   :ensure t
@@ -1192,7 +1192,7 @@
 
 (use-package term-keys
   :ensure t
-  :unless (display-graphic-p)
+  :unless (or (daemonp) (display-graphic-p))
   :config
   (global-set-key (kbd "M-[ 1 ; 2 a") (kbd "S-<up>"))
   (global-set-key (kbd "M-[ 1 ; 2 b") (kbd "S-<down>"))
@@ -1204,7 +1204,7 @@
 
 (use-package kitty-graphics
   :ensure t
-  :unless (display-graphic-p)
+  :unless (or (daemonp) (display-graphic-p))
   :vc (:url "https://github.com/timfel/kitty-graphics.el" :branch "master" :rev :newest)
   :config
   (kitty-graphics-mode 1))
@@ -1296,7 +1296,6 @@
 
 (use-package emojify
   :ensure t
-  :if (display-graphic-p)
   :commands emojify-insert-emoji
   :custom
   (emojify-display-style 'unicode)
@@ -1448,12 +1447,12 @@
   :vc (:url "https://github.com/timfel/emacs-theme-detection.git" :branch "main" :rev :newest))
 
 (use-package xt-mouse
-  :if (eq window-system nil)
+  :unless (or (daemonp) (display-graphic-p))
   :config (run-with-idle-timer 0.1 nil #'xterm-mouse-mode +1))
 
 (use-package clipetty
   :ensure t
-  :if (eq window-system nil))
+  :unless (or (daemonp) (display-graphic-p)))
 
 (use-package proced
   :ensure t
@@ -2264,6 +2263,7 @@ input means nil arguments."
   (setq zone-programs (vconcat [zone-rainbow] zone-programs)))
 
 (use-package custom
+  :functions (timfel/set-frame-faces)
   :config
   (if (eq system-type 'android)
       (load-theme 'leuven-dark t)
@@ -2288,15 +2288,19 @@ input means nil arguments."
   (if (eq system-type 'windows-nt)
       (set-fontset-font t '(#x1F300 . #x1F5FF) "Segoe UI Symbol"))  ; 🔁, Miscellaneous Symbols and Pictographs
 
-  (if (display-graphic-p)
-      (run-with-idle-timer 0 nil
-                           (lambda ()
-                             (if (memq window-system '(x pgtk))
-                                 (set-face-attribute 'default nil :font "DejaVu Sans Mono-10")
-                               (if (eq window-system 'w32)
-                                   (set-face-attribute 'default nil :family "Consolas" :height 105)
-                                 (if (eq system-type 'android)
-                                     (set-face-attribute 'default nil :family "Droid Sans Mono" :height 120)))))))
+
+  (defun timfel/set-frame-faces ()
+    (cond
+     ((memq window-system '(x pgtk))
+      (set-face-attribute 'default nil :font "DejaVu Sans Mono-10"))
+     ((eq window-system 'w32)
+      (set-face-attribute 'default nil :family "Consolas" :height 105))
+     ((eq system-type 'android)
+      (set-face-attribute 'default nil :family "Droid Sans Mono" :height 120))))
+
+  (cond
+   ((display-graphic-p) (run-with-idle-timer 0 nil #'timfel/set-frame-faces))
+   ((daemonp) (add-hook 'server-after-make-frame-hook #'timfel/set-frame-faces)))
 
   (setq safe-local-variable-values
         (append safe-local-variable-values
