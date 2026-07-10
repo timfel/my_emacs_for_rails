@@ -640,7 +640,7 @@
     (unless (display-local-help t)
       (call-interactively #'eldoc-print-current-symbol-info)))
   (setq eldoc-display-functions '(eldoc-display-in-echo-area eldoc-display-in-buffer))
-  (remove-hook 'eldoc-display-functions #'eldoc-display-in-buffer)
+  ;; (remove-hook 'eldoc-display-functions #'eldoc-display-in-buffer)
   (remove-hook 'eldoc-display-functions #'eldoc-display-in-buffer-at-point)
   (add-hook 'eldoc-display-functions #'eldoc-display-in-echo-area))
 
@@ -2254,7 +2254,7 @@ input means nil arguments."
 
 (use-package codespaces
   :ensure t
-  :config (codespaces-setup))
+  :commands (codespaces-setup))
 
 (use-package hide-mode-line
   :ensure t

@@ -24,10 +24,15 @@ process through TRAMP, so this should also be available in the remote PATH."
   :group 'eglot-jdtls)
 
 (defcustom eglot-jdtls-initialization-options
-  '(:settings
+  '(:extendedClientCapabilities
+    (:classFileContentsSupport t)
+    :settings
     (:java (:format (:onType (:enabled t)
                     :comments (:enabled t)
                     :enabled t)
+            :hover (:javadoc (:enabled t))
+            :contentProvider (:preferred ["fernflowerContentProvider"])
+            :references (:includeDecompiledSources t)
             :completion (:guessMethodArguments t
                          :overwrite t
                          :enabled t)
@@ -40,6 +45,8 @@ process through TRAMP, so this should also be available in the remote PATH."
   "Initialization options passed to JDTLS."
   :type 'sexp
   :group 'eglot-jdtls)
+
+;;; JDTLS workspace, cache directory, and temporary file location handling
 
 (defun eglot-jdtls--project-id (project-root)
   "Return a stable directory name for PROJECT-ROOT."
@@ -66,6 +73,17 @@ process through TRAMP, so this should also be available in the remote PATH."
   (expand-file-name (eglot-jdtls--project-id project-root)
                     (eglot-jdtls--state-base project-root)))
 
+(defun eglot-jdtls--jdt-cache-dir ()
+  "Return cache directory for JDTLS virtual classfile sources."
+  (let* ((project (project-current t))
+         (root (project-root project))
+         (project-dir (eglot-jdtls--project-dir root))
+         (cache-dir (expand-file-name "jdt-contents/" project-dir)))
+    (make-directory cache-dir t)
+    cache-dir))
+
+;;; JDTLS subprocess initialization and arguments preparation
+
 (defun eglot-jdtls--local-argument (file-name)
   "Return FILE-NAME as a path suitable for the JDTLS process."
   (file-local-name (expand-file-name file-name)))
@@ -90,6 +108,51 @@ process through TRAMP, so this should also be available in the remote PATH."
                 (mapcar #'eglot-path-to-uri
                         (eglot-jdtls--workspace-roots project))))
     options))
+
+;;; jdt:// URI handling for decompiled sources
+
+(defun eglot-jdtls--jdt-uri-file-name (uri)
+  "Return stable cache file name for JDTLS URI."
+  (let* ((decoded (url-unhex-string uri))
+         (base (if (string-match "jdt://contents/[^/]+/\\(.+?\\)\\.class\\?" decoded)
+                   (replace-regexp-in-string "/" "." (match-string 1 decoded))
+                 (secure-hash 'sha1 decoded))))
+    (expand-file-name (concat base ".java") (eglot-jdtls--jdt-cache-dir))))
+
+(defun eglot-jdtls--resolve-jdt-uri (uri)
+  "Resolve JDTLS URI to a local cached Java source file."
+  (let ((file (eglot-jdtls--jdt-uri-file-name uri)))
+    (unless (file-readable-p file)
+      (let ((content (jsonrpc-request
+                      (eglot-current-server)
+                      :java/classFileContents
+                      `(:uri ,uri))))
+        (make-directory (file-name-directory file) t)
+        (with-temp-file file
+          (insert content))))
+    file))
+
+(defun eglot-jdtls--file-handler (operation &rest args)
+  "Handle JDTLS virtual classfile paths."
+  (let ((inhibit-file-name-handlers
+         (cons 'eglot-jdtls--file-handler
+               (and (eq inhibit-file-name-operation operation)
+                    inhibit-file-name-handlers)))
+        (inhibit-file-name-operation operation))
+    (pcase operation
+      ('file-exists-p t)
+      ('file-readable-p t)
+      ('file-regular-p t)
+      ('expand-file-name (car args))
+      ('file-local-copy (eglot-jdtls--resolve-jdt-uri (car args)))
+      ('insert-file-contents
+       (let ((file (eglot-jdtls--resolve-jdt-uri (car args))))
+         (apply #'insert-file-contents file (cdr args))))
+      (_
+       (let ((resolved (eglot-jdtls--resolve-jdt-uri (car args))))
+         (apply operation resolved (cdr args)))))))
+
+(add-to-list 'file-name-handler-alist '("\\`jdt://contents/" . eglot-jdtls--file-handler))
 
 ;;;###autoload
 (defun eglot-jdtls (_interactive project)
