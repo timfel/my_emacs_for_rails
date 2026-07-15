@@ -15,6 +15,7 @@
         ("gnu" . 5)
         ("melpa" . 1)
         ("cselpa" . 0)))
+(setq package-install-upgrade-built-in t)
 (package-initialize)
 
 (require 'use-package)
@@ -319,10 +320,9 @@
   :hook
   (agent-shell-mode . (lambda ()
                         (when (and desktop-save-mode desktop-dirname desktop-file-modtime)
+                          ;; this is so we wait roughly until we have a session id to save
                           (run-with-idle-timer 5 nil #'desktop-save desktop-dirname nil t))))
-  :config
-  (if desktop-save-mode
-      (agent-shell-desktop-mode 1)))
+  (desktop-save-mode . agent-shell-desktop-mode))
 
 (use-package agent-shell-dashboard
   :after agent-shell
@@ -948,7 +948,7 @@
                                        "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
                                        "\\)$"))
   :config
-  (desktop-save-mode)
+  ;; (desktop-save-mode)
   (add-to-list 'desktop-globals-to-save 'file-name-history)
   (add-to-list 'desktop-modes-not-to-save 'dired-mode)
   (add-to-list 'desktop-modes-not-to-save 'Info-mode)
@@ -1325,13 +1325,13 @@
   :commands (gptel gptel-request gptel-openai-oauth-login)
   :pin melpa
   :custom
-  (gptel-model 'gpt-5.4-mini)
+  (gptel-model 'gpt-5.6-luna)
   (gptel-include-tool-results t)
   (gptel-include-reasoning t)
   :config
   (require 'gptel-openai-oauth)
   (setq gptel-backend
-        (gptel-make-openai-oauth "OpenAI"))
+        (gptel-make-openai-oauth "OpenAI" :models gptel--openai-models))
   (gptel-make-openai "llama-cpp"
     :host "127.0.0.1:8080"
     :protocol "http"
@@ -2033,6 +2033,7 @@ input means nil arguments."
          ("C-x a R" . agent-shell-restart)
          ("C-x a r" . agent-shell-reload))
   :custom
+  (agent-shell-thought-process-expand-by-default t)
   (agent-shell-busy-indicator-frames 'dots-round)
   (agent-shell-header-style 'text)
   (agent-shell-buffer-name-format (lambda (_agent-name project-name) (format "%s agent" project-name)))
