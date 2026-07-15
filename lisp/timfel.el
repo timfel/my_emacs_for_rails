@@ -22,6 +22,7 @@
 (require 'cl-lib)
 (require 'json)
 (require 'subr-x)
+(require 'openproject-dir-locals)
 
 (declare-function term-keys/windows-terminal-json "term-keys-windows-terminal")
 (defvar c-basic-offset)
