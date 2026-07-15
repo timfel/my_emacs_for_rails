@@ -81,7 +81,14 @@
   (show-paren-style 'mixed)
   (inhibit-startup-screen t)
   (default-directory "~/")
-  (initial-scratch-message nil)
+  (setq initial-scratch-message ";; Welcome to your emacs.
+;; Some useful expressions:
+;;   Resume desktop
+;;     (call-interactively (quote desktop-change-dir))
+;;     (desktop-save-mode 1)
+;;   Last bookmarks: `\\[bookmark-bmenu-list]`
+;;   Agenda: 'C-c a a'
+")
   (comment-multi-line t)
   (comment-style 'extra-line)
   (sentence-end-double-space nil)
@@ -94,6 +101,7 @@
   :config
   (if (file-exists-p custom-file)
       (load custom-file))
+  (zone-when-idle 300)
   (recentf-mode t)
   (show-paren-mode t)
   (blink-cursor-mode 0)
