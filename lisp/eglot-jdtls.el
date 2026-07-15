@@ -27,9 +27,9 @@ process through TRAMP, so this should also be available in the remote PATH."
   '(:extendedClientCapabilities
     (:classFileContentsSupport t)
     :settings
-    (:java (:format (:onType (:enabled t)
-                    :comments (:enabled t)
-                    :enabled t)
+    (:java (:format (:onType (:enabled nil)
+                    :comments (:enabled nil)
+                    :enabled nil)
             :hover (:javadoc (:enabled t))
             :contentProvider (:preferred ["fernflowerContentProvider"])
             :references (:includeDecompiledSources t)
@@ -38,8 +38,8 @@ process through TRAMP, so this should also be available in the remote PATH."
                          :enabled t)
             :import (:maven (:enabled t)
                      :gradle (:enabled t))
-            :autobuild (:enabled t)
-            :saveActions (:organizeImports t)
+            :autobuild (:enabled nil)
+            :saveActions (:organizeImports nil)
             :jdt (:ls (:javac (:enabled t)))
             :project (:importOnFirstTimeStartup t))))
   "Initialization options passed to JDTLS."
