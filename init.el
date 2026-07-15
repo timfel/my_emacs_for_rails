@@ -412,12 +412,54 @@
   :hook ((ruby-mode . (lambda() (progn
                                   (set (make-local-variable 'indent-tabs-mode) 'nil)
                                   (set (make-local-variable 'tab-width) 2)))))
-  :config (defun ruby-accurate-end-of-block (&optional end)
-            "(tfel): Fixes an issue I had with ruby-mode."
-            (let (state
-                  (end (or end (point-max))))
-              (while (and (setq state (apply 'ruby-parse-partial end state))
-                          (nth 2 state) (>= (nth 2 state) 0) (< (point) end))))))
+  :config
+  (with-eval-after-load 'eglot
+    (add-to-list 'eglot-server-programs '((ruby-mode ruby-ts-mode) "ruby-lsp")))
+  (defun ruby-accurate-end-of-block (&optional end)
+    "(tfel): Fixes an issue I had with ruby-mode."
+    (let (state
+          (end (or end (point-max))))
+      (while (and (setq state (apply 'ruby-parse-partial end state))
+                  (nth 2 state) (>= (nth 2 state) 0) (< (point) end))))))
+
+(use-package robe
+  :ensure t
+  :hook ((ruby-mode . robe-mode)
+         (ruby-ts-mode . robe-mode)))
+
+(use-package rspec-mode
+  :ensure t
+  :hook ((ruby-mode . rspec-mode)
+         (ruby-ts-mode . rspec-mode)))
+
+(use-package inf-ruby
+  :ensure t
+  ;; ((ruby-mode . ((inf-ruby-wrapper-command . "docker exec -i container_name %s"))))
+  :commands (inf-ruby inf-ruby-console-auto))
+
+(use-package docker
+  :ensure t
+  :bind ("C-c d" . docker))
+
+(use-package dockerfile-mode
+  :ensure t
+  :commands (dockerfile-mode))
+
+(use-package docker-compose-mode
+  :ensure t
+  :commands (docker-compose-mode))
+
+(use-package web-mode
+  :ensure t
+  :mode
+  (("\\.phtml\\'" . web-mode)
+   ("\\.php\\'" . web-mode)
+   ("\\.tpl\\'" . web-mode)
+   ("\\.[agj]sp\\'" . web-mode)
+   ("\\.as[cp]x\\'" . web-mode)
+   ("\\.erb\\'" . web-mode)
+   ("\\.mustache\\'" . web-mode)
+   ("\\.djhtml\\'" . web-mode)))
 
 (use-package org
   :commands org-mode
@@ -1626,6 +1668,12 @@
 (use-package redo+
   :bind (("C--" . redo)))
 
+(use-package repeat
+  :hook
+  (after-init . repeat-mode)
+  :custom
+  (repeat-exit-timeout 5))
+
 (use-package flymake
   :bind (("C-c f" . flymake-show-buffer-diagnostics)
          ("C-c e" . flymake-show-project-diagnostics)))
@@ -1704,6 +1752,10 @@ input means nil arguments."
   ;; use the debug view with many windows
   (setq gdb-many-windows t
         gdb-use-separate-io-buffer t))
+
+(use-package dape
+  :ensure t
+  :commands dape)
 
 (use-package eglot-jdtls
   :after eglot
