@@ -101,7 +101,6 @@
   :config
   (if (file-exists-p custom-file)
       (load custom-file))
-  (zone-when-idle 300)
   (recentf-mode t)
   (show-paren-mode t)
   (blink-cursor-mode 0)
@@ -214,6 +213,10 @@
 
                           (_ nil)))))))
 
+(use-package zone
+  :config
+  (zone-when-idle 300))
+
 (use-package request ;; has not had a release in ages, but bugfixes on master
   :ensure t
   :defer t
@@ -274,7 +277,10 @@
 (use-package agent-shell-slack
   :after agent-shell
   :commands agent-shell-slack
-  :vc (:url "https://github.com/timfel/agent-shell-slack.git" :branch "master" :rev :newest))
+  :vc (:url "https://github.com/timfel/agent-shell-slack.git"
+            :branch "master"
+            :rev :newest
+            :ignored-files ("tests/*")))
 
 (use-package agent-shell-bwrap
   :after agent-shell-utils
@@ -1290,7 +1296,10 @@
   (exec-path-from-shell-initialize))
 
 (use-package exec-path-from-powershell
-  :vc (:url "https://github.com/timfel/exec-path-from-powershell" :branch "main" :rev :newest)
+  :vc (:url "https://github.com/timfel/exec-path-from-powershell"
+            :rev :newest
+            :branch "main"
+            :ignored-files ("scripts/*" "test/*"))
   :if (eq system-type 'windows-nt)
   :defer t)
 
@@ -1324,6 +1333,7 @@
             cashpw/gptel-mode-line--indicator-responding
             cashpw/gptel-show-progress-in-mode-line
             timfel/gptel-tool--collection-tools
+            gptel--openai-models
             timfel/gptel-tool--custom-tools)
   :functions (timfel/gptel--load-prompt-directive
               timfel/gptel--prompt-metadata
@@ -1477,7 +1487,7 @@
 
 (use-package vterm
   :ensure t
-  :defines (vterm-mode-map vterm--process)
+  :defines (vterm-mode-map vterm--process vterm-copy-mode-map)
   :commands (vterm)
   :unless (memq system-type '(windows-nt android))
   :bind (("<f12>" . (lambda (&optional arg)
