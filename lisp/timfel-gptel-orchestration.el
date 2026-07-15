@@ -25,7 +25,7 @@
 (declare-function agent-shell-status "agent-shell")
 (declare-function agent-shell-subscribe-to "agent-shell")
 (declare-function agent-shell-unsubscribe "agent-shell")
-(declare-function agent-shell--resolve-preferred-config "agent-shell"))
+(declare-function agent-shell--resolve-preferred-config "agent-shell")
 (declare-function shell-maker-point-at-last-prompt-p "shell-maker")
 (declare-function ci-dashboard "emacs-ci")
 (declare-function ci--auth-headers "emacs-ci")

@@ -214,6 +214,7 @@
                           (_ nil)))))))
 
 (use-package zone
+  :commands (zone-when-idle)
   :config
   (zone-when-idle 300))
 
@@ -649,6 +650,7 @@
 (use-package org-download
   :ensure t
   :after org
+  :pin melpa
   :commands org-download-screenshot
   :custom
   (org-download-image-org-width 200)
