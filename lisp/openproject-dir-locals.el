@@ -45,3 +45,5 @@
 (dir-locals-set-directory-class
  (expand-file-name "~/dev/openproject/")
  'openproject-docker)
+
+(provide 'openproject-dir-locals)
