@@ -81,7 +81,7 @@
   (show-paren-style 'mixed)
   (inhibit-startup-screen t)
   (default-directory "~/")
-  (setq initial-scratch-message ";; Welcome to your emacs.
+  (initial-scratch-message ";; Welcome to your emacs.
 ;; Some useful expressions:
 ;;   Resume desktop
 ;;     (call-interactively (quote desktop-change-dir))
@@ -101,6 +101,7 @@
   :config
   (if (file-exists-p custom-file)
       (load custom-file))
+  (setq read-process-output-max (* 1024 1024))
   (recentf-mode t)
   (show-paren-mode t)
   (blink-cursor-mode 0)
