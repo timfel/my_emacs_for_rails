@@ -155,6 +155,19 @@ process through TRAMP, so this should also be available in the remote PATH."
 (add-to-list 'file-name-handler-alist '("\\`jdt://contents/" . eglot-jdtls--file-handler))
 
 ;;;###autoload
+(defun eglot-jdtls-clear-workspace-and-cache ()
+  "Delete the workspace and cache directory for the current project after confirming."
+  (interactive)
+  (if-let* ((project (project-current t))
+            (root (project-root project))
+            (directory (eglot-jdtls--project-dir root)))
+      (when (yes-or-no-p
+             (format "Delete JDTLS workspace and cache directory %s? " directory))
+        (when (file-directory-p directory)
+          (delete-directory directory t))
+        (message "Deleted JDTLS workspace and cache for %s" root))))
+
+;;;###autoload
 (defun eglot-jdtls (_interactive project)
   "Return an Eglot contact for JDTLS in PROJECT."
   (let* ((project-root (project-root project))
