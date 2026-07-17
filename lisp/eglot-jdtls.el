@@ -156,7 +156,7 @@ process through TRAMP, so this should also be available in the remote PATH."
 
 ;;;###autoload
 (defun eglot-jdtls-clear-workspace-and-cache ()
-  "Delete the workspace and cache directory for the current project after confirming."
+  "Delete the workspace directory for the current project after confirming."
   (interactive)
   (if-let* ((project (project-current t))
             (root (project-root project))
