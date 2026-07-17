@@ -677,7 +677,7 @@
   ;;   Blank
   ;;   Comparison
   (org-pandoc-options-for-pptx
-   `((reference-doc . ,(expand-file-name "Graal Template.potx" timfel/gist-location))
+   `((reference-doc . ,(expand-file-name "Graal Template.pptx" timfel/gist-location))
      (slide-level . 2))))
 
 (use-package imenu
