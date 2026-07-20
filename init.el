@@ -1382,6 +1382,7 @@
             timfel/gptel-tool--custom-tools)
   :functions (timfel/gptel--load-prompt-directive
               timfel/gptel--prompt-metadata
+              timfel/gptel-fim--strip-terminators
               cashpw/gptel-mode-line cashpw/gptel-mode-line--hide-all
               cashpw/gptel-mode-line--indicator gptel-abort
               gptel-make-openai-oauth)
@@ -1439,20 +1440,73 @@
 
   (advice-add 'keyboard-quit :before (lambda (&rest _args) (ignore-errors (gptel-abort (current-buffer)))))
 
+  (defconst timfel/gptel-fim-prefix "<|fim_prefix|>")
+  (defconst timfel/gptel-fim-suffix "<|fim_suffix|>")
+  (defconst timfel/gptel-fim-middle "<|fim_middle|>")
+  (defconst timfel/gptel-fim-file-separator "<|file_separator|>")
+
+  (defun timfel/gptel-fim--strip-terminators (response)
+    "Return RESPONSE up to the first FIM control token.
+
+FIM models use these tokens as generation terminators.  Stop at all of
+them in case a server returns a terminator as ordinary response text."
+    (let ((terminators (regexp-opt
+                        (list timfel/gptel-fim-prefix
+                              timfel/gptel-fim-suffix
+                              timfel/gptel-fim-middle
+                              timfel/gptel-fim-file-separator))))
+      (if-let ((position (string-match terminators response)))
+          (substring response 0 position)
+        response)))
+
   (defun timfel/gptel-complete ()
-    (interactive
-     (let ((query (if (use-region-p)
-                      (buffer-substring-no-properties (region-beginning)
-                                                      (region-end))
-                    (buffer-substring-no-properties (point-min)
-                                                    (point))))
-           (gptel-tools (append timfel/gptel-tool--custom-tools
-                                timfel/gptel-tool--collection-tools))
-           (gptel-use-tools t)
-           (gptel-include-reasoning nil))
-       (gptel-request query
-         :stream gptel-stream
-         :system "Continue writing until the current control flow is completed or the task described in the last comment is done. Only write code, no markup, no communication, no explanations, do not repeat parts of the request, just continue writing the code."))))
+    "Replace the active region, or insert at point, with a FIM completion."
+    (interactive)
+    (let* ((buffer (current-buffer))
+           (gap-start (copy-marker (if (use-region-p) (region-beginning) (point))))
+           (gap-end (copy-marker (if (use-region-p) (region-end) (point)) t))
+           (prefix (buffer-substring-no-properties (point-min) gap-start))
+           (suffix (buffer-substring-no-properties gap-end (point-max)))
+           (prompt (concat timfel/gptel-fim-prefix prefix
+                           timfel/gptel-fim-suffix suffix
+                           timfel/gptel-fim-middle))
+           ;; Do not add chat context, tools, reasoning, or instructions to a FIM prompt.
+           (gptel-use-context nil)
+           (gptel-use-tools nil)
+           (gptel-tools nil)
+           (gptel-include-reasoning nil)
+           (gptel-temperature 0.1)
+           (gptel-stream t)
+           (response-parts nil))
+      ;; Buffer streaming output so terminators split across chunks are removed.
+      (gptel-request
+          prompt
+        :buffer buffer
+        :position gap-start
+        :stream t
+        :system "Perform fill in the middle (FIM) completion and NO extra output. `<|fim_prefix|>` is before the code, <|fim_suffix|> is where the cursor is, <|fim_middle|> is the end of the request."
+        :callback
+        (lambda (response info)
+          (cond
+           ((stringp response)
+            (push response response-parts))
+           ((eq response t)
+            (unwind-protect
+                (when (buffer-live-p buffer)
+                  (with-current-buffer buffer
+                    (when (and (marker-position gap-start)
+                               (marker-position gap-end))
+                      (save-excursion
+                        (goto-char gap-start)
+                        (delete-region gap-start gap-end)
+                        (insert (timfel/gptel-fim--strip-terminators
+                                 (apply #'concat (nreverse response-parts))))))))
+              (set-marker gap-start nil)
+              (set-marker gap-end nil)))
+           (t
+            (set-marker gap-start nil)
+            (set-marker gap-end nil)
+            (message "FIM completion failed: %s" (plist-get info :status))))))))
 
   (defun timfel/gptel--prompt-metadata (key)
     "Return prompt metadata KEY from comment headers in the current buffer."
