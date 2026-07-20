@@ -1465,8 +1465,8 @@ them in case a server returns a terminator as ordinary response text."
     (let* ((buffer (current-buffer))
            (gap-start (copy-marker (if (use-region-p) (region-beginning) (point))))
            (gap-end (copy-marker (if (use-region-p) (region-end) (point)) t))
-           (prefix (buffer-substring-no-properties (point-min) gap-start))
-           (suffix (buffer-substring-no-properties gap-end (point-max)))
+           (prefix (buffer-substring-no-properties (max (point-min) (- gap-start 1000)) gap-start))
+           (suffix (buffer-substring-no-properties gap-end (min (point-max) (+ gap-start 1000))))
            (prompt (concat timfel/gptel-fim-prefix prefix
                            timfel/gptel-fim-suffix suffix
                            timfel/gptel-fim-middle))
