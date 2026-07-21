@@ -1390,17 +1390,31 @@
   :pin melpa
   :custom
   (gptel-model 'gpt-5.6-luna)
-  (gptel-include-tool-results t)
-  (gptel-include-reasoning t)
+  (gptel-default-mode 'org-mode)
+  (gptel-log-level 'info)
   :config
   (require 'gptel-openai-oauth)
   (setq gptel-backend
         (gptel-make-openai-oauth "OpenAI" :models gptel--openai-models))
+
+  (with-eval-after-load 'gptel-openai
+    (dolist (model-effort
+             '((gpt-5.6-terra . "max")
+               (gpt-5.6-luna  . "max")
+               (gpt-5.6-sol   . "max")))
+      (let ((model (car model-effort))
+            (effort (cdr model-effort)))
+        (setplist
+         model
+         (plist-put (symbol-plist model)
+                    :request-params
+                    `(:reasoning (:effort ,effort)))))))
+
   (gptel-make-openai "llama-cpp"
     :host "127.0.0.1:8080"
     :protocol "http"
     :stream t
-    :models '(ggml-org/gemma-4-E2B-it-GGUF unsloth/Qwen3.6-35B-A3B-GGUF)
+    :models '(local-code-model local-chat-model)
     :key "none")
   (setq
    cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
