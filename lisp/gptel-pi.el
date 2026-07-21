@@ -1,0 +1,238 @@
+;;; gptel-pi.el --- GPTel configuration to be a minimal agent. Like Pi :) -*- lexical-binding: t -*-
+
+;; Copyright (C) 2026 Tim Felgentreff <timfelgentreff@gmail.com>
+;;
+;; This program is free software: you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation, version 3.
+;;
+;; This program is distributed in the hope that it will be useful, but
+;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+;; General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see https://www.gnu.org/licenses/.
+
+;;; Author: Tim Felgentreff <timfelgentreff@gmail.com>
+
+;;; Code:
+
+(require 'gptel)
+(require 'gptel-context)
+(require 'project)
+
+(defconst gptel-pi-system-prompt "You are an expert coding assistant.
+You help users with coding tasks by reading files, executing commands, editing code, and writing new files.
+
+Guidelines:
+- Use `eval` to get recent buffers, kill ring, or other editor state
+- Use `bash` for file operations like ls, grep, find
+- Use `read` to examine files before editing
+- Use `edit` for precise changes
+- Use `write` only for new files or complete rewrites
+- When summarizing your actions, output plain text directly - do NOT use cat or bash to display what you did
+- Be concise in your responses")
+
+(defconst gptel-pi-tools
+  (list
+   (gptel-make-tool
+    :name "eval"
+    :function (lambda (elisp)
+                (eval (read elisp)))
+    :description "Execute elisp"
+    :args (list '(:name "elisp" :type string :description "The elisp code to eval"))
+    :async nil
+    :category "pi"
+    :confirm nil
+    :include t)
+
+   (gptel-make-tool
+    :name "bash"
+    :function (lambda (callback command)
+                (let* ((buffer (generate-new-buffer (format "*%s bash-output*" (string-replace "*" "" (buffer-name)))))
+                       (prefix
+                        (when (boundp 'agent-shell-command-prefix)
+                          (cond
+                           ((functionp agent-shell-command-prefix)
+                            (funcall agent-shell-command-prefix (current-buffer)))
+                           ((listp agent-shell-command-prefix)
+                            agent-shell-command-prefix))))
+                       ;; Keep COMMAND a single shell argument.  In particular,
+                       ;; do not let operators such as && escape PREFIX (which
+                       ;; may be the agent-shell bubblewrap sandbox).
+                       (argv (append prefix
+                                     (list shell-file-name shell-command-switch command)))
+                       ;; Tool commands are non-interactive.  A pty makes tools
+                       ;; such as git start a pager and wait forever for input.
+                       (process (make-process :name "bash"
+                                              :buffer buffer
+                                              :command argv
+                                              :connection-type 'pipe
+                                              :noquery t)))
+                  (set-process-sentinel
+                   process
+                   (lambda (process _event)
+                     (when (memq (process-status process) '(exit signal))
+                       (unwind-protect
+                           (funcall callback
+                                    (with-current-buffer (process-buffer process)
+                                      (buffer-string)))
+                         (kill-buffer (process-buffer process))))))
+                  process))
+    :description "Execute a bash command in the current working directory. Returns stdout and stderr. Wrap with `timeout` if you need to."
+    :args (list '(:name "command" :type string :description "The commandline to execute in bash."))
+    :async t
+    :category "pi"
+    :confirm nil
+    :include t)
+
+   (gptel-make-tool
+    :name "read"
+    :function (lambda (path &optional offset limit)
+                (let* ((path (expand-file-name path))
+                       (mime-type
+                        (ignore-errors
+                          (with-temp-buffer
+                            (call-process "file" nil t nil "--mime-type" "--brief" path)
+                            (string-trim (buffer-string))))))
+                  (cond
+                   ((equal nil mime-type) 1)
+                   ((string-prefix-p "text/" mime-type)
+                    (with-temp-buffer
+                      (insert-file-contents path)
+                      (goto-char (point-min))
+                      (forward-line (1- (or offset 1)))
+                      (let ((start (point)))
+                        (forward-line (or limit 2000))
+                        (buffer-substring-no-properties start (point)))))
+                   (t (progn (gptel-context-add-file path)
+                             (format "Added binary file to context: %s" path))))))
+    :description (concat "Read the contents of a file. Supports text and binary files. Binary files are sent as attachments. "
+                         "For text files, defaults to first 2000 lines. Use offset/limit for large files.")
+    :args (list '(:name "path" :type string :description "Path to the file to read (relative or absolute)")
+                '(:name "offset" :type integer :description "Line number to start reading from (1-indexed)")
+                '(:name "limit" :type integer :description "Maximum number of lines to read"))
+    :async nil
+    :category "pi"
+    :confirm nil
+    :include 'call)
+
+   (gptel-make-tool
+    :name "write"
+    :function (lambda (path content)
+                (let ((expanded-path (expand-file-name path)))
+                  (make-directory (file-name-directory expanded-path) t)
+                  (with-temp-file expanded-path
+                    (insert content))
+                  (format "Wrote %d bytes to %s"
+                          (string-bytes content)
+                          expanded-path)))
+    :description (concat "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. "
+                         "Automatically creates parent directories.")
+    :args (list '(:name "path" :type string :description "Path to the file to write (relative or absolute)")
+                '(:name "content" :type string :description "Content to write to the file"))
+    :async nil
+    :category "pi"
+    :confirm nil
+    :include 'call)
+
+   (gptel-make-tool
+    :name "edit"
+    :function (lambda (path old new)
+                (let ((expanded-path (expand-file-name path)))
+                  (if (not (file-exists-p expanded-path))
+                      (format "Error: file not found: %s" expanded-path)
+                    (with-temp-buffer
+                      (insert-file-contents expanded-path)
+                      (goto-char (point-min))
+                      (if (search-forward old nil t)
+                          (progn
+                            (replace-match new t t)
+                            (write-region (point-min) (point-max) expanded-path nil 'silent)
+                            (format "Edited %s at offset %d" expanded-path (- (point) (point-min))))
+                        (format "Error: old text not found in %s" expanded-path))))))
+    :description (concat "Edit a file by replacing exact text. `old` must match exactly "
+                         "(including whitespace). Use this for precise, surgical edits.")
+    :args (list '(:name "path" :type string :description "Path to the file to edit (relative or absolute)")
+                '(:name "old" :type string :description "Exact text to find and replace (must match exactly)")
+                '(:name "new" :type string :description "New text to replace the old text with"))
+    :async nil
+    :category "pi"
+    :confirm nil
+    :include 'call)))
+
+(gptel-make-preset
+ 'gptel-pi
+ :description "gptel pi"
+ :system gptel-pi-system-prompt
+ :tools (mapcar #'gptel-tool-name gptel-pi-tools)
+ :confirm-tool-calls 'auto
+ :use-tools t)
+
+;;;###autoload
+(defun gptel-pi (&optional prefix)
+  "DWIM open or switch to gptel-mode buffer through the (gptel) command.
+
+Jump to the last visited *gptel-pi* buffer in the current project root,
+creating one if none exists.
+
+With a single C-u prefix, start a new *gptel-pi* buffer in the current
+project root.
+
+With a C-u C-u prefix, ask for the *gptel-pi* buffer to switch to.
+
+It consults agent-shell-context-sources if that is bound. If it is, it
+goes through the sources and the first one that is a callable function
+that returns a non-empty string result is used inserted into the new or
+existing buffer at (point-max)"
+  (interactive "P")
+  (let* ((root (file-truename
+                (or (when-let ((project (project-current)))
+                      (project-root project))
+                    default-directory)))
+         (buffers
+          (let (result)
+            (dolist (buffer (buffer-list) (nreverse result))
+              (with-current-buffer buffer
+                (when (and (bound-and-true-p gptel-mode)
+                           (equal (file-truename default-directory) root))
+                  (push buffer result))))))
+         (buffer
+          (cond
+           ((equal prefix '(4)) nil)
+           ((equal prefix '(16))
+            (when buffers
+              (get-buffer
+               (completing-read "Switch to gptel-pi buffer: "
+                                (mapcar #'buffer-name buffers)
+                                nil t nil nil 42))))
+           (t (car buffers)))))
+    (unless buffer
+      (setq buffer
+            (let ((name (generate-new-buffer-name
+                         (format "*gptel-pi:%s*" (abbreviate-file-name root))))
+                  (default-directory root))
+              (gptel name))))
+    (unless (equal buffer 42)
+      (with-current-buffer buffer
+        (gptel-preset (gptel-get-preset 'gptel-pi))
+        (when (boundp 'agent-shell-context-sources)
+          (when-let ((context
+                      (catch 'context
+                        (dolist (source agent-shell-context-sources)
+                          (when (and (or (functionp source)
+                                         (and (symbolp source) (fboundp source))))
+                            (condition-case nil
+                                (let ((result (funcall source)))
+                                  (when (and (stringp result)
+                                             (> (length result) 0))
+                                    (throw 'context result)))
+                              (error nil)))))))
+            (goto-char (point-max))
+            (insert context)))))
+    (pop-to-buffer buffer)))
+
+(global-set-key (kbd "C-x p i") #'gptel-pi)
+
+(provide 'gptel-pi)
