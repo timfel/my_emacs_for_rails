@@ -74,8 +74,18 @@ those tools in a sandboxed request."
 
    (gptel-make-tool
     :name "bash"
-    :function (lambda (callback command)
+    :function (lambda (callback command &optional timeout)
                 (let* ((buffer (generate-new-buffer (format "*%s bash-output*" (string-replace "*" "" (buffer-name)))))
+                       (effective-timeout
+                        (let ((seconds
+                               (if (null timeout)
+                                   300
+                                 timeout)))
+                          (when (and seconds (> seconds 0))
+                            seconds)))
+                       (timeout-argv
+                        (when effective-timeout
+                          (list "timeout" (format "%ss" effective-timeout))))
                        (prefix
                         (when (boundp 'agent-shell-command-prefix)
                           (cond
@@ -86,7 +96,7 @@ those tools in a sandboxed request."
                        ;; Keep COMMAND a single shell argument.  In particular,
                        ;; do not let operators such as && escape PREFIX (which
                        ;; may be the agent-shell bubblewrap sandbox).
-                       (argv (append prefix
+                       (argv (append prefix timeout-argv
                                      (list shell-file-name shell-command-switch command)))
                        ;; Tool commands are non-interactive.  A pty makes tools
                        ;; such as git start a pager and wait forever for input.
@@ -101,12 +111,25 @@ those tools in a sandboxed request."
                      (when (memq (process-status process) '(exit signal))
                        (unwind-protect
                            (funcall callback
-                                    (with-current-buffer (process-buffer process)
-                                      (buffer-string)))
+                                    (let ((output
+                                           (with-current-buffer (process-buffer process)
+                                             (buffer-string)))
+                                          (status (process-status process))
+                                          (exit-status (process-exit-status process)))
+                                      (format "%s: %d%s"
+                                              (if (eq status 'signal)
+                                                  "signal"
+                                                "exit status")
+                                              exit-status
+                                              (if (string-empty-p output)
+                                                  ""
+                                                (concat "\n" output)))))
                          (kill-buffer (process-buffer process))))))
+                  (process-send-eof process)
                   process))
-    :description "Execute a bash command in the current working directory. Returns stdout and stderr. Wrap with `timeout` if you need to."
-    :args (list '(:name "command" :type string :description "The commandline to execute in bash."))
+    :description "Execute a bash command in the current working directory. Returns stdout, stderr, and exit status."
+    :args (list '(:name "command" :type string :description "The commandline to execute in bash.")
+                '(:name "timeout" :type integer :description "Optional timeout in seconds. Defaults to 300; set to -1 or 0 to disable timeout for this command."))
     :async t
     :category "pi"
     :confirm nil
