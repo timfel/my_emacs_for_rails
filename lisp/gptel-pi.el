@@ -21,6 +21,7 @@
 (require 'gptel)
 (require 'gptel-context)
 (require 'project)
+(require 'cl-lib)
 
 (defconst gptel-pi-system-prompt "You are an expert coding assistant.
 You help users with coding tasks by reading files, executing commands, editing code, and writing new files.
@@ -33,6 +34,30 @@ Guidelines:
 - Use `write` only for new files or complete rewrites
 - When summarizing your actions, output plain text directly - do NOT use cat or bash to display what you did
 - Be concise in your responses")
+
+(defun gptel-pi--sandboxed-p (buffer)
+  "Return non-nil when BUFFER has an effective shell command prefix."
+  (when (and (buffer-live-p buffer)
+             (boundp 'agent-shell-command-prefix))
+    (let ((prefix (buffer-local-value 'agent-shell-command-prefix buffer)))
+      (if (functionp prefix)
+          (with-current-buffer buffer
+            (funcall prefix buffer))
+        prefix))))
+
+(defun gptel-pi--restrict-tools (fsm)
+  "Remove Emacs-host tools from the request when shell access is sandboxed.
+
+The shell command prefix only affects processes started by the `bash' tool;
+`read', `write', `edit', and `eval' execute in Emacs itself.  Do not advertise
+those tools in a sandboxed request."
+  (let ((buffer (plist-get (gptel-fsm-info fsm) :buffer)))
+    (when (gptel-pi--sandboxed-p buffer)
+      (setq gptel-tools
+            (cl-remove-if
+             (lambda (tool)
+               (member (gptel-tool-name tool) '("eval" "read" "write" "edit")))
+             gptel-tools)))))
 
 (defconst gptel-pi-tools
   (list
@@ -167,6 +192,9 @@ Guidelines:
  :description "gptel pi"
  :system gptel-pi-system-prompt
  :tools (mapcar #'gptel-tool-name gptel-pi-tools)
+ :prompt-transform-functions '(gptel--transform-apply-preset
+                               gptel--transform-add-context
+                               gptel-pi--restrict-tools)
  :confirm-tool-calls 'auto
  :use-tools t)
 
