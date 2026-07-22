@@ -1406,6 +1406,16 @@
                   :request-params
                   `(:reasoning (:effort ,effort))))))
 
+  ;; currently:
+  ;;
+  ;;  llama-server -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL --alias \
+  ;;    local-code-model --port 8080 --host 0.0.0.0 --ctx-size 65536 --flash-attn \
+  ;;    on --cache-type-k q8_0 --cache-type-v q8_0 --jinja -np 1 --reasoning off
+  ;;
+  ;;  llama-server -hf unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL --alias \
+  ;;    local-chat-model --port 8080 --host 0.0.0.0 --ctx-size 65536 --flash-attn \
+  ;;    on --cache-type-k q8_0 --cache-type-v q8_0 --jinja -np 1 --temp 1.0 \
+  ;;    --top-p 0.95 --top-k 64
   (gptel-make-openai "llama-cpp"
     :host "127.0.0.1:8080"
     :protocol "http"
