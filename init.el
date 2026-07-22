@@ -1374,19 +1374,9 @@
 
 (use-package gptel
   :ensure t
-  :defines (cashpw/gptel-mode-line--indicator-querying
-            cashpw/gptel-mode-line--indicator-responding
-            cashpw/gptel-show-progress-in-mode-line
-            timfel/gptel-tool--collection-tools
-            gptel--openai-models
-            timfel/gptel-tool--custom-tools)
-  :functions (timfel/gptel--load-prompt-directive
-              timfel/gptel--prompt-metadata
-              timfel/gptel-fim--strip-terminators
-              cashpw/gptel-mode-line cashpw/gptel-mode-line--hide-all
-              cashpw/gptel-mode-line--indicator gptel-abort
-              gptel-make-openai-oauth)
-  :commands (gptel gptel-request gptel-openai-oauth-login)
+  :defines (gptel--openai-models)
+  :functions (gptel-make-openai-oauth)
+  :commands (gptel)
   :pin melpa
   :custom
   (gptel-model 'gpt-5.6-luna)
@@ -1394,25 +1384,27 @@
   (gptel-log-level 'info)
   (gptel-org-branching-context t)
   :config
+  (require 'gptel-openai)
+  (require 'gptel-openai-oauth)
+  (require 'gptel-request)
+
   (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
   (setf (alist-get 'org-mode gptel-response-prefix-alist) "@llm\n")
 
-  (require 'gptel-openai-oauth)
   (setq gptel-backend
         (gptel-make-openai-oauth "OpenAI" :models gptel--openai-models))
 
-  (with-eval-after-load 'gptel-openai
-    (dolist (model-effort
-             '((gpt-5.6-terra . "max")
-               (gpt-5.6-luna  . "max")
-               (gpt-5.6-sol   . "max")))
-      (let ((model (car model-effort))
-            (effort (cdr model-effort)))
-        (setplist
-         model
-         (plist-put (symbol-plist model)
-                    :request-params
-                    `(:reasoning (:effort ,effort)))))))
+  (dolist (model-effort
+           '((gpt-5.6-terra . "max")
+             (gpt-5.6-luna  . "max")
+             (gpt-5.6-sol   . "max")))
+    (let ((model (car model-effort))
+          (effort (cdr model-effort)))
+      (setplist
+       model
+       (plist-put (symbol-plist model)
+                  :request-params
+                  `(:reasoning (:effort ,effort))))))
 
   (gptel-make-openai "llama-cpp"
     :host "127.0.0.1:8080"
@@ -1420,161 +1412,45 @@
     :stream t
     :models '(local-code-model local-chat-model)
     :key "none")
-  (setq
-   cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
-   cashpw/gptel-mode-line--indicator-responding "↓GPTEL↓ "
-   cashpw/gptel-show-progress-in-mode-line t)
-  (defun cashpw/gptel-mode-line--indicator (mode)
-    "Return indicator string for MODE."
-    (pcase mode
-      ('querying
-       cashpw/gptel-mode-line--indicator-querying)
-      ('responding
-       cashpw/gptel-mode-line--indicator-responding)
-      (_
-       "")))
-  (defun cashpw/gptel-mode-line (command mode)
-    "Update mode line to COMMAND (show|hide) indicator for MODE."
-    (when cashpw/gptel-show-progress-in-mode-line
-      (let ((indicator (list t (cashpw/gptel-mode-line--indicator mode))))
-        (pcase command
-          ('show
-           (cl-pushnew indicator global-mode-string :test #'equal))
-          ('hide
-           (setf global-mode-string (remove indicator global-mode-string)))))
-      (force-mode-line-update t)))
-  (defun cashpw/gptel-mode-line--hide-all (&rest _)
-    (cashpw/gptel-mode-line 'hide 'querying)
-    (cashpw/gptel-mode-line 'hide 'responding))
-  (defun cashpw/gptel-mode-line--show-querying ()
-    (cashpw/gptel-mode-line--hide-all)
-    (cashpw/gptel-mode-line 'show 'querying))
-  (defun cashpw/gptel-mode-line--show-responding ()
-    (cashpw/gptel-mode-line--hide-all)
-    (cashpw/gptel-mode-line 'show 'responding))
-  (add-hook 'gptel-post-request-hook 'cashpw/gptel-mode-line--show-querying)
-  (add-hook 'gptel-pre-response-hook 'cashpw/gptel-mode-line--show-responding)
-  (add-hook 'gptel-post-response-functions 'cashpw/gptel-mode-line--hide-all)
-
-  (advice-add 'keyboard-quit :before (lambda (&rest _args) (ignore-errors (gptel-abort (current-buffer)))))
-
-  (defconst timfel/gptel-fim-prefix "<|fim_prefix|>")
-  (defconst timfel/gptel-fim-suffix "<|fim_suffix|>")
-  (defconst timfel/gptel-fim-middle "<|fim_middle|>")
-  (defconst timfel/gptel-fim-file-separator "<|file_separator|>")
-
-  (defun timfel/gptel-fim--strip-terminators (response)
-    "Return RESPONSE up to the first FIM control token.
-
-FIM models use these tokens as generation terminators.  Stop at all of
-them in case a server returns a terminator as ordinary response text."
-    (let ((terminators (regexp-opt
-                        (list timfel/gptel-fim-prefix
-                              timfel/gptel-fim-suffix
-                              timfel/gptel-fim-middle
-                              timfel/gptel-fim-file-separator))))
-      (if-let ((position (string-match terminators response)))
-          (substring response 0 position)
-        response)))
-
-  (defun timfel/gptel-complete ()
-    "Replace the active region, or insert at point, with a FIM completion."
-    (interactive)
-    (let* ((buffer (current-buffer))
-           (gap-start (copy-marker (if (use-region-p) (region-beginning) (point))))
-           (gap-end (copy-marker (if (use-region-p) (region-end) (point)) t))
-           (prefix (buffer-substring-no-properties (max (point-min) (- gap-start 1000)) gap-start))
-           (suffix (buffer-substring-no-properties gap-end (min (point-max) (+ gap-start 1000))))
-           (prompt (concat timfel/gptel-fim-prefix prefix
-                           timfel/gptel-fim-suffix suffix
-                           timfel/gptel-fim-middle))
-           ;; Do not add chat context, tools, reasoning, or instructions to a FIM prompt.
-           (gptel-use-context nil)
-           (gptel-use-tools nil)
-           (gptel-tools nil)
-           (gptel-include-reasoning nil)
-           (gptel-temperature 0.1)
-           (gptel-stream t)
-           (response-parts nil))
-      ;; Buffer streaming output so terminators split across chunks are removed.
-      (gptel-request
-          prompt
-        :buffer buffer
-        :position gap-start
-        :stream t
-        :system "Perform fill in the middle (FIM) completion and NO extra output. `<|fim_prefix|>` is before the code, <|fim_suffix|> is where the cursor is, <|fim_middle|> is the end of the request."
-        :callback
-        (lambda (response info)
-          (cond
-           ((stringp response)
-            (push response response-parts))
-           ((eq response t)
-            (unwind-protect
-                (when (buffer-live-p buffer)
-                  (with-current-buffer buffer
-                    (when (and (marker-position gap-start)
-                               (marker-position gap-end))
-                      (save-excursion
-                        (goto-char gap-start)
-                        (delete-region gap-start gap-end)
-                        (insert (timfel/gptel-fim--strip-terminators
-                                 (apply #'concat (nreverse response-parts))))))))
-              (set-marker gap-start nil)
-              (set-marker gap-end nil)))
-           (t
-            (set-marker gap-start nil)
-            (set-marker gap-end nil)
-            (message "FIM completion failed: %s" (plist-get info :status))))))))
-
-  (defun timfel/gptel--prompt-metadata (key)
-    "Return prompt metadata KEY from comment headers in the current buffer."
-    (save-excursion
-      (goto-char (point-min))
-      (when (re-search-forward
-             (format "^ *<!-- *#\\+%s: \\(.*?\\) *--> *$" key)
-             nil t)
-        (string-trim (match-string 1)))))
-
-  (defun timfel/gptel--load-prompt-directive (prompt-file)
-    "Load PROMPT-FILE into a single `gptel-directives' entry."
-    (with-temp-buffer
-      (insert-file-contents prompt-file)
-      (let ((prompt-name nil)
-            (prompt-description nil))
-        (setq prompt-name
-              (or (timfel/gptel--prompt-metadata "name")
-                  (file-name-base prompt-file)))
-        (setq prompt-description
-              (or (timfel/gptel--prompt-metadata "description")
-                  "NO DESCRIPTION"))
-        ;; Strip prompt metadata comments before sending the directive text.
-        (goto-char (point-min))
-        (flush-lines "^ *<!--.*--> *$")
-        (goto-char (point-min))
-        (when (looking-at "\n+")
-          (delete-region (point) (match-end 0)))
-        (list
-         (intern prompt-name)
-         prompt-description
-         (buffer-substring-no-properties (point-min) (point-max))))))
 
   (setq gptel-directives
         (let* ((promptdir (expand-file-name "prompts" user-emacs-directory))
                (prompt-files (directory-files promptdir t "\\.md\\'")))
-          (mapcar #'timfel/gptel--load-prompt-directive prompt-files)))
-  :bind (("C-x a i" . gptel)
-         ("C-x a c" . timfel/gptel-complete)))
+          (mapcar
+           (lambda (prompt-file)
+             (with-temp-buffer
+               (insert-file-contents prompt-file)
+               (let* ((gmd (lambda (key)
+                             (save-excursion
+                               (goto-char (point-min))
+                               (when (re-search-forward
+                                      (format "^ *<!-- *#\\+%s: \\(.*?\\) *--> *$" key)
+                                      nil t)
+                                 (string-trim (match-string 1))))))
+                      (prompt-name (or (funcall gmd "name") (file-name-base prompt-file)))
+                      (prompt-description (or (funcall gmd "description") "NO DESCR")))
+                 (goto-char (point-min))
+                 (flush-lines "^ *<!--.*--> *$")
+                 (goto-char (point-min))
+                 (when (looking-at "\n+") (delete-region (point) (match-end 0)))
+                 (list
+                  (intern prompt-name)
+                  prompt-description
+                  (buffer-substring-no-properties (point-min) (point-max))))))
+           prompt-files))))
 
-(use-package llm-tool-collection
-  :ensure t
+(use-package gptel-pi
+  :bind (("C-x a i" . gptel-pi)))
+
+(use-package gptel-fim
+  :bind (("C-x a c" . gptel-fim)))
+
+(use-package gptel-modeline-status
   :after gptel
-  :vc (:url "https://github.com/skissue/llm-tool-collection" :branch "main" :rev :newest))
-
-(use-package timfel-gptel-tools
-  :after (gptel llm-tool-collection))
+  :demand t)
 
 (use-package timfel-gptel-orchestration
-  :commands timfel/gptel-open-agents-orchestration
+  :commands timfel/weekly-confluence-report
   :bind (("C-x a m" . timfel/gptel-open-agents-orchestration)))
 
 (use-package emacs-theme-detection
