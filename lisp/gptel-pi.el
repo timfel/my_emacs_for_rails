@@ -107,12 +107,16 @@ those tools in a sandboxed request."
                      (when (memq (process-status process) '(exit signal))
                        (funcall
                         (process-get process 'callback)
-                        (format "%s: %d%s"
-                                    (process-status process)
-                                    (process-exit-status process)
-                                    (with-current-buffer (process-buffer process)
-                                      (buffer-string)))))
-                         (kill-buffer (process-buffer process))))
+                        (format "%s\n%s %d\n"
+                                (with-current-buffer (process-buffer process)
+                                  (goto-char (point-min))
+                                  (let ((rem (forward-line 1000)))
+                                    (concat
+                                     (buffer-substring-no-properties (point-min) (point))
+                                     (if (> rem 0) "\n... truncated..." ""))))
+                                (process-status process)
+                                (process-exit-status process)))
+                         (kill-buffer (process-buffer process)))))
                   (process-send-eof process)
                   process))
     :description "Execute a bash command in the current working directory. Returns stdout, stderr, and exit status."
@@ -139,9 +143,11 @@ those tools in a sandboxed request."
                       (insert-file-contents path)
                       (goto-char (point-min))
                       (forward-line (1- (or offset 1)))
-                      (let ((start (point)))
-                        (forward-line (or limit 2000))
-                        (buffer-substring-no-properties start (point)))))
+                      (let ((start (point))
+                            (rem (forward-line (or limit 1000))))
+                        (concat
+                         (buffer-substring-no-properties start (point))
+                         (if (> rem 0) "\n... truncated..." "")))))
                    (t (progn (gptel-context-add-file path)
                              (format "Added binary file to context: %s" path))))))
     :description (concat "Read the contents of a file. Supports text and binary files. Binary files are sent as attachments. "
