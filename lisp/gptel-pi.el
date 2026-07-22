@@ -75,13 +75,12 @@ those tools in a sandboxed request."
    (gptel-make-tool
     :name "bash"
     :function (lambda (callback command &optional timeout)
-                (let* ((buffer (generate-new-buffer (format "*%s bash-output*" (string-replace "*" "" (buffer-name)))))
+                (let* ((buffer
+                        (generate-new-buffer
+                         (format "*%s bash-output*" (string-replace "*" "" (buffer-name)))))
                        (effective-timeout
-                        (let ((seconds
-                               (if (null timeout)
-                                   300
-                                 timeout)))
-                          (when (and seconds (> seconds 0))
+                        (let ((seconds (or timeout 300)))
+                          (when (> seconds 0)
                             seconds)))
                        (timeout-argv
                         (when effective-timeout
@@ -91,40 +90,27 @@ those tools in a sandboxed request."
                           (cond
                            ((functionp agent-shell-command-prefix)
                             (funcall agent-shell-command-prefix (current-buffer)))
-                           ((listp agent-shell-command-prefix)
-                            agent-shell-command-prefix))))
-                       ;; Keep COMMAND a single shell argument.  In particular,
-                       ;; do not let operators such as && escape PREFIX (which
-                       ;; may be the agent-shell bubblewrap sandbox).
+                           (t agent-shell-command-prefix))))
                        (argv (append prefix timeout-argv
                                      (list shell-file-name shell-command-switch command)))
-                       ;; Tool commands are non-interactive.  A pty makes tools
-                       ;; such as git start a pager and wait forever for input.
                        (process (make-process :name "bash"
                                               :buffer buffer
                                               :command argv
                                               :connection-type 'pipe
+                                              :file-handler t
                                               :noquery t)))
                   (set-process-sentinel
                    process
                    (lambda (process _event)
                      (when (memq (process-status process) '(exit signal))
-                       (unwind-protect
-                           (funcall callback
-                                    (let ((output
-                                           (with-current-buffer (process-buffer process)
-                                             (buffer-string)))
-                                          (status (process-status process))
-                                          (exit-status (process-exit-status process)))
-                                      (format "%s: %d%s"
-                                              (if (eq status 'signal)
-                                                  "signal"
-                                                "exit status")
-                                              exit-status
-                                              (if (string-empty-p output)
-                                                  ""
-                                                (concat "\n" output)))))
-                         (kill-buffer (process-buffer process))))))
+                       (funcall
+                        callback
+                        (format "%s: %d%s"
+                                    (process-status process)
+                                    (process-exit-status process)
+                                    (with-current-buffer (process-buffer process)
+                                      (buffer-string)))))
+                         (kill-buffer (process-buffer process))))
                   (process-send-eof process)
                   process))
     :description "Execute a bash command in the current working directory. Returns stdout, stderr, and exit status."
@@ -142,7 +128,7 @@ those tools in a sandboxed request."
                        (mime-type
                         (ignore-errors
                           (with-temp-buffer
-                            (call-process "file" nil t nil "--mime-type" "--brief" path)
+                            (process-file "file" nil t nil "--mime-type" "--brief" path)
                             (string-trim (buffer-string))))))
                   (cond
                    ((equal nil mime-type) 1)
@@ -215,9 +201,9 @@ those tools in a sandboxed request."
  :description "gptel pi"
  :system gptel-pi-system-prompt
  :tools (mapcar #'gptel-tool-name gptel-pi-tools)
- :prompt-transform-functions '(gptel--transform-apply-preset
-                               gptel--transform-add-context
-                               gptel-pi--restrict-tools)
+ :prompt-transform-functions (append
+                              gptel-prompt-transform-functions
+                              '(gptel-pi--restrict-tools))
  :confirm-tool-calls 'auto
  :use-tools t)
 

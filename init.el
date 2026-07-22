@@ -1392,7 +1392,11 @@
   (gptel-model 'gpt-5.6-luna)
   (gptel-default-mode 'org-mode)
   (gptel-log-level 'info)
+  (gptel-org-branching-context t)
   :config
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
+  (setf (alist-get 'org-mode gptel-response-prefix-alist) "@llm\n")
+
   (require 'gptel-openai-oauth)
   (setq gptel-backend
         (gptel-make-openai-oauth "OpenAI" :models gptel--openai-models))
