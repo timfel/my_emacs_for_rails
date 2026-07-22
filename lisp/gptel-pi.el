@@ -22,6 +22,7 @@
 (require 'gptel-context)
 (require 'project)
 (require 'cl-lib)
+(require 'subr-x)
 
 (defconst gptel-pi-system-prompt "You are an expert coding assistant.
 You help users with coding tasks by reading files, executing commands, editing code, and writing new files.
@@ -99,12 +100,13 @@ those tools in a sandboxed request."
                                               :connection-type 'pipe
                                               :file-handler t
                                               :noquery t)))
+                  (process-put process 'callback callback)
                   (set-process-sentinel
                    process
                    (lambda (process _event)
                      (when (memq (process-status process) '(exit signal))
                        (funcall
-                        callback
+                        (process-get process 'callback)
                         (format "%s: %d%s"
                                     (process-status process)
                                     (process-exit-status process)
@@ -224,10 +226,10 @@ goes through the sources and the first one that is a callable function
 that returns a non-empty string result is used inserted into the new or
 existing buffer at (point-max)"
   (interactive "P")
-  (let* ((root (file-truename
+  (let* ((root (file-name-as-directory (file-truename
                 (or (when-let ((project (project-current)))
                       (project-root project))
-                    default-directory)))
+                    default-directory))))
          (buffers
           (let (result)
             (dolist (buffer (buffer-list) (nreverse result))
@@ -245,31 +247,88 @@ existing buffer at (point-max)"
                                 (mapcar #'buffer-name buffers)
                                 nil t nil nil 42))))
            (t (car buffers)))))
+
+    ;; new buffer
     (unless buffer
       (setq buffer
             (let ((name (generate-new-buffer-name
                          (format "*gptel-pi:%s*" (abbreviate-file-name root))))
                   (default-directory root))
-              (gptel name))))
-    (unless (equal buffer 42)
+              (gptel name)))
+
       (with-current-buffer buffer
         (gptel-preset (gptel-get-preset 'gptel-pi))
-        (when (boundp 'agent-shell-context-sources)
-          (when-let ((context
-                      (catch 'context
-                        (dolist (source agent-shell-context-sources)
-                          (when (and (or (functionp source)
-                                         (and (symbolp source) (fboundp source))))
-                            (condition-case nil
-                                (let ((result (funcall source)))
-                                  (when (and (stringp result)
-                                             (> (length result) 0))
-                                    (throw 'context result)))
-                              (error nil)))))))
-            (goto-char (point-max))
-            (insert context)))))
-    (pop-to-buffer buffer)))
 
-(global-set-key (kbd "C-x p i") #'gptel-pi)
+        ;; insert agents.md and skills, if any
+        (let* ((p (point))
+               (heading (if (eq gptel-default-mode 'org-mode) "*" "#"))
+               (begin-quote (if (eq gptel-default-mode 'org-mode) "\n#+begin_quote %s\n" "\n``` %s\n"))
+               (end-quote
+                (lambda ()
+                  (if (eq gptel-default-mode 'org-mode)
+                      (insert "#+end_quote\n")
+                    (insert "```\n"))
+                  (let ((p (point)))
+                    (forward-line -1)
+                    (if (eq gptel-default-mode 'org-mode)
+                        (org-cycle)
+                      (gptel-markdown-cycle-block))
+                    (goto-char p))))
+               (amd (expand-file-name "AGENTS.md" root))
+               (amd (if (file-readable-p amd) amd nil))
+               (skills (thread-last
+                         '(".agents/skills/" "~/.agents/skills/")
+                         (seq-map (lambda (elt) (expand-file-name elt root)))
+                         (seq-filter #'file-directory-p)
+                         (seq-mapcat (lambda (elt) (directory-files elt t)))
+                         (seq-filter #'file-directory-p)
+                         (seq-map (lambda (elt) (file-name-concat elt "SKILL.md")))
+                         (seq-filter #'file-exists-p)))
+               (extra-amds
+                (thread-last
+                  (directory-files-recursively root "AGENTS\\.md" nil
+                                               (lambda (dir)
+                                                 (< (length (file-name-split
+                                                             (file-relative-name dir root)))
+                                                    4)))
+                  (seq-filter (lambda (elt) (not (string-equal elt amd)))))))
+
+          (when (or amd skills extra-amds)
+            (goto-char (point-min))
+            (insert (format "%s Project instructions:\n" heading))
+
+            (when amd
+              (insert (format begin-quote "AGENTS.md"))
+              (let ((start (point))
+                    (end (cadr (insert-file-contents amd))))
+                (forward-char end)
+                (indent-rigidly start end 1))
+              (funcall end-quote))
+
+            (when skills
+              (insert (format begin-quote "Skills (read when it might be useful for the user request)"))
+              (dolist (skill skills)
+                (insert " - " (file-relative-name skill root) " : ")
+                ;; too long skills or incorrectly formatted ones are cut
+                (let ((end (+ (point) (cadr (insert-file-contents skill nil 0 500)))))
+                  (when (re-search-forward
+                         (rx (or (seq "---" (* (or space "\n"))
+                                      "name: " (group (* not-newline)) (* (or space "\n"))
+                                      "description:" (group (* not-newline)) (* anything))
+                                 (* anything)))
+                         end t)
+                    (replace-match "\\1: \\2\n"))))
+              (funcall end-quote))
+
+            (when extra-amds
+              (insert (format begin-quote "Subdirectory-specific instructions (read when operating underneath)"))
+              (dolist (extra-amd extra-amds)
+                (insert " - " (file-relative-name extra-amd root) "\n"))
+              (funcall end-quote))
+
+            (insert "\n")
+            (forward-char (1- p))))))
+
+    (pop-to-buffer buffer)))
 
 (provide 'gptel-pi)
