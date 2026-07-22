@@ -1395,16 +1395,17 @@
         (gptel-make-openai-oauth "OpenAI" :models gptel--openai-models))
 
   (dolist (model-effort
-           '((gpt-5.6-terra . "max")
-             (gpt-5.6-luna  . "max")
-             (gpt-5.6-sol   . "max")))
+           '((gpt-5.6-terra . "high")
+             (gpt-5.6-luna  . "high")
+             (gpt-5.6-sol   . "high")))
     (let ((model (car model-effort))
           (effort (cdr model-effort)))
       (setplist
        model
        (plist-put (symbol-plist model)
                   :request-params
-                  `(:reasoning (:effort ,effort))))))
+                  `(:reasoning (:effort ,effort
+                                :summary "concise"))))))
 
   ;; currently:
   ;;
