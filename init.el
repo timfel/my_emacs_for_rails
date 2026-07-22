@@ -1269,7 +1269,7 @@
 (use-package kitty-graphics
   :ensure t
   :unless (or (daemonp) (display-graphic-p))
-  :vc (:url "https://github.com/timfel/kitty-graphics.el" :branch "master" :rev :newest)
+  :vc (:url "https://github.com/cashmeredev/kitty-graphics.el" :branch "master" :rev :newest)
   :config
   (kitty-graphics-mode 1))
 
