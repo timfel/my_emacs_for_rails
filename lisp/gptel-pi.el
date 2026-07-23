@@ -60,12 +60,82 @@ those tools in a sandboxed request."
                (member (gptel-tool-name tool) '("eval" "read" "write" "edit")))
              gptel-tools)))))
 
+(defconst gptel-pi--max-tool-chars 1000
+  "max chars to keep from tool results")
+(defconst gptel-pi--bash-temp-file-retention 120
+  "max time to keep older tool result files around in seconds")
+(defvar-local gptel-pi--bash-temp-file nil)
+
+(defun gptel-pi--limit-tool-result (result &optional store-in-tmpfile)
+  (let ((max-chars gptel-pi--max-tool-chars))
+    (when store-in-tmpfile
+      (when gptel-pi--bash-temp-file
+        ;; delete this after a while, but the agent still has a grace period to
+        ;; read it
+        (run-with-timer gptel-pi--bash-temp-file-retention nil #'delete-file gptel-pi--bash-temp-file))
+      (setq-local gptel-pi--bash-temp-file (make-temp-file "gptel-tempfile"))
+      (with-temp-file gptel-pi--bash-temp-file
+        (insert result)))
+    (if (and (stringp result)
+             (> (length result) max-chars))
+        (concat
+         (substring result 0 (/ max-chars 2))
+         (format "\n[... *truncated*%s ...]\n"
+                 (if store-in-tmpfile
+                     (concat " (full output temporarily in " gptel-pi--bash-temp-file ")")
+                   ""))
+         (substring result (/ max-chars 2) max-chars))
+      result)))
+
+(defun gptel-pi--tool-bash (callback command &optional timeout)
+  (let* ((buffer
+          (generate-new-buffer
+           (format "*%s bash-output*" (string-replace "*" "" (buffer-name)))))
+         (effective-timeout
+          (let ((seconds (or timeout 300)))
+            (when (> seconds 0)
+              seconds)))
+         (timeout-argv
+          (when effective-timeout
+            (list "timeout" (format "%ss" effective-timeout))))
+         (prefix
+          (when (boundp 'agent-shell-command-prefix)
+            (cond
+             ((functionp agent-shell-command-prefix)
+              (funcall agent-shell-command-prefix (current-buffer)))
+             (t agent-shell-command-prefix))))
+         (argv (append prefix timeout-argv
+                       (list shell-file-name shell-command-switch command)))
+         (process (make-process :name "bash"
+                                :buffer buffer
+                                :command argv
+                                :connection-type 'pipe
+                                :file-handler t
+                                :noquery t)))
+    (process-put process 'callback callback)
+    (set-process-sentinel
+     process
+     (lambda (process _event)
+       (when (memq (process-status process) '(exit signal))
+         (funcall
+          (process-get process 'callback)
+          (gptel-pi--limit-tool-result
+           (format "%s\n%s %d\n"
+                   (with-current-buffer (process-buffer process)
+                     (buffer-string))
+                   (process-status process)
+                   (process-exit-status process))
+           t))
+         (kill-buffer (process-buffer process)))))
+    (process-send-eof process)
+    process))
+
 (defconst gptel-pi-tools
   (list
    (gptel-make-tool
     :name "eval"
     :function (lambda (elisp)
-                (eval (read elisp)))
+                (gptel-pi--limit-tool-result (eval (read elisp)) t))
     :description "Execute elisp"
     :args (list '(:name "elisp" :type string :description "The elisp code to eval"))
     :async nil
@@ -75,50 +145,7 @@ those tools in a sandboxed request."
 
    (gptel-make-tool
     :name "bash"
-    :function (lambda (callback command &optional timeout)
-                (let* ((buffer
-                        (generate-new-buffer
-                         (format "*%s bash-output*" (string-replace "*" "" (buffer-name)))))
-                       (effective-timeout
-                        (let ((seconds (or timeout 300)))
-                          (when (> seconds 0)
-                            seconds)))
-                       (timeout-argv
-                        (when effective-timeout
-                          (list "timeout" (format "%ss" effective-timeout))))
-                       (prefix
-                        (when (boundp 'agent-shell-command-prefix)
-                          (cond
-                           ((functionp agent-shell-command-prefix)
-                            (funcall agent-shell-command-prefix (current-buffer)))
-                           (t agent-shell-command-prefix))))
-                       (argv (append prefix timeout-argv
-                                     (list shell-file-name shell-command-switch command)))
-                       (process (make-process :name "bash"
-                                              :buffer buffer
-                                              :command argv
-                                              :connection-type 'pipe
-                                              :file-handler t
-                                              :noquery t)))
-                  (process-put process 'callback callback)
-                  (set-process-sentinel
-                   process
-                   (lambda (process _event)
-                     (when (memq (process-status process) '(exit signal))
-                       (funcall
-                        (process-get process 'callback)
-                        (format "%s\n%s %d\n"
-                                (with-current-buffer (process-buffer process)
-                                  (goto-char (point-min))
-                                  (let ((rem (forward-line 1000)))
-                                    (concat
-                                     (buffer-substring-no-properties (point-min) (point))
-                                     (if (> rem 0) "\n... truncated..." ""))))
-                                (process-status process)
-                                (process-exit-status process)))
-                         (kill-buffer (process-buffer process)))))
-                  (process-send-eof process)
-                  process))
+    :function #'gptel-pi--tool-bash
     :description "Execute a bash command in the current working directory. Returns stdout, stderr, and exit status."
     :args (list '(:name "command" :type string :description "The commandline to execute in bash.")
                 '(:name "timeout" :type integer :description "Optional timeout in seconds. Defaults to 300; set to -1 or 0 to disable timeout for this command."))
@@ -130,26 +157,16 @@ those tools in a sandboxed request."
    (gptel-make-tool
     :name "read"
     :function (lambda (path &optional offset limit)
-                (let* ((path (expand-file-name path))
-                       (mime-type
-                        (ignore-errors
-                          (with-temp-buffer
-                            (process-file "file" nil t nil "--mime-type" "--brief" path)
-                            (string-trim (buffer-string))))))
+                (let* ((path (expand-file-name path)))
                   (cond
-                   ((equal nil mime-type) 1)
-                   ((string-prefix-p "text/" mime-type)
+                   ((string-match-p (rx (or ".jpg" ".png" ".pdf" ".gif") eos) path)
+                    (gptel-context-add-file path)
+                    "Added binary file to context")
+                   (t
                     (with-temp-buffer
                       (insert-file-contents path)
-                      (goto-char (point-min))
-                      (forward-line (1- (or offset 1)))
-                      (let ((start (point))
-                            (rem (forward-line (or limit 1000))))
-                        (concat
-                         (buffer-substring-no-properties start (point))
-                         (if (> rem 0) "\n... truncated..." "")))))
-                   (t (progn (gptel-context-add-file path)
-                             (format "Added binary file to context: %s" path))))))
+                      (gptel-pi--limit-tool-result
+                       (buffer-string)))))))
     :description (concat "Read the contents of a file. Supports text and binary files. Binary files are sent as attachments. "
                          "For text files, defaults to first 2000 lines. Use offset/limit for large files.")
     :args (list '(:name "path" :type string :description "Path to the file to read (relative or absolute)")
