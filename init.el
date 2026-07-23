@@ -65,9 +65,13 @@
                                                 url))
                                           (y-or-n-p "Browse with EWW? "))
                                      (apply #'eww-browse-url url args)
-                                   (if (eq system-type 'windows-nt)
-                                       (apply #'browse-url-default-browser url args)
-                                     (apply #'browse-url-generic url args)))))
+                                   (cond
+                                    ((eq system-type 'windows-nt) 
+                                     (apply #'browse-url-default-browser url args))
+                                    ((eq system-type 'android)
+                                     (apply #'browse-url-default-android-browser url args))
+                                    (t
+                                     (apply #'browse-url-generic url args))))))
   (custom-file (locate-user-emacs-file "emacs-custom.el"))
   (confirm-kill-emacs 'yes-or-no-p)
   (visible-bell nil)
