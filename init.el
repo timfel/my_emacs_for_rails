@@ -472,7 +472,9 @@
          ("C-c m" . (lambda () (interactive) (org-capture nil "m")))
          ("C-c t" . (lambda () (interactive) (org-capture nil "t")))
          ("C-c a" . (lambda () (interactive)
-                      (require 'jira) (require 'emacs-ci)
+                      (ignore-errors
+                        (require 'jira)
+                        (require 'emacs-ci))
                       (call-interactively #'org-agenda)))
          ("C-c l" . org-store-link)
          ("C-c b" . (lambda ()
@@ -527,6 +529,7 @@
   (org-replace-disputed-keys t)
   (org-deadline-warning-days 7)
   (org-agenda-span 'fortnight)
+  (org-agenda-start-on-weekday nil)
   (org-agenda-skip-scheduled-if-deadline-is-shown t)
   (org-agenda-skip-deadline-prewarning-if-scheduled 'pre-scheduled)
   (org-agenda-todo-ignore-deadlines 'all)
