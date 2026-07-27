@@ -169,10 +169,67 @@
     (gptel-pi-promote-label)
     (should (equal (buffer-string) "* Conversation\n** Findings\n"))))
 
+(ert-deftest gptel-pi-read-archives-full-truncated-selection ()
+  (gptel-pi-test--with-file "1111\n2222\n3333"
+    (with-temp-buffer
+      (org-mode)
+      (setq-local gptel-pi-session-p t)
+      (gptel-pi--initialize-org-session)
+      (let ((gptel-pi-max-tool-bytes 10)
+            (gptel-pi-max-tool-lines 20))
+        (let ((result (gptel-pi--tool-read file)))
+          (should (string-match-p "Full selected output: \\[\\[gptel-pi-tool-0001\\]"
+                                  result))
+          (should (string-match-p "1111\n2222\n3333" (buffer-string))))))))
+
 (ert-deftest gptel-pi-eval-prints-arbitrary-values ()
   (should (equal (gptel-pi--tool-eval "42") "42"))
   (should (equal (gptel-pi--tool-eval "nil") "nil"))
   (should (equal (gptel-pi--tool-eval "(list 'one 2)") "(one 2)")))
+
+(ert-deftest gptel-pi-eval-archives-large-printed-result ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (gptel-pi--initialize-org-session)
+    (let ((gptel-pi-max-tool-bytes 5))
+      (let ((result (gptel-pi--tool-eval "\"a long result\"")))
+        (should (string-match-p "Full printed result: \\[\\[gptel-pi-tool-0001\\]"
+                                result))
+        (should (string-match-p "\\\"a long result\\\"" (buffer-string)))))))
+
+(ert-deftest gptel-pi-bash-captures-streams-and-nonzero-status ()
+  (with-temp-buffer
+    (let (done result)
+      (gptel-pi--tool-bash
+       (lambda (value) (setq result value done t))
+       "printf stdout; printf stderr >&2; exit 7" 10)
+      (while (not done) (accept-process-output nil 0.05))
+      (should (string-match-p "Bash exited with status 7" result))
+      (should (string-match-p "STDOUT:\nstdout" result))
+      (should (string-match-p "STDERR:\nstderr" result)))))
+
+(ert-deftest gptel-pi-bash-archives-full-output-and-keeps-tail ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (gptel-pi--initialize-org-session)
+    (let ((gptel-pi-max-tool-bytes 35)
+          (gptel-pi-max-tool-lines 20))
+      (let ((result (gptel-pi--format-bash-result
+                     (current-buffer) "make test" default-directory
+                     "old output that is omitted\n" "final error\n"
+                     'exit 1 300)))
+        (should (string-match-p "Bash exited with status 1" result))
+        (should (string-match-p "final error" result))
+        (should (string-match-p "Full output: \\[\\[gptel-pi-tool-0001\\]" result))
+        (should (string-match-p "old output that is omitted" (buffer-string)))))))
+
+(ert-deftest gptel-pi-bash-reports-timeout ()
+  (should (string-prefix-p
+           "Bash timed out after 5 seconds (status 124)."
+           (gptel-pi--format-bash-result
+            (current-buffer) "sleep 10" default-directory "" "" 'exit 124 5))))
 
 (ert-deftest gptel-pi-edit-rejects-empty-old-text ()
   (gptel-pi-test--with-file "unchanged"

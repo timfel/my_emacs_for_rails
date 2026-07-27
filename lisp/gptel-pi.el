@@ -184,6 +184,21 @@ text inserted before the example block."
         (insert "#+end_example\n\n")))
     (format "[[%s][%s]]" target title)))
 
+(defun gptel-pi--archive-tool-output (tool summary output metadata)
+  "Archive complete tool OUTPUT and return its ordinary Org link.
+
+TOOL and SUMMARY form the archive heading, and METADATA is inserted before the
+output block."
+  (let* ((next (gptel-pi--next-target "tool"))
+         (number (string-to-number
+                  (progn (string-match "-\\([0-9]+\\)\\'" next)
+                         (match-string 1 next))))
+         (clean-summary (truncate-string-to-width
+                         (replace-regexp-in-string "[\n\r]+" " " summary)
+                         80 nil nil "…"))
+         (title (format "%s %04d: %s" tool number clean-summary)))
+    (gptel-pi--archive-entry "tool" "Tool outputs" title output metadata)))
+
 (defun gptel-pi--skill-summary (path root)
   "Return a short skill index line for PATH relative to ROOT."
   (with-temp-buffer
@@ -339,10 +354,45 @@ DIRECTION is either `head' or `tail'.  MAX-BYTES and MAX-LINES default to
       0
     (line-number-at-pos (max (point-min) (1- (point-max))))))
 
+(defun gptel-pi--format-read-result
+    (origin path selected offset total-lines truncation)
+  "Format a read result and archive SELECTED when TRUNCATION occurred."
+  (let* ((shown-lines (plist-get truncation :lines))
+         (end-line (+ offset shown-lines -1))
+         (next-offset (and (< end-line total-lines) (1+ end-line)))
+         (link (when (and (plist-get truncation :truncated)
+                          (buffer-live-p origin)
+                          (buffer-local-value 'gptel-pi-session-p origin))
+                 (with-current-buffer origin
+                   (gptel-pi--archive-tool-output
+                    "read" (file-name-nondirectory path) selected
+                    (format "- Path :: =%s=\n- Requested offset :: %d\n"
+                            path offset))))))
+    (if (plist-get truncation :first-line-too-long)
+        (concat
+         (format (concat "Line %d exceeds the %d-byte read limit. "
+                         "Inspect it in chunks, for example with: "
+                         "sed -n '%dp' %s | head -c %d")
+                 offset gptel-pi-max-tool-bytes offset
+                 (shell-quote-argument path) gptel-pi-max-tool-bytes)
+         (when link (format "\n\nFull selected output: %s" link)))
+      (concat
+       (plist-get truncation :content)
+       (unless (or (string-empty-p (plist-get truncation :content))
+                   (string-suffix-p "\n" (plist-get truncation :content)))
+         "\n")
+       (format "[Showing lines %d-%d of %d%s.]"
+               offset end-line total-lines
+               (if next-offset
+                   (format "; use offset=%d to continue" next-offset)
+                 ""))
+       (when link (format "\n\nFull selected output: %s" link))))))
+
 (defun gptel-pi--tool-read (path &optional offset limit)
   "Read text file PATH from one-indexed OFFSET for at most LIMIT lines."
   (let ((expanded-path (expand-file-name path))
-        (offset (or offset 1)))
+        (offset (or offset 1))
+        (origin (current-buffer)))
     (cond
      ((or (not (integerp offset)) (< offset 1))
       (format "Error: offset must be a positive integer, got %S" offset))
@@ -370,32 +420,27 @@ DIRECTION is either `head' or `tail'.  MAX-BYTES and MAX-LINES default to
                   (forward-line limit)
                 (goto-char (point-max)))
               (let* ((selected (buffer-substring-no-properties start (point)))
-                     (truncation (gptel-pi--truncate-result selected 'head))
-                     (shown-lines (plist-get truncation :lines)))
-                (if (plist-get truncation :first-line-too-long)
-                    (format (concat "Line %d exceeds the %d-byte read limit. "
-                                    "Inspect it in chunks, for example with: "
-                                    "sed -n '%dp' %s | head -c %d")
-                            offset gptel-pi-max-tool-bytes offset
-                            (shell-quote-argument expanded-path)
-                            gptel-pi-max-tool-bytes)
-                  (let* ((end-line (+ offset shown-lines -1))
-                         (next-offset (and (< end-line total-lines)
-                                           (1+ end-line))))
-                    (concat
-                     (plist-get truncation :content)
-                     (unless (or (string-empty-p (plist-get truncation :content))
-                                 (string-suffix-p "\n" (plist-get truncation :content)))
-                       "\n")
-                     (format "[Showing lines %d-%d of %d%s.]"
-                             offset end-line total-lines
-                             (if next-offset
-                                 (format "; use offset=%d to continue" next-offset)
-                               "")))))))))))))))
+                     (truncation (gptel-pi--truncate-result selected 'head)))
+                (gptel-pi--format-read-result
+                 origin expanded-path selected offset total-lines truncation)))))))))))
 
 (defun gptel-pi--tool-eval (elisp)
-  "Evaluate one ELISP form and return its printed result."
-  (plist-get (gptel-pi--truncate-result (eval (read elisp)) 'head) :content))
+  "Evaluate one ELISP form and return its safely printed result."
+  (let* ((full (gptel-pi--result-string (eval (read elisp))))
+         (truncation (gptel-pi--truncate-result full 'head))
+         (content (plist-get truncation :content)))
+    (if (not (plist-get truncation :truncated))
+        content
+      (let ((link (when (and gptel-pi-session-p (derived-mode-p 'org-mode))
+                    (gptel-pi--archive-tool-output
+                     "eval" (truncate-string-to-width elisp 60 nil nil "…") full
+                     (format "- Elisp :: ~%s~\n" elisp)))))
+        (concat
+         (if (plist-get truncation :first-line-too-long)
+             (format "The printed result starts with a line exceeding %d bytes."
+                     gptel-pi-max-tool-bytes)
+           content)
+         (when link (format "\n\nFull printed result: %s" link)))))))
 
 (defun gptel-pi--tool-edit (path old new)
   "Replace the unique literal occurrence of OLD with NEW in PATH."
@@ -434,48 +479,95 @@ DIRECTION is either `head' or `tail'.  MAX-BYTES and MAX-LINES default to
               (write-region (point-min) (point-max) expanded-path nil 'silent)
               (format "Edited %s at line %d" expanded-path line))))))))))
 
+(defun gptel-pi--format-bash-result
+    (origin command directory stdout stderr status exit-code timeout)
+  "Format and possibly archive one completed Bash invocation."
+  (let* ((full (concat "STDOUT:\n" stdout
+                       (unless (or (string-empty-p stdout)
+                                   (string-suffix-p "\n" stdout)) "\n")
+                       "\nSTDERR:\n" stderr))
+         (truncation (gptel-pi--truncate-result full 'tail))
+         (status-text
+          (cond
+           ((eq status 'signal)
+            (format "Bash was terminated by signal %d." exit-code))
+           ((and timeout (= exit-code 124))
+            (format "Bash timed out after %d seconds (status 124)." timeout))
+           (t (format "Bash exited with status %d." exit-code))))
+         (link
+          (when (and (plist-get truncation :truncated)
+                     (buffer-live-p origin)
+                     (buffer-local-value 'gptel-pi-session-p origin))
+            (with-current-buffer origin
+              (gptel-pi--archive-tool-output
+               "bash" command full
+               (format (concat "- Command :: ~%s~\n- Directory :: =%s=\n"
+                               "- Completion :: %s\n")
+                       command directory status-text))))))
+    (concat status-text
+            (unless (and (string-empty-p stdout) (string-empty-p stderr))
+              (concat "\n\n"
+                      (if (plist-get truncation :truncated)
+                          "Relevant tail:\n"
+                        "")
+                      (plist-get truncation :content)))
+            (when link (format "\n\nFull output: %s" link)))))
+
 (defun gptel-pi--tool-bash (callback command &optional timeout)
-  (let* ((buffer
-          (generate-new-buffer
-           (format "*%s bash-output*" (string-replace "*" "" (buffer-name)))))
+  "Run COMMAND asynchronously through a pipe and invoke CALLBACK with output."
+  (let* ((origin (current-buffer))
+         (directory default-directory)
+         (name (string-replace "*" "" (buffer-name)))
+         (stdout-buffer (generate-new-buffer (format "*%s bash-stdout*" name)))
+         (stderr-buffer (generate-new-buffer (format "*%s bash-stderr*" name)))
          (effective-timeout
           (let ((seconds (or timeout 300)))
-            (when (> seconds 0)
-              seconds)))
+            (when (> seconds 0) seconds)))
          (timeout-argv
           (when effective-timeout
             (list "timeout" (format "%ss" effective-timeout))))
          (prefix
           (when (boundp 'agent-shell-command-prefix)
-            (cond
-             ((functionp agent-shell-command-prefix)
-              (funcall agent-shell-command-prefix (current-buffer)))
-             (t agent-shell-command-prefix))))
+            (if (functionp agent-shell-command-prefix)
+                (funcall agent-shell-command-prefix origin)
+              agent-shell-command-prefix)))
          (argv (append prefix timeout-argv
                        (list shell-file-name shell-command-switch command)))
-         (process (make-process :name "bash"
-                                :buffer buffer
+         (process (make-process :name "gptel-pi-bash"
+                                :buffer stdout-buffer
+                                :stderr stderr-buffer
                                 :command argv
                                 :connection-type 'pipe
                                 :file-handler t
                                 :noquery t)))
     (process-put process 'callback callback)
+    (process-put process 'origin origin)
+    (process-put process 'command command)
+    (process-put process 'directory directory)
+    (process-put process 'timeout effective-timeout)
+    (process-put process 'stderr-buffer stderr-buffer)
     (set-process-sentinel
      process
-     (lambda (process _event)
-       (when (memq (process-status process) '(exit signal))
-         (funcall
-          (process-get process 'callback)
-          (plist-get
-           (gptel-pi--truncate-result
-            (format "%s\n%s %d\n"
-                    (with-current-buffer (process-buffer process)
-                      (buffer-string))
-                    (process-status process)
-                    (process-exit-status process))
-            'tail)
-           :content))
-         (kill-buffer (process-buffer process)))))
+     (lambda (finished _event)
+       (when (memq (process-status finished) '(exit signal))
+         (let ((stdout-buffer (process-buffer finished))
+               (stderr-buffer (process-get finished 'stderr-buffer)))
+           (unwind-protect
+               (funcall
+                (process-get finished 'callback)
+                (gptel-pi--format-bash-result
+                 (process-get finished 'origin)
+                 (process-get finished 'command)
+                 (process-get finished 'directory)
+                 (if (buffer-live-p stdout-buffer)
+                     (with-current-buffer stdout-buffer (buffer-string)) "")
+                 (if (buffer-live-p stderr-buffer)
+                     (with-current-buffer stderr-buffer (buffer-string)) "")
+                 (process-status finished)
+                 (process-exit-status finished)
+                 (process-get finished 'timeout)))
+             (when (buffer-live-p stdout-buffer) (kill-buffer stdout-buffer))
+             (when (buffer-live-p stderr-buffer) (kill-buffer stderr-buffer)))))))
     (process-send-eof process)
     process))
 
