@@ -60,14 +60,20 @@ those tools in a sandboxed request."
                (member (gptel-tool-name tool) '("eval" "read" "write" "edit")))
              gptel-tools)))))
 
-(defconst gptel-pi--max-tool-chars 1000
+(defconst gptel-pi--max-tool-chars 2000
+  "max chars to keep from tool results")
+(defconst gptel-pi--max-tool-lines 500
   "max chars to keep from tool results")
 (defconst gptel-pi--bash-temp-file-retention 120
   "max time to keep older tool result files around in seconds")
 (defvar-local gptel-pi--bash-temp-file nil)
 
 (defun gptel-pi--limit-tool-result (result &optional store-in-tmpfile)
-  (let ((max-chars gptel-pi--max-tool-chars))
+  (let* ((max-chars gptel-pi--max-tool-chars)
+         (max-lines gptel-pi--max-tool-lines)
+         (lines (string-lines result))
+         (num-lines (length lines))
+         (num-bytes (length result)))
     (when store-in-tmpfile
       (when gptel-pi--bash-temp-file
         ;; delete this after a while, but the agent still has a grace period to
@@ -76,15 +82,20 @@ those tools in a sandboxed request."
       (setq-local gptel-pi--bash-temp-file (make-temp-file "gptel-tempfile"))
       (with-temp-file gptel-pi--bash-temp-file
         (insert result)))
-    (if (and (stringp result)
-             (> (length result) max-chars))
-        (concat
-         (substring result 0 (/ max-chars 2))
-         (format "\n[... *truncated*%s ...]\n"
-                 (if store-in-tmpfile
-                     (concat " (full output temporarily in " gptel-pi--bash-temp-file ")")
-                   ""))
-         (substring result (/ max-chars 2) max-chars))
+    (if (or (> num-bytes max-chars)
+            (> num-lines max-lines))
+        (let ((output "")
+              (linecount 0))
+          (while (and (< (length output) max-chars)
+                      (< linecount max-lines))
+            (setq output (concat output (seq-elt lines linecount) "\n"))
+            (setq linecount (1+ linecount)))
+          (setq output (concat
+                        output
+                        "\n[... *truncated* ...]\n"
+                        (if store-in-tmpfile
+                            (concat " (full output in " gptel-pi--bash-temp-file ")"))))
+          output)
       result)))
 
 (defun gptel-pi--tool-bash (callback command &optional timeout)
