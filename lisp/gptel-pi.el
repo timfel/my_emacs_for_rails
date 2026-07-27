@@ -60,43 +60,169 @@ those tools in a sandboxed request."
                (member (gptel-tool-name tool) '("eval" "read" "write" "edit")))
              gptel-tools)))))
 
-(defconst gptel-pi--max-tool-chars 2000
-  "max chars to keep from tool results")
-(defconst gptel-pi--max-tool-lines 500
-  "max chars to keep from tool results")
-(defconst gptel-pi--bash-temp-file-retention 120
-  "max time to keep older tool result files around in seconds")
-(defvar-local gptel-pi--bash-temp-file nil)
+(defcustom gptel-pi-max-tool-bytes (* 50 1024)
+  "Maximum UTF-8 bytes returned directly by a gptel-pi tool."
+  :type 'integer
+  :group 'gptel)
 
-(defun gptel-pi--limit-tool-result (result &optional store-in-tmpfile)
-  (let* ((max-chars gptel-pi--max-tool-chars)
-         (max-lines gptel-pi--max-tool-lines)
-         (lines (string-lines result))
-         (num-lines (length lines))
-         (num-bytes (length result)))
-    (when store-in-tmpfile
-      (when gptel-pi--bash-temp-file
-        ;; delete this after a while, but the agent still has a grace period to
-        ;; read it
-        (run-with-timer gptel-pi--bash-temp-file-retention nil #'delete-file gptel-pi--bash-temp-file))
-      (setq-local gptel-pi--bash-temp-file (make-temp-file "gptel-tempfile"))
-      (with-temp-file gptel-pi--bash-temp-file
-        (insert result)))
-    (if (or (> num-bytes max-chars)
-            (> num-lines max-lines))
-        (let ((output "")
-              (linecount 0))
-          (while (and (< (length output) max-chars)
-                      (< linecount max-lines))
-            (setq output (concat output (seq-elt lines linecount) "\n"))
-            (setq linecount (1+ linecount)))
-          (setq output (concat
-                        output
-                        "\n[... *truncated* ...]\n"
-                        (if store-in-tmpfile
-                            (concat " (full output in " gptel-pi--bash-temp-file ")"))))
-          output)
-      result)))
+(defcustom gptel-pi-max-tool-lines 2000
+  "Maximum complete lines returned directly by a gptel-pi tool."
+  :type 'integer
+  :group 'gptel)
+
+(defun gptel-pi--result-string (result)
+  "Convert arbitrary tool RESULT to readable text."
+  (if (stringp result)
+      result
+    (condition-case nil
+        (prin1-to-string result)
+      (error (format "%s" result)))))
+
+(defun gptel-pi--truncate-result (result direction &optional max-bytes max-lines)
+  "Truncate RESULT by complete lines and UTF-8 bytes.
+
+DIRECTION is either `head' or `tail'.  MAX-BYTES and MAX-LINES default to
+`gptel-pi-max-tool-bytes' and `gptel-pi-max-tool-lines'.  Return a plist with
+`:content', `:truncated', `:lines', `:bytes', and `:first-line-too-long'."
+  (let* ((text (gptel-pi--result-string result))
+         (max-bytes (or max-bytes gptel-pi-max-tool-bytes))
+         (max-lines (or max-lines gptel-pi-max-tool-lines))
+         (total-bytes (string-bytes text))
+         segments)
+    (with-temp-buffer
+      (insert text)
+      (goto-char (point-min))
+      (while (< (point) (point-max))
+        (let ((start (point)))
+          (forward-line 1)
+          (push (buffer-substring-no-properties start (point)) segments))))
+    (setq segments (nreverse segments))
+    (if (and (<= total-bytes max-bytes)
+             (<= (length segments) max-lines))
+        (list :content text :truncated nil :lines (length segments)
+              :bytes total-bytes :first-line-too-long nil)
+      (let ((candidates (if (eq direction 'tail) (reverse segments) segments))
+            (kept nil)
+            (bytes 0)
+            (lines 0))
+        (while (and candidates (< lines max-lines))
+          (let* ((segment (car candidates))
+                 (segment-bytes (string-bytes segment)))
+            (if (> (+ bytes segment-bytes) max-bytes)
+                (setq candidates nil)
+              (push segment kept)
+              (setq bytes (+ bytes segment-bytes)
+                    lines (1+ lines)
+                    candidates (cdr candidates)))))
+        (when (eq direction 'head)
+          (setq kept (nreverse kept)))
+        (list :content (apply #'concat kept)
+              :truncated t
+              :lines lines
+              :bytes bytes
+              :first-line-too-long (and (eq direction 'head) (zerop lines)
+                                         (not (string-empty-p text))))))))
+
+(defun gptel-pi--file-line-count ()
+  "Return the number of text lines in the current buffer."
+  (if (= (point-min) (point-max))
+      0
+    (line-number-at-pos (max (point-min) (1- (point-max))))))
+
+(defun gptel-pi--tool-read (path &optional offset limit)
+  "Read text file PATH from one-indexed OFFSET for at most LIMIT lines."
+  (let ((expanded-path (expand-file-name path))
+        (offset (or offset 1)))
+    (cond
+     ((or (not (integerp offset)) (< offset 1))
+      (format "Error: offset must be a positive integer, got %S" offset))
+     ((and limit (or (not (integerp limit)) (< limit 1)))
+      (format "Error: limit must be a positive integer, got %S" limit))
+     ((not (file-readable-p expanded-path))
+      (format "Error: file is not readable: %s" expanded-path))
+     ((file-directory-p expanded-path)
+      (format "Error: path is a directory: %s" expanded-path))
+     (t
+      (with-temp-buffer
+        (insert-file-contents expanded-path)
+        (let ((total-lines (gptel-pi--file-line-count)))
+          (cond
+           ((zerop total-lines)
+            (format "File is empty: %s" expanded-path))
+           ((> offset total-lines)
+            (format "Error: offset %d is beyond end of file (%d lines total): %s"
+                    offset total-lines expanded-path))
+           (t
+            (goto-char (point-min))
+            (forward-line (1- offset))
+            (let ((start (point)))
+              (if limit
+                  (forward-line limit)
+                (goto-char (point-max)))
+              (let* ((selected (buffer-substring-no-properties start (point)))
+                     (truncation (gptel-pi--truncate-result selected 'head))
+                     (shown-lines (plist-get truncation :lines)))
+                (if (plist-get truncation :first-line-too-long)
+                    (format (concat "Line %d exceeds the %d-byte read limit. "
+                                    "Inspect it in chunks, for example with: "
+                                    "sed -n '%dp' %s | head -c %d")
+                            offset gptel-pi-max-tool-bytes offset
+                            (shell-quote-argument expanded-path)
+                            gptel-pi-max-tool-bytes)
+                  (let* ((end-line (+ offset shown-lines -1))
+                         (next-offset (and (< end-line total-lines)
+                                           (1+ end-line))))
+                    (concat
+                     (plist-get truncation :content)
+                     (unless (or (string-empty-p (plist-get truncation :content))
+                                 (string-suffix-p "\n" (plist-get truncation :content)))
+                       "\n")
+                     (format "[Showing lines %d-%d of %d%s.]"
+                             offset end-line total-lines
+                             (if next-offset
+                                 (format "; use offset=%d to continue" next-offset)
+                               "")))))))))))))))
+
+(defun gptel-pi--tool-eval (elisp)
+  "Evaluate one ELISP form and return its printed result."
+  (plist-get (gptel-pi--truncate-result (eval (read elisp)) 'head) :content))
+
+(defun gptel-pi--tool-edit (path old new)
+  "Replace the unique literal occurrence of OLD with NEW in PATH."
+  (let ((expanded-path (expand-file-name path)))
+    (cond
+     ((string-empty-p old)
+      "Error: old text must not be empty")
+     ((not (file-exists-p expanded-path))
+      (format "Error: file not found: %s" expanded-path))
+     ((file-directory-p expanded-path)
+      (format "Error: path is a directory: %s" expanded-path))
+     (t
+      (with-temp-buffer
+        (insert-file-contents expanded-path)
+        (let ((matches 0)
+              first-start)
+          (goto-char (point-min))
+          (while (search-forward old nil t)
+            (setq matches (1+ matches))
+            (unless first-start
+              (setq first-start (match-beginning 0)))
+            ;; Advance one character from the beginning to count overlapping
+            ;; literal matches as ambiguous too.
+            (goto-char (1+ (match-beginning 0))))
+          (cond
+           ((zerop matches)
+            (format "Error: old text not found in %s" expanded-path))
+           ((> matches 1)
+            (format "Error: old text matches %d times in %s; it must be unique"
+                    matches expanded-path))
+           (t
+            (goto-char first-start)
+            (let ((line (line-number-at-pos)))
+              (delete-region first-start (+ first-start (length old)))
+              (insert new)
+              (write-region (point-min) (point-max) expanded-path nil 'silent)
+              (format "Edited %s at line %d" expanded-path line))))))))))
 
 (defun gptel-pi--tool-bash (callback command &optional timeout)
   (let* ((buffer
@@ -130,13 +256,15 @@ those tools in a sandboxed request."
        (when (memq (process-status process) '(exit signal))
          (funcall
           (process-get process 'callback)
-          (gptel-pi--limit-tool-result
-           (format "%s\n%s %d\n"
-                   (with-current-buffer (process-buffer process)
-                     (buffer-string))
-                   (process-status process)
-                   (process-exit-status process))
-           t))
+          (plist-get
+           (gptel-pi--truncate-result
+            (format "%s\n%s %d\n"
+                    (with-current-buffer (process-buffer process)
+                      (buffer-string))
+                    (process-status process)
+                    (process-exit-status process))
+            'tail)
+           :content))
          (kill-buffer (process-buffer process)))))
     (process-send-eof process)
     process))
@@ -145,9 +273,10 @@ those tools in a sandboxed request."
   (list
    (gptel-make-tool
     :name "eval"
-    :function (lambda (elisp)
-                (gptel-pi--limit-tool-result (eval (read elisp)) t))
-    :description "Execute elisp"
+    :function #'gptel-pi--tool-eval
+    :description (concat "Evaluate one Elisp form in the live Emacs session and return its printed value. "
+                         "Use this only to inspect relevant editor state such as buffers, the kill ring, "
+                         "or active modes; use read and bash for ordinary file and project exploration.")
     :args (list '(:name "elisp" :type string :description "The elisp code to eval"))
     :async nil
     :category "pi"
@@ -159,7 +288,7 @@ those tools in a sandboxed request."
     :function #'gptel-pi--tool-bash
     :description "Execute a bash command in the current working directory. Returns stdout, stderr, and exit status."
     :args (list '(:name "command" :type string :description "The commandline to execute in bash.")
-                '(:name "timeout" :type integer :description "Optional timeout in seconds. Defaults to 300; set to -1 or 0 to disable timeout for this command."))
+                '(:name "timeout" :type integer :description "Optional timeout in seconds. Defaults to 300; set to -1 or 0 to disable timeout for this command." :optional t))
     :async t
     :category "pi"
     :confirm nil
@@ -167,26 +296,17 @@ those tools in a sandboxed request."
 
    (gptel-make-tool
     :name "read"
-    :function (lambda (path &optional offset limit)
-                (let* ((path (expand-file-name path)))
-                  (cond
-                   ((string-match-p (rx (or ".jpg" ".png" ".pdf" ".gif") eos) path)
-                    (gptel-context-add-file path)
-                    "Added binary file to context")
-                   (t
-                    (with-temp-buffer
-                      (insert-file-contents path)
-                      (gptel-pi--limit-tool-result
-                       (buffer-string)))))))
-    :description (concat "Read the contents of a file. Supports text and binary files. Binary files are sent as attachments. "
-                         "For text files, defaults to first 2000 lines. Use offset/limit for large files.")
+    :function #'gptel-pi--tool-read
+    :description (concat "Read the contents of a text file. Output is limited to complete lines and "
+                         "50KB or 2000 lines, whichever is reached first. Use offset/limit for large "
+                         "files and continue with the reported next offset.")
     :args (list '(:name "path" :type string :description "Path to the file to read (relative or absolute)")
-                '(:name "offset" :type integer :description "Line number to start reading from (1-indexed)")
-                '(:name "limit" :type integer :description "Maximum number of lines to read"))
+                '(:name "offset" :type integer :description "Line number to start reading from (1-indexed)" :optional t)
+                '(:name "limit" :type integer :description "Maximum number of lines to read" :optional t))
     :async nil
     :category "pi"
     :confirm nil
-    :include 'call)
+    :include t)
 
    (gptel-make-tool
     :name "write"
@@ -205,23 +325,11 @@ those tools in a sandboxed request."
     :async nil
     :category "pi"
     :confirm nil
-    :include 'call)
+    :include t)
 
    (gptel-make-tool
     :name "edit"
-    :function (lambda (path old new)
-                (let ((expanded-path (expand-file-name path)))
-                  (if (not (file-exists-p expanded-path))
-                      (format "Error: file not found: %s" expanded-path)
-                    (with-temp-buffer
-                      (insert-file-contents expanded-path)
-                      (goto-char (point-min))
-                      (if (search-forward old nil t)
-                          (progn
-                            (replace-match new t t)
-                            (write-region (point-min) (point-max) expanded-path nil 'silent)
-                            (format "Edited %s at offset %d" expanded-path (- (point) (point-min))))
-                        (format "Error: old text not found in %s" expanded-path))))))
+    :function #'gptel-pi--tool-edit
     :description (concat "Edit a file by replacing exact text. `old` must match exactly "
                          "(including whitespace). Use this for precise, surgical edits.")
     :args (list '(:name "path" :type string :description "Path to the file to edit (relative or absolute)")
@@ -230,7 +338,7 @@ those tools in a sandboxed request."
     :async nil
     :category "pi"
     :confirm nil
-    :include 'call)))
+    :include t)))
 
 (gptel-make-preset
  'gptel-pi
