@@ -73,6 +73,59 @@
         (should (string-match-p "Line 1 exceeds the 5-byte read limit" result))
         (should (string-match-p "sed -n '1p'" result))))))
 
+(ert-deftest gptel-pi-normalizes-only-assistant-headings ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (insert "* User branch\nUser text\n")
+    (let ((begin (point)))
+      (insert (propertize "** Findings\nBody\n*** Details\n"
+                          'gptel 'response 'front-sticky '(gptel)))
+      (gptel-pi-normalize-assistant-headings begin (point-max)))
+    (should (equal (buffer-string)
+                   "* User branch\nUser text\n*Findings*\nBody\n*Details*\n"))
+    (goto-char (point-min))
+    (search-forward "Findings")
+    (should (eq (get-text-property (match-beginning 0) 'gptel) 'response))
+    (should (eq (get-text-property (1- (match-beginning 0)) 'gptel) 'response))))
+
+(ert-deftest gptel-pi-normalization-skips-protected-blocks ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (insert (concat "#+begin_src text\n** Source heading\n#+end_src\n"
+                    "#+begin_example\n** Example heading\n#+end_example\n"
+                    "#+begin_quote\n** Quote heading\n#+end_quote\n"
+                    "#+begin_reasoning\n** Reasoning heading\n#+end_reasoning\n"
+                    "#+begin_tool call\n** Tool heading\n#+end_tool\n"
+                    "** Real response heading\n"))
+    (gptel-pi-normalize-assistant-headings (point-min) (point-max))
+    (should (string-match-p "^\\*\\* Source heading$" (buffer-string)))
+    (should (string-match-p "^\\*\\* Example heading$" (buffer-string)))
+    (should (string-match-p "^\\*\\* Quote heading$" (buffer-string)))
+    (should (string-match-p "^\\*\\* Reasoning heading$" (buffer-string)))
+    (should (string-match-p "^\\*\\* Tool heading$" (buffer-string)))
+    (should (string-match-p "^\\*Real response heading\\*$" (buffer-string)))))
+
+(ert-deftest gptel-pi-normalization-is-idempotent ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (insert "** Findings\n")
+    (gptel-pi-normalize-assistant-headings (point-min) (point-max))
+    (let ((once (buffer-string)))
+      (gptel-pi-normalize-assistant-headings (point-min) (point-max))
+      (should (equal (buffer-string) once)))))
+
+(ert-deftest gptel-pi-promotes-label-to-child-heading ()
+  (with-temp-buffer
+    (org-mode)
+    (insert "* Conversation\n*Findings*\n")
+    (goto-char (point-max))
+    (forward-line -1)
+    (gptel-pi-promote-label)
+    (should (equal (buffer-string) "* Conversation\n** Findings\n"))))
+
 (ert-deftest gptel-pi-eval-prints-arbitrary-values ()
   (should (equal (gptel-pi--tool-eval "42") "42"))
   (should (equal (gptel-pi--tool-eval "nil") "nil"))

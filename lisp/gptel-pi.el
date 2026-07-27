@@ -20,9 +20,13 @@
 
 (require 'gptel)
 (require 'gptel-context)
+(require 'org)
 (require 'project)
 (require 'cl-lib)
 (require 'subr-x)
+
+(defvar-local gptel-pi-session-p nil
+  "Non-nil when the current buffer is a gptel-pi session.")
 
 (defconst gptel-pi-system-prompt "You are an expert coding assistant.
 You help users with coding tasks by reading files, executing commands, editing code, and writing new files.
@@ -35,6 +39,97 @@ Guidelines:
 - Use `write` only for new files or complete rewrites
 - When summarizing your actions, output plain text directly - do NOT use cat or bash to display what you did
 - Be concise in your responses")
+
+(defconst gptel-pi--protected-org-blocks
+  '("src" "example" "quote" "reasoning" "tool")
+  "Org block names in which assistant headings remain untouched.")
+
+(defun gptel-pi--response-properties (position)
+  "Return role-related text properties copied from POSITION."
+  (let ((gptel (get-text-property position 'gptel)))
+    (when gptel
+      (list 'gptel gptel 'front-sticky '(gptel)))))
+
+(defun gptel-pi--normalize-heading-at-point (begin)
+  "Turn the Org heading at point into a bold label when it starts after BEGIN."
+  (when (looking-at "^\\(\\*+\\)[ \t]+\\(.+?\\)[ \t]*$")
+    (let* ((heading-start (match-beginning 1))
+           (title-start (match-beginning 2))
+           (title-end (match-end 2))
+           (properties (gptel-pi--response-properties title-start)))
+      (when (>= heading-start begin)
+        (goto-char title-end)
+        (insert (apply #'propertize "*" properties))
+        (delete-region heading-start title-start)
+        (goto-char heading-start)
+        (insert (apply #'propertize "*" properties))))))
+
+(defun gptel-pi-normalize-assistant-headings (begin end)
+  "Turn assistant Org headings between BEGIN and END into bold labels.
+
+Headings in source, example, quote, reasoning, and tool blocks are not changed."
+  (when (and gptel-pi-session-p
+             (derived-mode-p 'org-mode)
+             (< begin end))
+    (let ((end-marker (copy-marker end t))
+          (case-fold-search t)
+          block-stack)
+      (unwind-protect
+          (save-excursion
+            (save-restriction
+              (widen)
+              (goto-char begin)
+              (unless (bolp) (forward-line 1))
+              (while (< (point) end-marker)
+                (let ((next-line
+                       (copy-marker
+                        (save-excursion (forward-line 1) (point)) t)))
+                  (cond
+                   ((looking-at "^[ \t]*#\\+begin_\\([[:alnum:]_-]+\\)\\b")
+                    (let ((name (downcase (match-string-no-properties 1))))
+                      (when (member name gptel-pi--protected-org-blocks)
+                        (push name block-stack))))
+                   ((looking-at "^[ \t]*#\\+end_\\([[:alnum:]_-]+\\)\\b")
+                    (let ((name (downcase (match-string-no-properties 1))))
+                      (when (equal name (car block-stack))
+                        (pop block-stack))))
+                   ((null block-stack)
+                    (gptel-pi--normalize-heading-at-point begin)))
+                  (goto-char next-line)
+                  (set-marker next-line nil)))))
+        (set-marker end-marker nil)))))
+
+(defun gptel-pi-promote-label (&optional level)
+  "Promote the bold assistant label at point to an Org heading.
+
+Use heading LEVEL when supplied.  Interactively, a numeric prefix specifies the
+level; otherwise use one level below the containing heading."
+  (interactive "P")
+  (unless (derived-mode-p 'org-mode)
+    (user-error "This command is only available in Org buffers"))
+  (save-excursion
+    (beginning-of-line)
+    (unless (looking-at "^\\*\\([^*\n]+\\)\\*[ \t]*$")
+      (user-error "Current line is not a bold assistant label"))
+    (let* ((title-start (match-beginning 1))
+           (title-end (match-end 1))
+           (title (buffer-substring title-start title-end))
+           (properties (gptel-pi--response-properties title-start))
+           (heading-level (if level
+                              (prefix-numeric-value level)
+                            (1+ (or (org-current-level) 0)))))
+      (unless (> heading-level 0)
+        (user-error "Heading level must be positive"))
+      (delete-region (line-beginning-position) (line-end-position))
+      (insert (apply #'propertize
+                     (concat (make-string heading-level ?*) " " title)
+                     properties)))))
+
+(defun gptel-pi--setup-buffer ()
+  "Set up the current buffer as a gptel-pi session."
+  (setq-local gptel-pi-session-p t)
+  (add-hook 'gptel-post-response-functions
+            #'gptel-pi-normalize-assistant-headings nil t))
 
 (defun gptel-pi--sandboxed-p (buffer)
   "Return non-nil when BUFFER has an effective shell command prefix."
@@ -377,6 +472,7 @@ existing buffer at (point-max)"
             (dolist (buffer (buffer-list) (nreverse result))
               (with-current-buffer buffer
                 (when (and (bound-and-true-p gptel-mode)
+                           (bound-and-true-p gptel-pi-session-p)
                            (equal (file-truename default-directory) root))
                   (push buffer result))))))
          (buffer
@@ -400,6 +496,7 @@ existing buffer at (point-max)"
 
       (with-current-buffer buffer
         (gptel-preset (gptel-get-preset 'gptel-pi))
+        (gptel-pi--setup-buffer)
 
         ;; insert agents.md and skills, if any
         (let* ((p (point))
