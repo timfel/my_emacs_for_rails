@@ -125,6 +125,121 @@ level; otherwise use one level below the containing heading."
                      (concat (make-string heading-level ?*) " " title)
                      properties)))))
 
+(defun gptel-pi--initialize-org-session ()
+  "Give a new Org session explicit archive and conversation subtrees."
+  (when (derived-mode-p 'org-mode)
+    (let ((initial (buffer-substring (point-min) (point-max))))
+      (erase-buffer)
+      (insert "* Archive\n** Tool outputs\n\n** Compactions\n\n"
+              "* Conversation\n"
+              initial)
+      (goto-char (point-max)))))
+
+(defun gptel-pi--next-target (kind)
+  "Return a unique, monotonically increasing target for KIND."
+  (let ((regexp (format "<<gptel-pi-%s-\\([0-9]+\\)>>" (regexp-quote kind)))
+        (maximum 0))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward regexp nil t)
+        (setq maximum (max maximum (string-to-number (match-string 1))))))
+    (format "gptel-pi-%s-%04d" kind (1+ maximum))))
+
+(defun gptel-pi--archive-section-position (section)
+  "Return insertion position at the end of Archive subsection SECTION."
+  (save-excursion
+    (goto-char (point-min))
+    (unless (re-search-forward "^\\* Archive[ \t]*$" nil t)
+      (error "This gptel-pi buffer has no Archive heading"))
+    (let ((archive-end (save-excursion (org-end-of-subtree t) (point))))
+      (unless (re-search-forward
+               (format "^\\*\\* %s[ \t]*$" (regexp-quote section))
+               archive-end t)
+        (error "This gptel-pi buffer has no Archive/%s section" section))
+      (org-end-of-subtree t)
+      (point))))
+
+(defun gptel-pi--archive-entry (kind section title body &optional metadata)
+  "Archive BODY under SECTION and return a link to its KIND target.
+
+TITLE is used for the level-three heading.  Optional METADATA is ordinary Org
+text inserted before the example block."
+  (unless (and gptel-pi-session-p (derived-mode-p 'org-mode))
+    (error "Tool output can only be archived in an Org gptel-pi session"))
+  (let ((target (gptel-pi--next-target kind))
+        (body (gptel-pi--result-string body)))
+    (save-excursion
+      (save-restriction
+        (widen)
+        (goto-char (gptel-pi--archive-section-position section))
+        (unless (bolp) (insert "\n"))
+        (insert (format "*** %s\n<<%s>>\n\n" title target))
+        (when metadata
+          (insert metadata)
+          (unless (string-suffix-p "\n" metadata) (insert "\n"))
+          (insert "\n"))
+        (insert "#+begin_example\n"
+                (org-escape-code-in-string body))
+        (unless (string-suffix-p "\n" body) (insert "\n"))
+        (insert "#+end_example\n\n")))
+    (format "[[%s][%s]]" target title)))
+
+(defun gptel-pi--skill-summary (path root)
+  "Return a short skill index line for PATH relative to ROOT."
+  (with-temp-buffer
+    (insert-file-contents path nil 0 2000)
+    (let ((case-fold-search nil)
+          name description)
+      (goto-char (point-min))
+      (when (re-search-forward "^name:[ \t]*\\(.+\\)$" nil t)
+        (setq name (string-trim (match-string 1))))
+      (goto-char (point-min))
+      (when (re-search-forward "^description:[ \t]*\\(.+\\)$" nil t)
+        (setq description (string-trim (match-string 1))))
+      (format "- %s (%s): %s"
+              (or name (file-name-nondirectory (directory-file-name
+                                                (file-name-directory path))))
+              (file-relative-name path root)
+              (or description "No description provided")))))
+
+(defun gptel-pi--project-system-context (root)
+  "Build branch-invariant project instructions and skill index for ROOT."
+  (let* ((agents (expand-file-name "AGENTS.md" root))
+         (agents (and (file-readable-p agents) agents))
+         (skill-dirs (list (expand-file-name ".agents/skills/" root)
+                           (expand-file-name "~/.agents/skills/")))
+         (skills (cl-loop for dir in skill-dirs
+                          when (file-directory-p dir)
+                          append (directory-files-recursively dir "SKILL\\.md\\'")))
+         (extra-agents
+          (cl-remove-if
+           (lambda (path) (and agents (file-equal-p path agents)))
+           (directory-files-recursively root "AGENTS\\.md\\'" nil
+                                        (lambda (dir)
+                                          (< (length (file-name-split
+                                                      (file-relative-name dir root)))
+                                             4))))))
+    (when (or agents skills extra-agents)
+      (concat
+       "\n\nProject context (applies to every conversation branch):\n"
+       (when agents
+         (concat "\n<project_instructions path=\"" agents "\">\n"
+                 (with-temp-buffer
+                   (insert-file-contents agents)
+                   (buffer-string))
+                 "\n</project_instructions>\n"))
+       (when skills
+         (concat "\nAvailable skills (read the referenced file when relevant):\n"
+                 (mapconcat (lambda (path) (gptel-pi--skill-summary path root))
+                            skills "\n")
+                 "\n"))
+       (when extra-agents
+         (concat "\nSubdirectory-specific instructions (read when working below them):\n"
+                 (mapconcat (lambda (path)
+                              (concat "- " (file-relative-name path root)))
+                            extra-agents "\n")
+                 "\n"))))))
+
 (defun gptel-pi--setup-buffer ()
   "Set up the current buffer as a gptel-pi session."
   (setq-local gptel-pi-session-p t)
@@ -456,12 +571,7 @@ creating one if none exists.
 With a single C-u prefix, start a new *gptel-pi* buffer in the current
 project root.
 
-With a C-u C-u prefix, ask for the *gptel-pi* buffer to switch to.
-
-It consults agent-shell-context-sources if that is bound. If it is, it
-goes through the sources and the first one that is a callable function
-that returns a non-empty string result is used inserted into the new or
-existing buffer at (point-max)"
+With a C-u C-u prefix, ask for the *gptel-pi* buffer to switch to."
   (interactive "P")
   (let* ((root (file-name-as-directory (file-truename
                 (or (when-let ((project (project-current)))
@@ -497,76 +607,10 @@ existing buffer at (point-max)"
       (with-current-buffer buffer
         (gptel-preset (gptel-get-preset 'gptel-pi))
         (gptel-pi--setup-buffer)
-
-        ;; insert agents.md and skills, if any
-        (let* ((p (point))
-               (heading (if (eq gptel-default-mode 'org-mode) "*" "#"))
-               (begin-quote (if (eq gptel-default-mode 'org-mode) "\n#+begin_quote %s\n" "\n``` %s\n"))
-               (end-quote
-                (lambda ()
-                  (if (eq gptel-default-mode 'org-mode)
-                      (insert "#+end_quote\n")
-                    (insert "```\n"))
-                  (let ((p (point)))
-                    (forward-line -1)
-                    (if (eq gptel-default-mode 'org-mode)
-                        (org-cycle)
-                      (gptel-markdown-cycle-block))
-                    (goto-char p))))
-               (amd (expand-file-name "AGENTS.md" root))
-               (amd (if (file-readable-p amd) amd nil))
-               (skills (thread-last
-                         '(".agents/skills/" "~/.agents/skills/")
-                         (seq-map (lambda (elt) (expand-file-name elt root)))
-                         (seq-filter #'file-directory-p)
-                         (seq-mapcat (lambda (elt) (directory-files elt t)))
-                         (seq-filter #'file-directory-p)
-                         (seq-map (lambda (elt) (file-name-concat elt "SKILL.md")))
-                         (seq-filter #'file-exists-p)))
-               (extra-amds
-                (thread-last
-                  (directory-files-recursively root "AGENTS\\.md" nil
-                                               (lambda (dir)
-                                                 (< (length (file-name-split
-                                                             (file-relative-name dir root)))
-                                                    4)))
-                  (seq-filter (lambda (elt) (not (string-equal elt amd)))))))
-
-          (when (or amd skills extra-amds)
-            (goto-char (point-min))
-            (insert (format "%s Project instructions:\n" heading))
-
-            (when amd
-              (insert (format begin-quote "AGENTS.md"))
-              (let ((start (point))
-                    (end (cadr (insert-file-contents amd))))
-                (forward-char end)
-                (indent-rigidly start end 1))
-              (funcall end-quote))
-
-            (when skills
-              (insert (format begin-quote "Skills (read when it might be useful for the user request)"))
-              (dolist (skill skills)
-                (insert " - " (file-relative-name skill root) " : ")
-                ;; too long skills or incorrectly formatted ones are cut
-                (let ((end (+ (point) (cadr (insert-file-contents skill nil 0 500)))))
-                  (when (re-search-forward
-                         (rx (or (seq "---" (* (or space "\n"))
-                                      "name: " (group (* not-newline)) (* (or space "\n"))
-                                      "description:" (group (* not-newline)) (* anything))
-                                 (* anything)))
-                         end t)
-                    (replace-match "\\1: \\2\n"))))
-              (funcall end-quote))
-
-            (when extra-amds
-              (insert (format begin-quote "Subdirectory-specific instructions (read when operating underneath)"))
-              (dolist (extra-amd extra-amds)
-                (insert " - " (file-relative-name extra-amd root) "\n"))
-              (funcall end-quote))
-
-            (insert "\n")
-            (forward-char (1- p))))))
+        (when-let* ((project-context (gptel-pi--project-system-context root)))
+          (setq-local gptel-system-prompt
+                      (concat gptel-system-prompt project-context)))
+        (gptel-pi--initialize-org-session)))
 
     (pop-to-buffer buffer)))
 

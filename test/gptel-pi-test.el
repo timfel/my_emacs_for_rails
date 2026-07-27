@@ -73,6 +73,49 @@
         (should (string-match-p "Line 1 exceeds the 5-byte read limit" result))
         (should (string-match-p "sed -n '1p'" result))))))
 
+(ert-deftest gptel-pi-initializes-org-session-layout ()
+  (with-temp-buffer
+    (org-mode)
+    (insert "@user ")
+    (gptel-pi--initialize-org-session)
+    (should (equal (buffer-string)
+                   (concat "* Archive\n** Tool outputs\n\n** Compactions\n\n"
+                           "* Conversation\n@user ")))
+    (should (= (point) (point-max)))
+    (should (org-find-exact-headline-in-buffer "Conversation"))))
+
+(ert-deftest gptel-pi-archive-entry-preserves-point-and-resolves-link ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (insert "@user ")
+    (gptel-pi--initialize-org-session)
+    (insert "Keep point here")
+    (let ((original-point (point-marker))
+          (link (gptel-pi--archive-entry
+                 "tool" "Tool outputs" "bash 0001: test" "full output\n"
+                 "- Exit status :: 1\n")))
+      (should (equal link "[[gptel-pi-tool-0001][bash 0001: test]]"))
+      (should (= (point) original-point))
+      (should (string-match-p "<<gptel-pi-tool-0001>>" (buffer-string)))
+      (should (string-match-p "#\\+begin_example\nfull output\n#\\+end_example"
+                              (buffer-string)))
+      (goto-char (point-min))
+      (search-forward "<<gptel-pi-tool-0001>>")
+      (should (org-link-search "gptel-pi-tool-0001")))))
+
+(ert-deftest gptel-pi-archive-targets-are-monotonic ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (gptel-pi--initialize-org-session)
+    (should (equal (gptel-pi--archive-entry
+                    "tool" "Tool outputs" "first" "one")
+                   "[[gptel-pi-tool-0001][first]]"))
+    (should (equal (gptel-pi--archive-entry
+                    "tool" "Tool outputs" "second" "two")
+                   "[[gptel-pi-tool-0002][second]]"))))
+
 (ert-deftest gptel-pi-normalizes-only-assistant-headings ()
   (with-temp-buffer
     (org-mode)
