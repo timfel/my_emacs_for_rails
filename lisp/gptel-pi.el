@@ -16,6 +16,131 @@
 
 ;;; Author: Tim Felgentreff <timfelgentreff@gmail.com>
 
+;;; Commentary:
+
+;; gptel-pi is a small, Org-native coding-agent harness built on top of gptel.
+;; It supplies a coding system prompt, a handful of local tools, bounded tool
+;; use, durable in-buffer tool receipts, explicit transcript compaction, and
+;; advisory context accounting.  gptel still owns requests, streaming, tool
+;; dispatch, response properties, persistence, and rewrite review.
+;;
+;; Design principles
+;; -----------------
+;;
+;; The conversation buffer is the source of truth.  Conversation history,
+;; archived output, compaction checkpoints, links, and branches are ordinary
+;; editable Org text.  This library deliberately does not provide a dashboard,
+;; command palette, custom agent loop, automatic retry, automatic compaction,
+;; or a second acceptance UI.  In particular, it does not advise
+;; `gptel-send'.  It uses gptel's public request and tool hooks and composes
+;; with the normal `gptel-rewrite' workflow.
+;;
+;; User-created Org headings define conversation branches.  Model-created
+;; headings do not: after each completed response,
+;; `gptel-pi-normalize-assistant-headings' changes assistant headings such as
+;; "** Findings" into presentational labels such as "*Findings*".  It leaves
+;; user text and headings inside source, example, quote, reasoning, and tool
+;; blocks alone.  Use `gptel-pi-promote-label' when an assistant label should
+;; intentionally become a real branch heading.
+;;
+;; Starting and using a session
+;; ----------------------------
+;;
+;; Run `gptel-pi' in a project.  It reuses the most recently visited gptel-pi
+;; session for the current project root.  With C-u it creates another session;
+;; with C-u C-u it prompts for an existing session.  The command uses
+;; `project-current' when possible and otherwise uses `default-directory'.
+;; Continue to send prompts with ordinary `gptel-send' and use the standard
+;; gptel commands and menus for model, backend, tool, and request control.
+;;
+;; A new Org session has this shape:
+;;
+;;   * Archive
+;;   ** Tool outputs
+;;   ** Compactions
+;;   * Conversation
+;;   @user
+;;
+;; Point starts in Conversation.  `gptel-org-branching-context' is enabled
+;; buffer-locally, so the Archive sibling is not replayed while point remains
+;; in the active conversation lineage.  Following an archive link is ordinary
+;; Org navigation; return to Conversation before sending another prompt unless
+;; the archive itself is intentionally being used as context.
+;;
+;; Saved Org chats retain the gptel-pi preset through gptel's normal state
+;; persistence.  When such a file is reopened and `gptel-mode' restores the
+;; preset, gptel-pi reinstalls its buffer-local hooks and mode-line entries.
+;;
+;; Important commands
+;; ------------------
+;;
+;; - `gptel-pi' starts, reuses, or selects a project session.
+;; - `gptel-send' is the unchanged, standard way to send a prompt.
+;; - `gptel-pi-promote-label' makes a bold assistant label a real Org heading.
+;; - `gptel-pi-archive-region' copies a selected transcript region verbatim to
+;;   Archive/Compactions and leaves an ordinary link beside the source.
+;; - `gptel-pi-compact-region' first performs that archival operation and then
+;;   starts standard `gptel-rewrite' with tools disabled and a checkpoint
+;;   directive.  Accept, reject, diff, ediff, merge, or iterate using gptel's
+;;   normal rewrite actions.  Rejecting a rewrite intentionally leaves the
+;;   visible archive snapshot and link, which can be removed by normal editing
+;;   or undo.
+;;
+;; Tools and retained output
+;; -------------------------
+;;
+;; The preset advertises five tools: `read', `bash', `eval', `write', and
+;; `edit'.  Reads use one-indexed line offsets, independent line and UTF-8 byte
+;; limits, head truncation, and actionable continuation offsets.  Bash uses a
+;; pipe rather than a PTY, keeps the useful tail, separates stdout and stderr,
+;; and reports exit, timeout, and signal status.  Eval is intended for relevant
+;; live Emacs state, not general project exploration.  Edit rejects empty or
+;; non-unique old text.  Write is intended for new files or complete rewrites.
+;;
+;; Large read, Bash, and printed eval results are stored in Archive/Tool
+;; outputs.  The active tool result contains a concise receipt and an ordinary
+;; Org link to the complete output.  The archive is in the same buffer; no
+;; temporary file is treated as durable history.  Text reads are the supported
+;; read path at present; binary media should be attached through gptel's normal
+;; media/context facilities rather than assumed to be available from a tool
+;; result in the current turn.
+;;
+;; Tool calls are autonomous under the preset, so the user is assumed to be
+;; comfortable allowing the advertised file and shell operations in the
+;; current project.  gptel-pi stops a request through
+;; `gptel-pre-tool-call-functions' after a hard budget, repeated identical
+;; calls, or repeated identical failures.  It never restarts the request.  A
+;; small "Pi tools N" mode-line item shows the current count and adds "!" near
+;; or at a stop condition.
+;;
+;; If `agent-shell-command-prefix' is buffer-local and effective, Bash commands
+;; are prefixed with it.  In that sandboxed situation the Emacs-hosted read,
+;; write, edit, and eval tools are removed from the request because they would
+;; bypass the shell sandbox.  Bash assumes `shell-file-name' accepts
+;; `shell-command-switch'; positive timeouts additionally assume a compatible
+;; external `timeout' executable.
+;;
+;; Project context and workflow assumptions
+;; ----------------------------------------
+;;
+;; The harness assumes coding work is rooted at an Emacs project (or at least a
+;; meaningful `default-directory'), that prompts and assistant replies remain
+;; in the Org conversation, and that the user creates branches with normal Org
+;; headings.  A root AGENTS.md is copied into the system prompt, where it is
+;; branch-invariant.  Local .agents/skills and ~/.agents/skills are indexed in
+;; the system prompt, and nearby subdirectory AGENTS.md files are listed for
+;; the model to read when relevant.  They are not inserted as conversation
+;; headings.
+;;
+;; Context pressure is advisory only.  "Pi ctx N%" estimates the active Org
+;; lineage plus the system prompt, uses model context-window metadata when
+;; present, and otherwise falls back to `gptel-pi-default-context-window' and
+;; `gptel-pi-context-chars-per-token'.  One or two exclamation marks indicate
+;; warning and critical thresholds.  The estimate never blocks or intercepts
+;; a send, mutates history, invokes compaction, or retries an overflow.  Exact
+;; provider token accounting is preferred conceptually, but the current
+;; indicator is intentionally documented as an estimate.
+
 ;;; Code:
 
 (require 'gptel)
