@@ -65,9 +65,13 @@
                                                 url))
                                           (y-or-n-p "Browse with EWW? "))
                                      (apply #'eww-browse-url url args)
-                                   (if (eq system-type 'windows-nt)
-                                       (apply #'browse-url-default-browser url args)
-                                     (apply #'browse-url-generic url args)))))
+                                   (cond
+                                    ((eq system-type 'windows-nt) 
+                                     (apply #'browse-url-default-browser url args))
+                                    ((eq system-type 'android)
+                                     (apply #'browse-url-default-android-browser url args))
+                                    (t
+                                     (apply #'browse-url-generic url args))))))
   (custom-file (locate-user-emacs-file "emacs-custom.el"))
   (confirm-kill-emacs 'yes-or-no-p)
   (visible-bell nil)
@@ -1272,7 +1276,7 @@
 (use-package kitty-graphics
   :ensure t
   :unless (or (daemonp) (display-graphic-p))
-  :vc (:url "https://github.com/timfel/kitty-graphics.el" :branch "master" :rev :newest)
+  :vc (:url "https://github.com/cashmeredev/kitty-graphics.el" :branch "master" :rev :newest)
   :config
   (kitty-graphics-mode 1))
 
@@ -1377,135 +1381,94 @@
 
 (use-package gptel
   :ensure t
-  :defines (cashpw/gptel-mode-line--indicator-querying
-            cashpw/gptel-mode-line--indicator-responding
-            cashpw/gptel-show-progress-in-mode-line
-            timfel/gptel-tool--collection-tools
-            gptel--openai-models
-            timfel/gptel-tool--custom-tools)
-  :functions (timfel/gptel--load-prompt-directive
-              timfel/gptel--prompt-metadata
-              cashpw/gptel-mode-line cashpw/gptel-mode-line--hide-all
-              cashpw/gptel-mode-line--indicator gptel-abort
-              gptel-make-openai-oauth)
-  :commands (gptel gptel-request gptel-openai-oauth-login)
+  :defines (gptel--openai-models)
+  :functions (gptel-make-openai-oauth)
+  :commands (gptel)
   :pin melpa
   :custom
   (gptel-model 'gpt-5.6-luna)
-  (gptel-include-tool-results t)
-  (gptel-include-reasoning t)
+  (gptel-default-mode 'org-mode)
+  (gptel-log-level 'info)
+  (gptel-org-branching-context t)
   :config
+  (require 'gptel-openai)
   (require 'gptel-openai-oauth)
+  (require 'gptel-request)
+
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
+  (setf (alist-get 'org-mode gptel-response-prefix-alist) "@llm\n")
+
   (setq gptel-backend
         (gptel-make-openai-oauth "OpenAI" :models gptel--openai-models))
+
+  (dolist (model-effort
+           '((gpt-5.6-terra . "high")
+             (gpt-5.6-luna  . "high")
+             (gpt-5.6-sol   . "high")))
+    (let ((model (car model-effort))
+          (effort (cdr model-effort)))
+      (setplist
+       model
+       (plist-put (symbol-plist model)
+                  :request-params
+                  `(:reasoning (:effort ,effort
+                                :summary "concise"))))))
+
+  ;; currently:
+  ;;
+  ;;  llama-server -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL --alias \
+  ;;    local-code-model --port 8080 --host 0.0.0.0 --ctx-size 65536 --flash-attn \
+  ;;    on --cache-type-k q8_0 --cache-type-v q8_0 --jinja -np 1 --reasoning off
+  ;;
+  ;;  llama-server -hf unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL --alias \
+  ;;    local-chat-model --port 8080 --host 0.0.0.0 --ctx-size 65536 --flash-attn \
+  ;;    on --cache-type-k q8_0 --cache-type-v q8_0 --jinja -np 1 --temp 1.0 \
+  ;;    --top-p 0.95 --top-k 64
   (gptel-make-openai "llama-cpp"
     :host "127.0.0.1:8080"
     :protocol "http"
     :stream t
-    :models '(ggml-org/gemma-4-E2B-it-GGUF unsloth/Qwen3.6-35B-A3B-GGUF)
+    :models '(local-code-model local-chat-model)
     :key "none")
-  (setq
-   cashpw/gptel-mode-line--indicator-querying "↑GPTEL↑ "
-   cashpw/gptel-mode-line--indicator-responding "↓GPTEL↓ "
-   cashpw/gptel-show-progress-in-mode-line t)
-  (defun cashpw/gptel-mode-line--indicator (mode)
-    "Return indicator string for MODE."
-    (pcase mode
-      ('querying
-       cashpw/gptel-mode-line--indicator-querying)
-      ('responding
-       cashpw/gptel-mode-line--indicator-responding)
-      (_
-       "")))
-  (defun cashpw/gptel-mode-line (command mode)
-    "Update mode line to COMMAND (show|hide) indicator for MODE."
-    (when cashpw/gptel-show-progress-in-mode-line
-      (let ((indicator (list t (cashpw/gptel-mode-line--indicator mode))))
-        (pcase command
-          ('show
-           (cl-pushnew indicator global-mode-string :test #'equal))
-          ('hide
-           (setf global-mode-string (remove indicator global-mode-string)))))
-      (force-mode-line-update t)))
-  (defun cashpw/gptel-mode-line--hide-all (&rest _)
-    (cashpw/gptel-mode-line 'hide 'querying)
-    (cashpw/gptel-mode-line 'hide 'responding))
-  (defun cashpw/gptel-mode-line--show-querying ()
-    (cashpw/gptel-mode-line--hide-all)
-    (cashpw/gptel-mode-line 'show 'querying))
-  (defun cashpw/gptel-mode-line--show-responding ()
-    (cashpw/gptel-mode-line--hide-all)
-    (cashpw/gptel-mode-line 'show 'responding))
-  (add-hook 'gptel-post-request-hook 'cashpw/gptel-mode-line--show-querying)
-  (add-hook 'gptel-pre-response-hook 'cashpw/gptel-mode-line--show-responding)
-  (add-hook 'gptel-post-response-functions 'cashpw/gptel-mode-line--hide-all)
-
-  (advice-add 'keyboard-quit :before (lambda (&rest _args) (ignore-errors (gptel-abort (current-buffer)))))
-
-  (defun timfel/gptel-complete ()
-    (interactive
-     (let ((query (if (use-region-p)
-                      (buffer-substring-no-properties (region-beginning)
-                                                      (region-end))
-                    (buffer-substring-no-properties (point-min)
-                                                    (point))))
-           (gptel-tools (append timfel/gptel-tool--custom-tools
-                                timfel/gptel-tool--collection-tools))
-           (gptel-use-tools t)
-           (gptel-include-reasoning nil))
-       (gptel-request query
-         :stream gptel-stream
-         :system "Continue writing until the current control flow is completed or the task described in the last comment is done. Only write code, no markup, no communication, no explanations, do not repeat parts of the request, just continue writing the code."))))
-
-  (defun timfel/gptel--prompt-metadata (key)
-    "Return prompt metadata KEY from comment headers in the current buffer."
-    (save-excursion
-      (goto-char (point-min))
-      (when (re-search-forward
-             (format "^ *<!-- *#\\+%s: \\(.*?\\) *--> *$" key)
-             nil t)
-        (string-trim (match-string 1)))))
-
-  (defun timfel/gptel--load-prompt-directive (prompt-file)
-    "Load PROMPT-FILE into a single `gptel-directives' entry."
-    (with-temp-buffer
-      (insert-file-contents prompt-file)
-      (let ((prompt-name nil)
-            (prompt-description nil))
-        (setq prompt-name
-              (or (timfel/gptel--prompt-metadata "name")
-                  (file-name-base prompt-file)))
-        (setq prompt-description
-              (or (timfel/gptel--prompt-metadata "description")
-                  "NO DESCRIPTION"))
-        ;; Strip prompt metadata comments before sending the directive text.
-        (goto-char (point-min))
-        (flush-lines "^ *<!--.*--> *$")
-        (goto-char (point-min))
-        (when (looking-at "\n+")
-          (delete-region (point) (match-end 0)))
-        (list
-         (intern prompt-name)
-         prompt-description
-         (buffer-substring-no-properties (point-min) (point-max))))))
 
   (setq gptel-directives
         (let* ((promptdir (expand-file-name "prompts" user-emacs-directory))
                (prompt-files (directory-files promptdir t "\\.md\\'")))
-          (mapcar #'timfel/gptel--load-prompt-directive prompt-files)))
-  :bind (("C-x a i" . gptel)
-         ("C-x a c" . timfel/gptel-complete)))
+          (mapcar
+           (lambda (prompt-file)
+             (with-temp-buffer
+               (insert-file-contents prompt-file)
+               (let* ((gmd (lambda (key)
+                             (save-excursion
+                               (goto-char (point-min))
+                               (when (re-search-forward
+                                      (format "^ *<!-- *#\\+%s: \\(.*?\\) *--> *$" key)
+                                      nil t)
+                                 (string-trim (match-string 1))))))
+                      (prompt-name (or (funcall gmd "name") (file-name-base prompt-file)))
+                      (prompt-description (or (funcall gmd "description") "NO DESCR")))
+                 (goto-char (point-min))
+                 (flush-lines "^ *<!--.*--> *$")
+                 (goto-char (point-min))
+                 (when (looking-at "\n+") (delete-region (point) (match-end 0)))
+                 (list
+                  (intern prompt-name)
+                  prompt-description
+                  (buffer-substring-no-properties (point-min) (point-max))))))
+           prompt-files))))
 
-(use-package llm-tool-collection
-  :ensure t
+(use-package gptel-pi
+  :bind (("C-x a i" . gptel-pi)))
+
+(use-package gptel-fim
+  :bind (("C-x a c" . gptel-fim)))
+
+(use-package gptel-modeline-status
   :after gptel
-  :vc (:url "https://github.com/skissue/llm-tool-collection" :branch "main" :rev :newest))
-
-(use-package timfel-gptel-tools
-  :after (gptel llm-tool-collection))
+  :demand t)
 
 (use-package timfel-gptel-orchestration
-  :commands timfel/gptel-open-agents-orchestration
+  :commands timfel/weekly-confluence-report
   :bind (("C-x a m" . timfel/gptel-open-agents-orchestration)))
 
 (use-package emacs-theme-detection
