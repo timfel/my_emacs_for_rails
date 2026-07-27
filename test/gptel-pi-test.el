@@ -116,6 +116,49 @@
                     "tool" "Tool outputs" "second" "two")
                    "[[gptel-pi-tool-0002][second]]"))))
 
+(ert-deftest gptel-pi-archive-region-copies-verbatim-and-keeps-source-active ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (gptel-pi--initialize-org-session)
+    (insert "First turn\n#+begin_tool x\nresult\n#+end_tool\nLatest turn\n")
+    (goto-char (point-min))
+    (search-forward "First turn")
+    (let ((begin (match-beginning 0)))
+      (search-forward "Latest turn")
+      (let* ((end (match-beginning 0))
+             (original (buffer-substring begin end)))
+        (goto-char end)
+        (set-mark begin)
+        (activate-mark)
+        (should (equal (gptel-pi-archive-region begin end)
+                       "[[gptel-pi-compaction-0001][compaction archive 0001]]"))
+        (should (equal (buffer-substring (region-beginning) (region-end))
+                       original))
+        (should (string-match-p
+                 (regexp-quote (concat "<<gptel-pi-compaction-0001>>\n\n" original))
+                 (buffer-string)))
+        (should (string-match-p
+                 (regexp-quote
+                  "Original transcript: [[gptel-pi-compaction-0001][compaction archive 0001]]")
+                 (buffer-string)))))))
+
+(ert-deftest gptel-pi-archive-region-targets-increase ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (gptel-pi--initialize-org-session)
+    (insert "one two")
+    (let ((begin (- (point-max) 7))
+          (end (- (point-max) 4)))
+      (gptel-pi-archive-region begin end)
+      (goto-char (point-max))
+      (insert "more")
+      (setq begin (- (point-max) 4)
+            end (point-max))
+      (should (equal (gptel-pi-archive-region begin end)
+                     "[[gptel-pi-compaction-0002][compaction archive 0002]]")))))
+
 (ert-deftest gptel-pi-normalizes-only-assistant-headings ()
   (with-temp-buffer
     (org-mode)

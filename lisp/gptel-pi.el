@@ -205,6 +205,54 @@ text inserted before the example block."
         (insert "#+end_example\n\n")))
     (format "[[%s][%s]]" target title)))
 
+(defun gptel-pi--archive-transcript (text)
+  "Archive transcript TEXT verbatim and return its link."
+  (let* ((target (gptel-pi--next-target "compaction"))
+         (number (progn
+                   (string-match "-\\([0-9]+\\)\\'" target)
+                   (string-to-number (match-string 1 target))))
+         (title (format "compaction %04d" number)))
+    (save-excursion
+      (save-restriction
+        (widen)
+        (goto-char (gptel-pi--archive-section-position "Compactions"))
+        (unless (bolp) (insert "\n"))
+        (insert (format "*** %s\n<<%s>>\n\n" title target) text)
+        (unless (string-suffix-p "\n" text) (insert "\n"))
+        (insert "\n")))
+    (format "[[%s][compaction archive %04d]]" target number)))
+
+;;;###autoload
+(defun gptel-pi-archive-region (begin end)
+  "Copy the active region from BEGIN to END into the compaction archive.
+
+The source is left untouched, an ordinary link is inserted immediately after
+it, and the original source remains the active region."
+  (interactive (if (use-region-p)
+                   (list (region-beginning) (region-end))
+                 (user-error "Select a region to archive")))
+  (unless (and gptel-pi-session-p (derived-mode-p 'org-mode))
+    (user-error "This command requires an Org gptel-pi session"))
+  (unless (< begin end)
+    (user-error "Select a non-empty region to archive"))
+  (let ((begin-marker (copy-marker begin nil))
+        (end-marker (copy-marker end nil))
+        (text (buffer-substring begin end))
+        link)
+    (unwind-protect
+        (progn
+          (setq link (gptel-pi--archive-transcript text))
+          (goto-char end-marker)
+          (unless (bolp) (insert "\n"))
+          (insert (format "\nOriginal transcript: %s\n" link))
+          (goto-char end-marker)
+          (set-mark begin-marker)
+          (setq deactivate-mark nil)
+          (activate-mark)
+          link)
+      (set-marker begin-marker nil)
+      (set-marker end-marker nil))))
+
 (defun gptel-pi--archive-tool-output (tool summary output metadata)
   "Archive complete tool OUTPUT and return its ordinary Org link.
 
