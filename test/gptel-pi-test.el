@@ -75,6 +75,19 @@
         (should (string-match-p "Line 1 exceeds the 5-byte read limit" result))
         (should (string-match-p "sed -n '1p'" result))))))
 
+(ert-deftest gptel-pi-restores-setup-from-saved-preset ()
+  (with-temp-buffer
+    (org-mode)
+    (insert "* Archive\n:PROPERTIES:\n:GPTEL_PRESET: gptel-pi\n:END:\n"
+            "* Conversation\n")
+    (setq-local gptel-mode t)
+    (gptel-pi--maybe-setup-restored-buffer)
+    (should gptel-pi-session-p)
+    (should gptel-org-branching-context)
+    (should (memq #'gptel-pi-normalize-assistant-headings
+                  gptel-post-response-functions))
+    (gptel-pi--cancel-context-timer)))
+
 (ert-deftest gptel-pi-initializes-org-session-layout ()
   (with-temp-buffer
     (org-mode)

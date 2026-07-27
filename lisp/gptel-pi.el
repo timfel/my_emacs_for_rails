@@ -620,6 +620,12 @@ output block."
         (setq gptel-pi--context-branch branch)
         (gptel-pi--schedule-context-update)))))
 
+(defun gptel-pi--cancel-context-timer ()
+  "Cancel the pending context update timer, if any."
+  (when (timerp gptel-pi--context-update-timer)
+    (cancel-timer gptel-pi--context-update-timer))
+  (setq gptel-pi--context-update-timer nil))
+
 (defun gptel-pi--context-mode-line ()
   "Return the advisory context percentage for the mode line."
   (format " Pi ctx %d%%%s" gptel-pi--context-percent
@@ -631,7 +637,8 @@ output block."
 
 (defun gptel-pi--setup-buffer ()
   "Set up the current buffer as a gptel-pi session."
-  (setq-local gptel-pi-session-p t)
+  (setq-local gptel-pi-session-p t
+              gptel-org-branching-context t)
   (gptel-pi--reset-tool-state)
   (add-hook 'gptel-post-request-hook #'gptel-pi--mark-request-active nil t)
   (add-hook 'gptel-pre-tool-call-functions #'gptel-pi--pre-tool-call nil t)
@@ -644,14 +651,21 @@ output block."
   (add-hook 'gptel-post-rewrite-functions #'gptel-pi--reset-tool-state 90 t)
   (add-hook 'after-change-functions #'gptel-pi--schedule-context-update nil t)
   (add-hook 'post-command-hook #'gptel-pi--track-context-branch nil t)
-  (add-hook 'kill-buffer-hook
-            (lambda ()
-              (when (timerp gptel-pi--context-update-timer)
-                (cancel-timer gptel-pi--context-update-timer))) nil t)
+  (add-hook 'kill-buffer-hook #'gptel-pi--cancel-context-timer nil t)
   (add-to-list (make-local-variable 'mode-line-misc-info)
                '(:eval (gptel-pi--tool-mode-line)) t)
   (add-to-list 'mode-line-misc-info
-               '(:eval (gptel-pi--context-mode-line)) t))
+               '(:eval (gptel-pi--context-mode-line)) t)
+  (gptel-pi--schedule-context-update))
+
+(defun gptel-pi--maybe-setup-restored-buffer ()
+  "Restore gptel-pi hooks when opening a saved gptel-pi Org session."
+  (when (and gptel-mode
+             (derived-mode-p 'org-mode)
+             (string-equal (org-entry-get (point-min) "GPTEL_PRESET") "gptel-pi"))
+    (gptel-pi--setup-buffer)))
+
+(add-hook 'gptel-mode-hook #'gptel-pi--maybe-setup-restored-buffer)
 
 (defun gptel-pi--sandboxed-p (buffer)
   "Return non-nil when BUFFER has an effective shell command prefix."
