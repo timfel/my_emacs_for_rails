@@ -25,6 +25,10 @@
 (require 'cl-lib)
 (require 'subr-x)
 
+(defvar gptel-rewrite-directives-hook)
+(defvar gptel-post-rewrite-functions)
+(defvar gptel--rewrite-message)
+
 (defvar-local gptel-pi-session-p nil
   "Non-nil when the current buffer is a gptel-pi session.")
 
@@ -48,6 +52,7 @@
 (defvar-local gptel-pi--tool-error-fingerprints nil)
 (defvar-local gptel-pi--tools-active-p nil)
 (defvar-local gptel-pi--tools-stopped-p nil)
+(defvar-local gptel-pi--request-active-p nil)
 
 (defconst gptel-pi-system-prompt "You are an expert coding assistant.
 You help users with coding tasks by reading files, executing commands, editing code, and writing new files.
@@ -222,6 +227,27 @@ text inserted before the example block."
         (insert "\n")))
     (format "[[%s][compaction archive %04d]]" target number)))
 
+(defun gptel-pi--inside-tool-block-p (position)
+  "Return non-nil when POSITION splits an Org gptel tool block."
+  (save-excursion
+    (goto-char (point-min))
+    (let ((case-fold-search t)
+          (depth 0))
+      (while (re-search-forward
+              "^[ \t]*#\\+\\(begin\\|end\\)_tool\\b" position t)
+        (if (string-equal (downcase (match-string 1)) "begin")
+            (setq depth (1+ depth))
+          (setq depth (max 0 (1- depth)))))
+      (> depth 0))))
+
+(defun gptel-pi--validate-compaction-region (begin end)
+  "Validate that BEGIN and END form a complete compaction region."
+  (unless (< begin end)
+    (user-error "Select a non-empty region to compact"))
+  (when (or (gptel-pi--inside-tool-block-p begin)
+            (gptel-pi--inside-tool-block-p end))
+    (user-error "Compaction region must not split a gptel tool block")))
+
 ;;;###autoload
 (defun gptel-pi-archive-region (begin end)
   "Copy the active region from BEGIN to END into the compaction archive.
@@ -252,6 +278,52 @@ it, and the original source remains the active region."
           link)
       (set-marker begin-marker nil)
       (set-marker end-marker nil))))
+
+(defconst gptel-pi--compaction-directive
+  (concat
+   "Summarize the selected transcript as a standalone context checkpoint. "
+   "Generate only replacement checkpoint text and do not continue the conversation. "
+   "Do not use real Org headings; use bold labels and lists. Preserve exact paths, "
+   "function names, decisions, current errors and test results, next steps, and the "
+   "cumulative read and modified file lists. Use this format:\n\n"
+   "*Context checkpoint*\n\n"
+   "- *Goal:* ...\n- *Constraints:* ...\n- *Completed:* ...\n"
+   "- *Current work:* ...\n- *Blocked:* ...\n- *Decisions:* ...\n"
+   "- *Next steps:* ...\n- *Critical context:* ...\n"
+   "- *Read files:* ...\n- *Modified files:* ...")
+  "Rewrite instruction used for explicit transcript compaction.")
+
+(defun gptel-pi--compaction-system-directive ()
+  "Return the standalone system directive for compaction rewrites."
+  (concat
+   "You compact coding-agent transcripts. " gptel-pi--compaction-directive
+   "\nDo not call tools, narrate progress, add markdown fences, or add commentary."))
+
+(defun gptel-pi--start-compaction-rewrite ()
+  "Start standard `gptel-rewrite' for the active compaction region."
+  (require 'gptel-rewrite)
+  ;; gptel does not yet expose a public argument for the initial rewrite
+  ;; instruction.  Dynamically binding its documented transient infix backing
+  ;; variable avoids any dependency on rewrite overlays or callbacks.
+  (let ((gptel-use-tools nil)
+        (gptel-tools nil)
+        (gptel--rewrite-message gptel-pi--compaction-directive)
+        (gptel-rewrite-directives-hook
+         (cons #'gptel-pi--compaction-system-directive
+               gptel-rewrite-directives-hook)))
+    (call-interactively #'gptel-rewrite)))
+
+;;;###autoload
+(defun gptel-pi-compact-region (begin end)
+  "Archive and invoke standard `gptel-rewrite' on the region BEGIN to END."
+  (interactive (if (use-region-p)
+                   (list (region-beginning) (region-end))
+                 (user-error "Select a region to compact")))
+  (when (or gptel-pi--request-active-p gptel-pi--tools-active-p)
+    (user-error "Wait for the active gptel request to finish before compacting"))
+  (gptel-pi--validate-compaction-region begin end)
+  (gptel-pi-archive-region begin end)
+  (gptel-pi--start-compaction-rewrite))
 
 (defun gptel-pi--archive-tool-output (tool summary output metadata)
   "Archive complete tool OUTPUT and return its ordinary Org link.
@@ -412,9 +484,14 @@ output block."
               (format "gptel-pi stopped after the same %s failure occurred %d times"
                       (plist-get info :name) count))))))
 
+(defun gptel-pi--mark-request-active ()
+  "Record that a public gptel request has been sent from this buffer."
+  (setq gptel-pi--request-active-p t))
+
 (defun gptel-pi--reset-tool-state (&rest _)
   "Reset per-request tool-loop state."
-  (setq gptel-pi--tool-call-count 0
+  (setq gptel-pi--request-active-p nil
+        gptel-pi--tool-call-count 0
         gptel-pi--tool-call-fingerprints (make-hash-table :test #'equal)
         gptel-pi--tool-error-fingerprints (make-hash-table :test #'equal)
         gptel-pi--tools-active-p nil
@@ -434,11 +511,13 @@ output block."
   "Set up the current buffer as a gptel-pi session."
   (setq-local gptel-pi-session-p t)
   (gptel-pi--reset-tool-state)
+  (add-hook 'gptel-post-request-hook #'gptel-pi--mark-request-active nil t)
   (add-hook 'gptel-pre-tool-call-functions #'gptel-pi--pre-tool-call nil t)
   (add-hook 'gptel-post-tool-call-functions #'gptel-pi--post-tool-call nil t)
   (add-hook 'gptel-post-response-functions
             #'gptel-pi-normalize-assistant-headings nil t)
   (add-hook 'gptel-post-response-functions #'gptel-pi--reset-tool-state 90 t)
+  (add-hook 'gptel-post-rewrite-functions #'gptel-pi--reset-tool-state 90 t)
   (add-to-list (make-local-variable 'mode-line-misc-info)
                '(:eval (gptel-pi--tool-mode-line)) t))
 

@@ -3,6 +3,8 @@
 (require 'ert)
 (require 'gptel-pi)
 
+(defvar gptel--rewrite-message)
+
 (defmacro gptel-pi-test--with-file (content &rest body)
   "Write CONTENT to a temporary file and evaluate BODY with `file' bound."
   (declare (indent 1) (debug t))
@@ -158,6 +160,72 @@
             end (point-max))
       (should (equal (gptel-pi-archive-region begin end)
                      "[[gptel-pi-compaction-0002][compaction archive 0002]]")))))
+
+(ert-deftest gptel-pi-compaction-validation-rejects-split-tool-block ()
+  (with-temp-buffer
+    (org-mode)
+    (insert "before\n#+begin_tool x\nresult\n#+end_tool\nafter\n")
+    (goto-char (point-min))
+    (search-forward "result")
+    (let ((inside (point)))
+      (should-error
+       (gptel-pi--validate-compaction-region (point-min) inside)
+       :type 'user-error)
+      (should-error
+       (gptel-pi--validate-compaction-region inside (point-max))
+       :type 'user-error)
+      (should-not
+       (gptel-pi--validate-compaction-region (point-min) (point-max))))))
+
+(ert-deftest gptel-pi-compaction-refuses-active-request ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t
+                gptel-pi--request-active-p t)
+    (insert "text")
+    (should-error (gptel-pi-compact-region (point-min) (point-max))
+                  :type 'user-error)))
+
+(ert-deftest gptel-pi-compact-region-composes-archive-and-rewrite ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (gptel-pi--initialize-org-session)
+    (insert "old transcript")
+    (let ((begin (- (point-max) (length "old transcript")))
+          (end (point-max))
+          rewrite-started)
+      (cl-letf (((symbol-function 'gptel-pi--start-compaction-rewrite)
+                 (lambda () (setq rewrite-started t))))
+        (gptel-pi-compact-region begin end))
+      (should rewrite-started)
+      (should (equal (buffer-substring (region-beginning) (region-end))
+                     "old transcript"))
+      (should (string-match-p "<<gptel-pi-compaction-0001>>"
+                              (buffer-string)))
+      (should (string-match-p "Original transcript: \\[\\[gptel-pi-compaction-0001\\]"
+                              (buffer-string))))))
+
+(ert-deftest gptel-pi-compaction-rewrite-disables-tools ()
+  (with-temp-buffer
+    (let ((gptel-use-tools t)
+          (gptel-tools '(fake-tool))
+          observed)
+      (require 'gptel-rewrite)
+      (cl-letf (((symbol-function 'gptel-rewrite)
+                 (lambda ()
+                   (interactive)
+                   (setq observed
+                         (list gptel-use-tools gptel-tools
+                               gptel--rewrite-message
+                               (run-hook-with-args-until-success
+                                'gptel-rewrite-directives-hook))))))
+        (gptel-pi--start-compaction-rewrite))
+      (should-not (nth 0 observed))
+      (should-not (nth 1 observed))
+      (should (equal (nth 2 observed) gptel-pi--compaction-directive))
+      (should (string-match-p "You compact coding-agent transcripts"
+                              (nth 3 observed))))))
 
 (ert-deftest gptel-pi-normalizes-only-assistant-headings ()
   (with-temp-buffer
