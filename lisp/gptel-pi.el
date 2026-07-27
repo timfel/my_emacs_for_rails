@@ -20,6 +20,7 @@
 
 (require 'gptel)
 (require 'gptel-context)
+(require 'gptel-org)
 (require 'org)
 (require 'project)
 (require 'cl-lib)
@@ -47,12 +48,36 @@
   :type 'integer
   :group 'gptel)
 
+(defcustom gptel-pi-context-chars-per-token 3.0
+  "Conservative fallback character-to-token ratio for context estimates."
+  :type 'number
+  :group 'gptel)
+
+(defcustom gptel-pi-default-context-window 128000
+  "Fallback model context window in tokens when metadata is unavailable."
+  :type 'integer
+  :group 'gptel)
+
+(defcustom gptel-pi-context-warning-percent 75
+  "Context percentage at which the mode-line estimate shows one warning mark."
+  :type 'integer
+  :group 'gptel)
+
+(defcustom gptel-pi-context-critical-percent 90
+  "Context percentage at which the mode-line estimate shows two warning marks."
+  :type 'integer
+  :group 'gptel)
+
 (defvar-local gptel-pi--tool-call-count 0)
 (defvar-local gptel-pi--tool-call-fingerprints nil)
 (defvar-local gptel-pi--tool-error-fingerprints nil)
 (defvar-local gptel-pi--tools-active-p nil)
 (defvar-local gptel-pi--tools-stopped-p nil)
 (defvar-local gptel-pi--request-active-p nil)
+(defvar-local gptel-pi--context-percent 0)
+(defvar-local gptel-pi--context-warning-level 0)
+(defvar-local gptel-pi--context-update-timer nil)
+(defvar-local gptel-pi--context-branch nil)
 
 (defconst gptel-pi-system-prompt "You are an expert coding assistant.
 You help users with coding tasks by reading files, executing commands, editing code, and writing new files.
@@ -507,6 +532,103 @@ output block."
                     (>= gptel-pi--tool-call-count gptel-pi-max-tool-calls))
                 "!" ""))))
 
+(defun gptel-pi--active-org-lineage-string ()
+  "Return the Org lineage up to point, matching gptel branching semantics."
+  (if (not (and (derived-mode-p 'org-mode) gptel-org-branching-context))
+      (buffer-substring-no-properties (point-min) (point))
+    (save-excursion
+      (let* ((source (current-buffer))
+             (prompt-end (point))
+             (lineage
+              (org-element-lineage-map
+                  (org-element-at-point)
+                  (lambda (node) (org-element-property :begin node))
+                '(headline) t))
+             (starts
+              (sort (append lineage
+                            (unless (save-excursion
+                                      (goto-char (point-min))
+                                      (looking-at-p outline-regexp))
+                              (list (point-min))))
+                    #'<))
+             ends)
+        (setq ends
+              (cl-loop for tail on starts
+                       for start = (car tail)
+                       collect
+                       (if (cdr tail)
+                           (progn
+                             (goto-char start)
+                             (outline-next-heading)
+                             (point))
+                         prompt-end)))
+        (with-temp-buffer
+          (cl-loop for start in starts
+                   for end in ends
+                   do (insert-buffer-substring-no-properties source start end))
+          (buffer-string))))))
+
+(defun gptel-pi--model-context-window ()
+  "Return the current model context window in tokens."
+  (let ((thousands (and (symbolp gptel-model)
+                        (get gptel-model :context-window))))
+    (if (numberp thousands)
+        (round (* thousands 1000))
+      gptel-pi-default-context-window)))
+
+(defun gptel-pi--update-context-estimate (&rest _)
+  "Recalculate the advisory active-lineage context estimate."
+  (when (and gptel-pi-session-p (buffer-live-p (current-buffer)))
+    (when (timerp gptel-pi--context-update-timer)
+      (cancel-timer gptel-pi--context-update-timer))
+    (setq gptel-pi--context-update-timer nil)
+    (let* ((active (gptel-pi--active-org-lineage-string))
+           (system (if (stringp gptel-system-prompt) gptel-system-prompt ""))
+           (tokens (ceiling (/ (+ (length active) (length system))
+                               gptel-pi-context-chars-per-token)))
+           (window (max 1 (gptel-pi--model-context-window)))
+           (percent (round (* 100.0 (/ (float tokens) window))))
+           (level (cond ((>= percent gptel-pi-context-critical-percent) 2)
+                        ((>= percent gptel-pi-context-warning-percent) 1)
+                        (t 0))))
+      (setq gptel-pi--context-percent percent)
+      (when (> level gptel-pi--context-warning-level)
+        (message
+         "gptel-pi context is approximately %d%%; compact a region or edit the buffer before continuing"
+         percent))
+      (setq gptel-pi--context-warning-level level)
+      (force-mode-line-update))))
+
+(defun gptel-pi--schedule-context-update (&rest _)
+  "Schedule an idle context estimate update for the current buffer."
+  (when (timerp gptel-pi--context-update-timer)
+    (cancel-timer gptel-pi--context-update-timer))
+  (let ((buffer (current-buffer)))
+    (setq gptel-pi--context-update-timer
+          (run-with-idle-timer
+           0.75 nil
+           (lambda ()
+             (when (buffer-live-p buffer)
+               (with-current-buffer buffer
+                 (gptel-pi--update-context-estimate))))))))
+
+(defun gptel-pi--track-context-branch ()
+  "Schedule context accounting when the active Org lineage changes."
+  (when (derived-mode-p 'org-mode)
+    (let ((branch (org-get-outline-path t t)))
+      (unless (equal branch gptel-pi--context-branch)
+        (setq gptel-pi--context-branch branch)
+        (gptel-pi--schedule-context-update)))))
+
+(defun gptel-pi--context-mode-line ()
+  "Return the advisory context percentage for the mode line."
+  (format " Pi ctx %d%%%s" gptel-pi--context-percent
+          (cond ((>= gptel-pi--context-percent
+                     gptel-pi-context-critical-percent) "!!")
+                ((>= gptel-pi--context-percent
+                     gptel-pi-context-warning-percent) "!")
+                (t ""))))
+
 (defun gptel-pi--setup-buffer ()
   "Set up the current buffer as a gptel-pi session."
   (setq-local gptel-pi-session-p t)
@@ -516,10 +638,20 @@ output block."
   (add-hook 'gptel-post-tool-call-functions #'gptel-pi--post-tool-call nil t)
   (add-hook 'gptel-post-response-functions
             #'gptel-pi-normalize-assistant-headings nil t)
+  (add-hook 'gptel-post-response-functions #'gptel-pi--update-context-estimate 80 t)
   (add-hook 'gptel-post-response-functions #'gptel-pi--reset-tool-state 90 t)
+  (add-hook 'gptel-post-rewrite-functions #'gptel-pi--update-context-estimate 80 t)
   (add-hook 'gptel-post-rewrite-functions #'gptel-pi--reset-tool-state 90 t)
+  (add-hook 'after-change-functions #'gptel-pi--schedule-context-update nil t)
+  (add-hook 'post-command-hook #'gptel-pi--track-context-branch nil t)
+  (add-hook 'kill-buffer-hook
+            (lambda ()
+              (when (timerp gptel-pi--context-update-timer)
+                (cancel-timer gptel-pi--context-update-timer))) nil t)
   (add-to-list (make-local-variable 'mode-line-misc-info)
-               '(:eval (gptel-pi--tool-mode-line)) t))
+               '(:eval (gptel-pi--tool-mode-line)) t)
+  (add-to-list 'mode-line-misc-info
+               '(:eval (gptel-pi--context-mode-line)) t))
 
 (defun gptel-pi--sandboxed-p (buffer)
   "Return non-nil when BUFFER has an effective shell command prefix."

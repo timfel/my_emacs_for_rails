@@ -374,6 +374,46 @@
                      (buffer-string))
                    "first\nnew text\nlast\n"))))
 
+(ert-deftest gptel-pi-context-lineage-excludes-archive-and-sibling-branches ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t
+                gptel-org-branching-context t)
+    (insert "* Archive\nARCHIVED HUGE OUTPUT\n"
+            "* Conversation\ncommon\n"
+            "** Branch A\nold branch\n"
+            "** Branch B\nactive branch\n")
+    (goto-char (point-max))
+    (let ((active (gptel-pi--active-org-lineage-string)))
+      (should (string-match-p "Conversation" active))
+      (should (string-match-p "common" active))
+      (should (string-match-p "Branch B" active))
+      (should (string-match-p "active branch" active))
+      (should-not (string-match-p "ARCHIVED" active))
+      (should-not (string-match-p "Branch A" active)))))
+
+(ert-deftest gptel-pi-context-estimate-uses-model-window-metadata ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t
+                gptel-org-branching-context t
+                gptel-system-prompt ""
+                gptel-model 'gptel-pi-test-model)
+    (put 'gptel-pi-test-model :context-window 1)
+    (insert "* Conversation\n" (make-string 1500 ?x))
+    (goto-char (point-max))
+    (let ((gptel-pi-context-chars-per-token 3.0))
+      (gptel-pi--update-context-estimate)
+      (should (= gptel-pi--context-percent 50))
+      (should (equal (gptel-pi--context-mode-line) " Pi ctx 50%")))))
+
+(ert-deftest gptel-pi-context-mode-line-warning-levels ()
+  (with-temp-buffer
+    (setq-local gptel-pi--context-percent 79)
+    (should (equal (gptel-pi--context-mode-line) " Pi ctx 79%!"))
+    (setq gptel-pi--context-percent 93)
+    (should (equal (gptel-pi--context-mode-line) " Pi ctx 93%!!"))))
+
 (ert-deftest gptel-pi-tool-fingerprint-normalizes-plist-order ()
   (should (equal (gptel-pi--tool-fingerprint "read" '(:path "x" :offset 2))
                  (gptel-pi--tool-fingerprint "read" '(:offset 2 :path "x")))))
