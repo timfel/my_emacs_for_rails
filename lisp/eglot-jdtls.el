@@ -114,7 +114,9 @@ process through TRAMP, so this should also be available in the remote PATH."
 (defun eglot-jdtls--jdt-uri-file-name (uri)
   "Return stable cache file name for JDTLS URI."
   (let* ((decoded (url-unhex-string uri))
-         (base (if (string-match "jdt://contents/[^/]+/\\(.+?\\)\\.class\\?" decoded)
+         (base (if (string-match
+                    "\\`jdt://contents/[^/]+/\\(.+?\\)\\.\\(?:class\\|java\\)\\?"
+                    decoded)
                    (replace-regexp-in-string "/" "." (match-string 1 decoded))
                  (secure-hash 'sha1 decoded))))
     (expand-file-name (concat base ".java") (eglot-jdtls--jdt-cache-dir))))

@@ -5,6 +5,9 @@
 (defun javap-handler (op &rest args)
   "Handle .class files by putting the output of javap in the buffer."
   (cond
+   ((and (stringp (car args))
+         (string-prefix-p "jdt://" (car args)))
+    (javap-handler-real op args))
    ((eq op 'get-file-buffer)
     (let ((file (car args)))
       (with-current-buffer (create-file-buffer file)
