@@ -263,6 +263,59 @@
                      (buffer-string))
                    "first\nnew text\nlast\n"))))
 
+(ert-deftest gptel-pi-tool-fingerprint-normalizes-plist-order ()
+  (should (equal (gptel-pi--tool-fingerprint "read" '(:path "x" :offset 2))
+                 (gptel-pi--tool-fingerprint "read" '(:offset 2 :path "x")))))
+
+(ert-deftest gptel-pi-tool-budget-stops-after-hard-limit ()
+  (with-temp-buffer
+    (gptel-pi--reset-tool-state)
+    (let ((gptel-pi-max-tool-calls 2)
+          (gptel-pi-max-identical-tool-calls 10))
+      (should-not (gptel-pi--pre-tool-call '(:name "read" :args (:path "one"))))
+      (should-not (gptel-pi--pre-tool-call '(:name "read" :args (:path "two"))))
+      (let ((stop (gptel-pi--pre-tool-call '(:name "read" :args (:path "three")))))
+        (should (plist-get stop :stop))
+        (should (string-match-p "2-call tool budget" (plist-get stop :stop-reason)))))))
+
+(ert-deftest gptel-pi-tool-budget-stops-repeated-normalized-call ()
+  (with-temp-buffer
+    (gptel-pi--reset-tool-state)
+    (let ((gptel-pi-max-tool-calls 20)
+          (gptel-pi-max-identical-tool-calls 3))
+      (should-not
+       (gptel-pi--pre-tool-call '(:name "read" :args (:path "x" :offset 2))))
+      (should-not
+       (gptel-pi--pre-tool-call '(:name "read" :args (:offset 2 :path "x"))))
+      (let ((stop
+             (gptel-pi--pre-tool-call
+              '(:name "read" :args (:path "x" :offset 2)))))
+        (should (plist-get stop :stop))
+        (should (string-match-p "identical arguments (3 times)"
+                                (plist-get stop :stop-reason)))))))
+
+(ert-deftest gptel-pi-tool-budget-stops-repeated-failure ()
+  (with-temp-buffer
+    (gptel-pi--reset-tool-state)
+    (let ((gptel-pi-max-identical-tool-errors 2)
+          (failure '(:name "edit" :args (:path "x")
+                    :result "Error: old text not found")))
+      (should-not (gptel-pi--post-tool-call failure))
+      (let ((stop (gptel-pi--post-tool-call failure)))
+        (should (plist-get stop :stop))
+        (should (string-match-p "same edit failure occurred 2 times"
+                                (plist-get stop :stop-reason)))))))
+
+(ert-deftest gptel-pi-tool-count-mode-line-resets ()
+  (with-temp-buffer
+    (gptel-pi--reset-tool-state)
+    (let ((gptel-pi-max-tool-calls 1)
+          (gptel-pi-max-identical-tool-calls 10))
+      (gptel-pi--pre-tool-call '(:name "read" :args (:path "one")))
+      (should (equal (gptel-pi--tool-mode-line) " Pi tools 1!"))
+      (gptel-pi--reset-tool-state)
+      (should-not (gptel-pi--tool-mode-line)))))
+
 (ert-deftest gptel-pi-tool-optional-arguments-are-not-required ()
   (dolist (spec '(("read" "offset" "limit")
                   ("bash" "timeout")))

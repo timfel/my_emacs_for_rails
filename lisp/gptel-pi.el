@@ -28,6 +28,27 @@
 (defvar-local gptel-pi-session-p nil
   "Non-nil when the current buffer is a gptel-pi session.")
 
+(defcustom gptel-pi-max-tool-calls 40
+  "Hard limit on tool calls in one gptel request."
+  :type 'integer
+  :group 'gptel)
+
+(defcustom gptel-pi-max-identical-tool-calls 3
+  "Number of identical tool calls allowed before stopping a request."
+  :type 'integer
+  :group 'gptel)
+
+(defcustom gptel-pi-max-identical-tool-errors 2
+  "Number of identical tool failures allowed before stopping a request."
+  :type 'integer
+  :group 'gptel)
+
+(defvar-local gptel-pi--tool-call-count 0)
+(defvar-local gptel-pi--tool-call-fingerprints nil)
+(defvar-local gptel-pi--tool-error-fingerprints nil)
+(defvar-local gptel-pi--tools-active-p nil)
+(defvar-local gptel-pi--tools-stopped-p nil)
+
 (defconst gptel-pi-system-prompt "You are an expert coding assistant.
 You help users with coding tasks by reading files, executing commands, editing code, and writing new files.
 
@@ -255,11 +276,123 @@ output block."
                             extra-agents "\n")
                  "\n"))))))
 
+(defun gptel-pi--normalize-fingerprint-value (value)
+  "Return VALUE in a deterministic form suitable for fingerprints."
+  (cond
+   ((and (listp value) (keywordp (car value)))
+    (sort (cl-loop for (key val) on value by #'cddr
+                   collect (cons key (gptel-pi--normalize-fingerprint-value val)))
+          (lambda (left right)
+            (string< (symbol-name (car left)) (symbol-name (car right))))))
+   ((vectorp value)
+    (vconcat (mapcar #'gptel-pi--normalize-fingerprint-value value)))
+   ((consp value)
+    (mapcar #'gptel-pi--normalize-fingerprint-value value))
+   (t value)))
+
+(defun gptel-pi--tool-fingerprint (name args)
+  "Return a stable fingerprint for tool NAME and ARGS."
+  (secure-hash 'sha256
+               (prin1-to-string
+                (list name (gptel-pi--normalize-fingerprint-value args)))))
+
+(defun gptel-pi--increment-fingerprint (table fingerprint)
+  "Increment FINGERPRINT in hash TABLE and return its new count."
+  (let ((count (1+ (gethash fingerprint table 0))))
+    (puthash fingerprint count table)
+    count))
+
+(defun gptel-pi--pre-tool-call (info)
+  "Enforce the per-request tool budget using public hook INFO."
+  (unless gptel-pi--tool-call-fingerprints
+    (setq gptel-pi--tool-call-fingerprints (make-hash-table :test #'equal)))
+  (unless gptel-pi--tool-error-fingerprints
+    (setq gptel-pi--tool-error-fingerprints (make-hash-table :test #'equal)))
+  (setq gptel-pi--tools-active-p t
+        gptel-pi--tool-call-count (1+ gptel-pi--tool-call-count))
+  (let* ((name (plist-get info :name))
+         (fingerprint (gptel-pi--tool-fingerprint name (plist-get info :args)))
+         (identical-count
+          (gptel-pi--increment-fingerprint
+           gptel-pi--tool-call-fingerprints fingerprint))
+         reason)
+    (cond
+     ((> gptel-pi--tool-call-count gptel-pi-max-tool-calls)
+      (setq reason
+            (format "gptel-pi stopped after the %d-call tool budget was exhausted"
+                    gptel-pi-max-tool-calls)))
+     ((>= identical-count gptel-pi-max-identical-tool-calls)
+      (setq reason
+            (format "gptel-pi stopped repeated call %s with identical arguments (%d times)"
+                    name identical-count))))
+    (when reason
+      (setq gptel-pi--tools-stopped-p t)
+      (force-mode-line-update)
+      (list :stop t :stop-reason reason))))
+
+(defun gptel-pi--failure-result-p (result)
+  "Return non-nil when RESULT clearly describes a tool failure."
+  (and (stringp result)
+       (string-match-p
+        (rx (or string-start line-start)
+            (* space)
+            (or "Error:"
+                (seq "Bash exited with status " (not (any "0\n")))
+                "Bash timed out"
+                "Bash was terminated by signal"))
+        result)))
+
+(defun gptel-pi--post-tool-call (info)
+  "Stop after repeated identical failures described by hook INFO."
+  (when (gptel-pi--failure-result-p (plist-get info :result))
+    (unless gptel-pi--tool-error-fingerprints
+      (setq gptel-pi--tool-error-fingerprints (make-hash-table :test #'equal)))
+    (let* ((fingerprint
+            (secure-hash
+             'sha256
+             (prin1-to-string
+              (list (gptel-pi--tool-fingerprint
+                     (plist-get info :name) (plist-get info :args))
+                    (plist-get info :result)))))
+           (count (gptel-pi--increment-fingerprint
+                   gptel-pi--tool-error-fingerprints fingerprint)))
+      (when (>= count gptel-pi-max-identical-tool-errors)
+        (setq gptel-pi--tools-stopped-p t)
+        (force-mode-line-update)
+        (list :stop t
+              :stop-reason
+              (format "gptel-pi stopped after the same %s failure occurred %d times"
+                      (plist-get info :name) count))))))
+
+(defun gptel-pi--reset-tool-state (&rest _)
+  "Reset per-request tool-loop state."
+  (setq gptel-pi--tool-call-count 0
+        gptel-pi--tool-call-fingerprints (make-hash-table :test #'equal)
+        gptel-pi--tool-error-fingerprints (make-hash-table :test #'equal)
+        gptel-pi--tools-active-p nil
+        gptel-pi--tools-stopped-p nil)
+  (force-mode-line-update))
+
+(defun gptel-pi--tool-mode-line ()
+  "Return the gptel-pi tool count for the mode line."
+  (when gptel-pi--tools-active-p
+    (format " Pi tools %d%s"
+            gptel-pi--tool-call-count
+            (if (or gptel-pi--tools-stopped-p
+                    (>= gptel-pi--tool-call-count gptel-pi-max-tool-calls))
+                "!" ""))))
+
 (defun gptel-pi--setup-buffer ()
   "Set up the current buffer as a gptel-pi session."
   (setq-local gptel-pi-session-p t)
+  (gptel-pi--reset-tool-state)
+  (add-hook 'gptel-pre-tool-call-functions #'gptel-pi--pre-tool-call nil t)
+  (add-hook 'gptel-post-tool-call-functions #'gptel-pi--post-tool-call nil t)
   (add-hook 'gptel-post-response-functions
-            #'gptel-pi-normalize-assistant-headings nil t))
+            #'gptel-pi-normalize-assistant-headings nil t)
+  (add-hook 'gptel-post-response-functions #'gptel-pi--reset-tool-state 90 t)
+  (add-to-list (make-local-variable 'mode-line-misc-info)
+               '(:eval (gptel-pi--tool-mode-line)) t))
 
 (defun gptel-pi--sandboxed-p (buffer)
   "Return non-nil when BUFFER has an effective shell command prefix."
