@@ -384,8 +384,7 @@ TITLE is used for the level-three heading.  Optional METADATA is ordinary Org
 text inserted before the example block."
   (unless (and gptel-pi-session-p (derived-mode-p 'org-mode))
     (error "Tool output can only be archived in an Org gptel-pi session"))
-  (let ((target (gptel-pi--next-target kind))
-        (body (gptel-pi--result-string body)))
+  (let ((target (gptel-pi--next-target kind)))
     (save-excursion
       (save-restriction
         (widen)
@@ -813,22 +812,13 @@ those tools in a sandboxed request."
   :type 'integer
   :group 'gptel)
 
-(defun gptel-pi--result-string (result)
-  "Convert arbitrary tool RESULT to readable text."
-  (if (stringp result)
-      result
-    (condition-case nil
-        (prin1-to-string result)
-      (error (format "%s" result)))))
-
-(defun gptel-pi--truncate-result (result direction &optional max-bytes max-lines)
-  "Truncate RESULT by complete lines and UTF-8 bytes.
+(defun gptel-pi--truncate-result (text direction &optional max-bytes max-lines)
+  "Truncate TEXT by complete lines and UTF-8 bytes.
 
 DIRECTION is either `head' or `tail'.  MAX-BYTES and MAX-LINES default to
 `gptel-pi-max-tool-bytes' and `gptel-pi-max-tool-lines'.  Return a plist with
 `:content', `:truncated', `:lines', `:bytes', and `:first-line-too-long'."
-  (let* ((text (gptel-pi--result-string result))
-         (max-bytes (or max-bytes gptel-pi-max-tool-bytes))
+  (let* ((max-bytes (or max-bytes gptel-pi-max-tool-bytes))
          (max-lines (or max-lines gptel-pi-max-tool-lines))
          (total-bytes (string-bytes text))
          segments)
@@ -865,12 +855,6 @@ DIRECTION is either `head' or `tail'.  MAX-BYTES and MAX-LINES default to
               :bytes bytes
               :first-line-too-long (and (eq direction 'head) (zerop lines)
                                          (not (string-empty-p text))))))))
-
-(defun gptel-pi--file-line-count ()
-  "Return the number of text lines in the current buffer."
-  (if (= (point-min) (point-max))
-      0
-    (line-number-at-pos (max (point-min) (1- (point-max))))))
 
 (defun gptel-pi--format-read-result
     (origin path selected offset total-lines truncation)
@@ -923,7 +907,7 @@ DIRECTION is either `head' or `tail'.  MAX-BYTES and MAX-LINES default to
      (t
       (with-temp-buffer
         (insert-file-contents expanded-path)
-        (let ((total-lines (gptel-pi--file-line-count)))
+        (let ((total-lines (line-number-at-pos (point-max))))
           (cond
            ((zerop total-lines)
             (format "File is empty: %s" expanded-path))
@@ -944,7 +928,7 @@ DIRECTION is either `head' or `tail'.  MAX-BYTES and MAX-LINES default to
 
 (defun gptel-pi--tool-eval (elisp)
   "Evaluate one ELISP form and return its safely printed result."
-  (let* ((full (gptel-pi--result-string (eval (read elisp))))
+  (let* ((full (prin1-to-string (eval (read elisp))))
          (truncation (gptel-pi--truncate-result full 'head))
          (content (plist-get truncation :content)))
     (if (not (plist-get truncation :truncated))
