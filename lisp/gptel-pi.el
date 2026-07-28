@@ -40,8 +40,7 @@
 ;; `gptel-pi-normalize-assistant-headings' changes assistant headings such as
 ;; "** Findings" into presentational labels such as "*Findings*".  It leaves
 ;; user text and headings inside source, example, quote, reasoning, and tool
-;; blocks alone.  Use `gptel-pi-promote-label' when an assistant label should
-;; intentionally become a real branch heading.
+;; blocks alone.
 ;;
 ;; Starting and using a session
 ;; ----------------------------
@@ -76,7 +75,6 @@
 ;;
 ;; - `gptel-pi' starts, reuses, or selects a project session.
 ;; - `gptel-send' is the unchanged, standard way to send a prompt.
-;; - `gptel-pi-promote-label' makes a bold assistant label a real Org heading.
 ;; - `gptel-pi-archive-region' copies a selected transcript region verbatim to
 ;;   Archive/Compactions and leaves an ordinary link beside the source.
 ;; - `gptel-pi-compact-region' first performs that archival operation and then
@@ -273,32 +271,6 @@ Headings in source, example, quote, reasoning, and tool blocks are not changed."
                   (goto-char next-line)
                   (set-marker next-line nil)))))
         (set-marker end-marker nil)))))
-
-(defun gptel-pi-promote-label (&optional level)
-  "Promote the bold assistant label at point to an Org heading.
-
-Use heading LEVEL when supplied.  Interactively, a numeric prefix specifies the
-level; otherwise use one level below the containing heading."
-  (interactive "P")
-  (unless (derived-mode-p 'org-mode)
-    (user-error "This command is only available in Org buffers"))
-  (save-excursion
-    (beginning-of-line)
-    (unless (looking-at "^\\*\\([^*\n]+\\)\\*[ \t]*$")
-      (user-error "Current line is not a bold assistant label"))
-    (let* ((title-start (match-beginning 1))
-           (title-end (match-end 1))
-           (title (buffer-substring title-start title-end))
-           (properties (gptel-pi--response-properties title-start))
-           (heading-level (if level
-                              (prefix-numeric-value level)
-                            (1+ (or (org-current-level) 0)))))
-      (unless (> heading-level 0)
-        (user-error "Heading level must be positive"))
-      (delete-region (line-beginning-position) (line-end-position))
-      (insert (apply #'propertize
-                     (concat (make-string heading-level ?*) " " title)
-                     properties)))))
 
 (defun gptel-pi--insert-project-context (root)
   "Insert editable project instructions for ROOT at the start of the buffer."
