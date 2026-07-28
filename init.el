@@ -2072,6 +2072,7 @@ input means nil arguments."
          ("C-x a R" . agent-shell-restart)
          ("C-x a r" . agent-shell-reload))
   :custom
+  (agent-shell-inhibit-system-sleep nil)
   (agent-shell-thought-process-expand-by-default t)
   (agent-shell-busy-indicator-frames 'dots-round)
   (agent-shell-header-style 'text)
