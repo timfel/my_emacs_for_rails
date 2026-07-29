@@ -1463,6 +1463,9 @@
 (use-package gptel-fim
   :bind (("C-x a c" . gptel-fim)))
 
+(use-package gptel-compile
+  :bind (("C-x a C" . gptel-compile)))
+
 (use-package gptel-modeline-status
   :after gptel
   :demand t)
