@@ -590,7 +590,8 @@
                 (org-agenda-use-time-grid nil)
                 (org-agenda-log-mode-items '(closed))
                 (org-agenda-skip-function
-                 '(or (org-agenda-skip-entry-if 'nottodo '("DONE" "WONT DO"))))))))))
+                 '(or (org-agenda-skip-entry-if 'nottodo '("DONE" "WONT DO"))))))))
+     ("b" "All org buffers" timfel/org-buffers)))
   (org-clock-idle-time 15)
   (org-agenda-files (list (expand-file-name "SyncFolder/todo.org" timfel/cloud-storage)
                           (expand-file-name "SyncFolder/notes.org" timfel/cloud-storage)))
@@ -633,6 +634,8 @@
   :defines (org-tree-slide-mode-map)
   :commands org-tree-slide-mode
   :config
+  (defun timfel/org-buffers (&rest _)
+    (ibuffer t "*Org Buffers*" '((used-mode . org-mode))))
   (setq org-tree-slide-header t)
   (setq org-tree-slide-slide-in-effect (display-graphic-p))
   (setq org-tree-slide-heading-emphasis nil)
