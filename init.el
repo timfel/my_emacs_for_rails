@@ -345,7 +345,6 @@
   (desktop-save-mode . agent-shell-desktop-mode))
 
 (use-package agent-shell-dashboard
-  :after agent-shell
   :bind ("C-x a a" . agent-shell-dashboard))
 
 (use-package timfel-lsp-java-extensions
@@ -2086,7 +2085,7 @@ input means nil arguments."
   (agent-shell-session-strategy 'prompt)
   (agent-shell-session-restore-verbosity 'full)
   (agent-shell-prefer-viewport-interaction nil)
-  (agent-shell-preferred-agent-config 'codex)
+  (agent-shell-preferred-agent-config 'pi)
   (agent-shell-show-config-icons nil)
   (agent-shell-show-usage-at-turn-end t)
   (agent-shell-text-file-capabilities t)

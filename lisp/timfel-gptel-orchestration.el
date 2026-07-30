@@ -25,7 +25,6 @@
 (declare-function agent-shell-status "agent-shell")
 (declare-function agent-shell-subscribe-to "agent-shell")
 (declare-function agent-shell-unsubscribe "agent-shell")
-(declare-function agent-shell--resolve-preferred-config "agent-shell")
 (declare-function shell-maker-point-at-last-prompt-p "shell-maker")
 (declare-function ci-dashboard "emacs-ci")
 (declare-function ci--auth-headers "emacs-ci")
@@ -841,7 +840,8 @@ When END-OF-DAY is non-nil, return the start of the following day."
 (defun timfel/weekly-confluence-report--start-slack-agent (since-date until-date)
   "Start a temporary agent-shell to collect Slack data."
   (require 'agent-shell)
-  (let* ((buffer (agent-shell-new-temp-shell))
+  (let* ((agent-shell-preferred-agent-config 'codex)
+         (buffer (agent-shell-new-temp-shell))
          (directory (with-current-buffer buffer
                       (file-name-as-directory default-directory)))
          (slack-file (expand-file-name "slack-context.md" directory))
