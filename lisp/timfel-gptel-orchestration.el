@@ -12,8 +12,8 @@
 (require 'json)
 (require 'seq)
 (require 'subr-x)
+(require 'org)
 (require 'timfel)
-(require 'timfel-gptel-tools nil t)
 
 (declare-function gptel--apply-preset "gptel")
 (declare-function gptel-abort "gptel")
@@ -840,6 +840,7 @@ When END-OF-DAY is non-nil, return the start of the following day."
 (defun timfel/weekly-confluence-report--start-slack-agent (since-date until-date)
   "Start a temporary agent-shell to collect Slack data."
   (require 'agent-shell)
+  (defvar agent-shell-preferred-agent-config)
   (let* ((agent-shell-preferred-agent-config 'codex)
          (buffer (agent-shell-new-temp-shell))
          (directory (with-current-buffer buffer

@@ -30,6 +30,11 @@ FILES=""
 [ -f "$EMACSDIR/init.el" ] && FILES="$FILES $EMACSDIR/init.el"
 [ -f "$EMACSDIR/early-init.el" ] && FILES="$FILES $EMACSDIR/early-init.el"
 
+for f in "$EMACSDIR"/init-*.el; do
+    [ -e "$f" ] || continue
+    FILES="$FILES $f"
+done
+
 if [ -d "$LISPDIR" ]; then
   # Only compile *.el directly under ./lisp (non-recursive)
   for f in "$LISPDIR"/*.el; do
@@ -43,10 +48,21 @@ if [ -z "$(printf %s "$FILES" | tr -d ' ')" ]; then
   exit 0
 fi
 
-"$EMACS_BIN" -Q --batch \
-  -l "$COMPILE_INIT" \
-  -l "$HOOK_COMPILE" \
-  --eval "(setq byte-compile-warnings t
-                byte-compile-error-on-warn t)" \
-  -f hook-compile-strict-batch \
-  $FILES
+for f in $FILES; do
+    echo "Checking $f"
+    "$EMACS_BIN" -Q --batch \
+      -l "$COMPILE_INIT" \
+      -l "$HOOK_COMPILE" \
+      --eval "(setq byte-compile-warnings t
+                    byte-compile-error-on-warn t)" \
+      -f hook-compile-strict-batch \
+      $f
+done
+
+# "$EMACS_BIN" -Q --batch \
+#   -l "$COMPILE_INIT" \
+#   -l "$HOOK_COMPILE" \
+#   --eval "(setq byte-compile-warnings t
+#                 byte-compile-error-on-warn t)" \
+#   -f hook-compile-strict-batch \
+#   $FILES

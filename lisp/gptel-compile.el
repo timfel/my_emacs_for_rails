@@ -117,9 +117,10 @@ request is active cannot broaden the tool's access."
      :include nil)))
 
 (defun gptel-compile--grep (cb pattern root)
+  (defvar deadgrep-display-buffer-function)
+  (defvar deadgrep-finished-hook)
   (let* ((results)
          (buffer)
-         ;; (current-prefix-arg 4)
          (deadgrep-display-buffer-function (lambda (buf) (setq buffer buf)))
          (prev-deadgrep-finished-hook deadgrep-finished-hook))
     (setq deadgrep-finished-hook (lambda ()

@@ -25,6 +25,9 @@
 (require 'openproject-dir-locals)
 
 (declare-function term-keys/windows-terminal-json "term-keys-windows-terminal")
+(declare-function org-cut-subtree "org")
+(declare-function org-heading-components "org")
+(declare-function org-next-visible-heading "org")
 (defvar c-basic-offset)
 
 (defgroup timfel nil
