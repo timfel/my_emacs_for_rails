@@ -20,15 +20,15 @@
 
 (require 'use-package)
 
-(setq use-package-compute-statistics t)
-(require 'profiler)
-(profiler-start 'cpu)
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (profiler-stop)
-            (profiler-report)
-            (use-package-report)))
-(setq use-package-verbose t)
+;; (setq use-package-compute-statistics t)
+;; (require 'profiler)
+;; (profiler-start 'cpu)
+;; (add-hook 'emacs-startup-hook
+;;           (lambda ()
+;;             (profiler-stop)
+;;             (profiler-report)
+;;             (use-package-report)))
+;; (setq use-package-verbose t)
 
 (use-package emacs
   :bind (([f11] . toggle-frame-fullscreen)
