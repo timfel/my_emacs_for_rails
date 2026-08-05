@@ -95,6 +95,7 @@
   (show-paren-style 'mixed)
   (inhibit-startup-screen t)
   (default-directory "~/")
+  (view-lossage-auto-refresh t) ; EMACS-31: live-updating C-h l, great for teaching/debugging
   (initial-scratch-message ";; Welcome to your emacs.
 ;; Some useful expressions:
 ;;   Resume desktop
@@ -109,9 +110,16 @@
   (use-short-answers t)
   (fill-column 79)
   (buffer-file-coding-system 'utf-8-unix)
+  (treesit-auto-install-grammar 'always) ; EMACS-31
+  (treesit-enabled-modes t)              ; EMACS-31
   :config
   (if (file-exists-p custom-file)
       (load custom-file))
+  (add-to-list 'save-some-buffers-action-alist
+	       (list "d"
+		     (lambda (buffer)
+		       (diff-buffer-with-file (buffer-file-name buffer)))
+		     "show diff between the buffer and its file"))
   (setq read-process-output-max (* 1024 1024))
   (tool-bar-mode 0)
   (menu-bar-mode 0)
@@ -122,6 +130,9 @@
   (scroll-bar-mode 0)
   (column-number-mode t)
   (windmove-default-keybindings)
+  (tab-bar-history-mode 1)
+  (undelete-frame-mode 1)
+  (winner-mode 1)
   (put 'narrow-to-region 'disabled nil)
   (put 'dired-find-alternate-file 'disabled nil)
   (setq-default indent-tabs-mode nil))

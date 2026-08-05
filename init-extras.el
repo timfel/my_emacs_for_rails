@@ -20,9 +20,16 @@
 
 (use-package markdown-mode
   :ensure t
+  :unless (>= emacs-major-version 31)
   :mode ("\\.md$")
   :config
   (setq markdown-command "cmark-gfm --extension table"))
+
+(use-package markdown-ts-mode
+  :if (>= emacs-major-version 31)
+  :ensure nil
+  :mode ("\\.md$")
+  :defer t)
 
 (use-package lua-mode
   :ensure t
@@ -235,6 +242,7 @@
                 :face mmm-code-submode-face)))
             (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)
             (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-javascript-block)
+            (mmm-add-mode-ext-class 'markdown-ts-mode "\\.md$" 'md-javascript-block)
             (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-github-code-block)))
 
 (use-package tramp-rpc

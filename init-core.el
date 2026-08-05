@@ -15,6 +15,17 @@
   (tool-bar-always-show-default t)
   (tool-bar-button-margin 32)
   :config
+
+  ;; AltGr on the no-name phone keyboard I use sends KEYCODE_*, and there is no
+  ;; Meta key, so let's make it usable
+  (define-key key-translation-map (kbd "<KEYCODE_SPACE>") (kbd "ESC"))
+  (define-key key-translation-map (kbd "<KEYCODE_Q>") (kbd "ä"))
+  (define-key key-translation-map (kbd "<KEYCODE_P>") (kbd "ö"))
+  (define-key key-translation-map (kbd "<KEYCODE_Y>") (kbd "ü"))
+  (define-key key-translation-map (kbd "S-<KEYCODE_Q>") (kbd "Ä"))
+  (define-key key-translation-map (kbd "S-<KEYCODE_P>") (kbd "Ö"))
+  (define-key key-translation-map (kbd "S-<KEYCODE_Y>") (kbd "Ü"))
+
   (setq android-intercept-control-space nil)
   (global-visual-line-mode t)
   (setq visual-line-fringe-indicators
@@ -109,6 +120,9 @@
 
 (use-package zone
   :commands (zone-when-idle)
+  :custom
+  (zone-all-frames t)           ; EMACS-31
+  (zone-all-windows-in-frame t) ; EMACS-31
   :config
   (zone-when-idle 300))
 
@@ -293,6 +307,7 @@
   :custom
   (eldoc-documentation-strategy #'eldoc-documentation-compose)
   (eldoc-echo-area-prefer-doc-buffer t)
+  (eldoc-help-at-pt t) ;; EMACS-31
   :functions (eldoc-display-in-buffer-at-point)
   :bind (([remap display-local-help] . timfel/local-help-or-doc))
   :config
@@ -339,6 +354,8 @@
   (icomplete-tidy-shadowed-file-names t)
   (icomplete-show-matches-on-no-input t)
   (completion-flex-nospace nil)
+  (icomplete-vertical-in-buffer-adjust-list t) ;; EMACS-31
+  (icomplete-vertical-render-prefix-indicator t) ;; EMACS-31
   :config
   (add-to-list 'completion-ignored-extensions
                ".lock")
@@ -439,6 +456,8 @@
   :custom
   (vc-revert-show-diff nil)
   (vc-handled-backends '(Git))
+  (vc-dir-auto-hide-up-to-date 'revert) ;; EMACS-31
+  (vc-allow-rewriting-published-history t) ;; EMACS-31
   :bind (("C-x C-z" . project-vc-dir)))
 
 (use-package diff
@@ -784,6 +803,9 @@
               eglot-current-server)
   :bind (("C-," . eglot-code-actions)
          ("C-S-t" . xref-find-apropos))
+  :custom
+  (eglot-documentation-renderer 'markdown-ts-view-mode) ;; EMACS-31
+  (eglot-code-action-indications nil)                   ;; EMACS-31
   :config
   (advice-add
    'eglot-workspace-folders :filter-return
@@ -860,3 +882,44 @@
    '(("xkcd" "https://xkcd.com/rss.xml")
      ("indieretronews" "https://www.indieretronews.com/feeds/posts/default?alt=rss")
      ("osnews" "https://www.osnews.com/feed/"))))
+
+(use-package speedbar
+  :if (>= emacs-major-version 31)
+  :functions (speedbar-window)
+  :custom ;; all EMACS-31
+  (speedbar-window-default-width 25)
+  (speedbar-window-max-width 25)
+  :bind
+  (("<f6>" . #'speedbar-window)))
+
+(use-package ibuffer
+  :defer t
+  :custom
+  (ibuffer-human-readable-size t))
+
+;; (use-package tty-tip
+;;   :if (>= emacs-major-version 31)
+;;   :ensure nil
+;;   :functions (tty-tip-mode)
+;;   :config
+;;   (tty-tip-mode))
+
+(use-package apropos
+  :defer t
+  :config
+  (defvar-keymap help-apropos-map
+    :doc "Keymap for apropos subcommands."
+    "a"   #'apropos
+    "l"   #'apropos-library
+    "f"   #'apropos-function
+    "x"   #'apropos-command
+    "v"   #'apropos-variable
+    "V"   #'apropos-local-variable
+    "u"   #'apropos-user-option
+    "d"   #'apropos-documentation
+    "C-f" #'customize-apropos-faces
+    "g"   #'customize-apropos-groups
+    "o"   #'customize-apropos-options
+    "c"   #'customize-apropos
+    "i"   #'info-apropos)
+  (keymap-set help-map "a" help-apropos-map))
