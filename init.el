@@ -61,7 +61,8 @@
   (browse-url-browser-function
    (lambda (url &rest args)
      (if (and (not (string-match-p
-                    (rx (or "github.com"
+                    (rx (or "mailto:"
+                            "github.com"
                             "jira"
                             "bitbucket"
                             ".google.com"
@@ -78,6 +79,9 @@
         (t
          (setq browse-url-generic-program (or (executable-find "wslview") "xdg-open"))
          (apply #'browse-url-generic url args))))))
+  (user-full-name "Tim Felgentreff")
+  (user-mail-address "timfelgentreff@gmail.com")
+  (send-mail-function 'mailclient-send-it)
   (custom-file (file-name-concat user-emacs-directory "emacs-custom.el"))
   (confirm-kill-emacs 'yes-or-no-p)
   (visible-bell nil)
