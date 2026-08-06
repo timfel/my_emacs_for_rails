@@ -210,14 +210,14 @@
   (when (eq system-type 'gnu/linux)
     (when (or (eq window-system 'pgtk)
               (and (not window-system) (getenv "WAYLAND_DISPLAY")))
-      (declare-function clipetty-cut "clipetty" (text))
+      (declare-function clipetty-cut "clipetty" (orig-fun text))
       (let ((last-copied-text)
             (wl-copy-process))
         (setq interprogram-cut-function
               (lambda (text)
                 (setq last-copied-text (substring-no-properties text))
                 (if (and (fboundp #'clipetty-cut) (not window-system))
-                    (clipetty-cut last-copied-text)
+                    (clipetty-cut (lambda (text)) last-copied-text)
                   (when wl-copy-process
                     (ignore-errors
                       (kill-process wl-copy-process)))
