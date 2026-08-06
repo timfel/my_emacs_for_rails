@@ -36,7 +36,7 @@ them in case a server returns a terminator as ordinary response text."
                             gptel-fim-suffix
                             gptel-fim-middle
                             gptel-fim-file-separator))))
-    (if-let ((position (string-match terminators response)))
+    (if-let* ((position (string-match terminators response)))
         (substring response 0 position)
       response)))
 

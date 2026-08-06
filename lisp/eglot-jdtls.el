@@ -61,7 +61,7 @@ process through TRAMP, so this should also be available in the remote PATH."
 
 (defun eglot-jdtls--state-base (project-root)
   "Return the JDTLS state base directory for PROJECT-ROOT."
-  (if-let ((remote (file-remote-p project-root)))
+  (if-let* ((remote (file-remote-p project-root)))
       (let ((remote-dir (format "/tmp/emacs-jdtls-%s/"
                                 (replace-regexp-in-string "[^[:alnum:]._-]+" "-"
                                                           (user-login-name)))))

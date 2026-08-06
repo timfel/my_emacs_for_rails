@@ -532,7 +532,7 @@ When END-OF-DAY is non-nil, return the start of the following day."
 
 (defun timfel/weekly-confluence-report--millis-date (millis)
   "Convert MILLIS since epoch to an ISO date string."
-  (when-let ((time (timfel/weekly-confluence-report--millis-time millis)))
+  (when-let* ((time (timfel/weekly-confluence-report--millis-time millis)))
     (timfel/weekly-confluence-report--date-string time)))
 
 (defun timfel/weekly-confluence-report--pr-object (entry)
@@ -1063,10 +1063,10 @@ REASON is a short human-readable string."
           (with-current-buffer buffer
             (ignore-errors
               (agent-shell-unsubscribe :subscription token))))))
-    (when-let ((slack-buffer (gethash :slack-buffer-object state)))
+    (when-let* ((slack-buffer (gethash :slack-buffer-object state)))
       (when (buffer-live-p slack-buffer)
         (ignore-errors (kill-buffer slack-buffer))))
-    (when-let ((gptel-buffer (gethash :gptel-buffer state)))
+    (when-let* ((gptel-buffer (gethash :gptel-buffer state)))
       (when (buffer-live-p gptel-buffer)
         (ignore-errors
           (with-current-buffer gptel-buffer

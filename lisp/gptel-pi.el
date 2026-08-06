@@ -1168,7 +1168,7 @@ project root.
 With a C-u C-u prefix, ask for the *gptel-pi* buffer to switch to."
   (interactive "P")
   (let* ((root (file-name-as-directory (file-truename
-                (or (when-let ((project (project-current)))
+                (or (when-let* ((project (project-current)))
                       (project-root project))
                     default-directory))))
          (buffers

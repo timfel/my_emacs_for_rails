@@ -17,10 +17,10 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (add-to-list 'package-archives '("cselpa" . "https://elpa.thecybershadow.net/packages/"))
 (setq package-archive-priorities
-      '(("melpa-stable" . 10)
+      '(("melpa" . 10)
         ("nongnu" . 5)
         ("gnu" . 5)
-        ("melpa" . 1)
+        ("melpa-stable" . 1)
         ("cselpa" . 0)))
 (package-initialize)
 

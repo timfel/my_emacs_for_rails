@@ -142,6 +142,7 @@
                                       try-expand-dabbrev)))
 
 (use-package org
+  :after timfel
   :commands org-mode
   :functions org-agenda-files
   :mode (("\\.org$" . org-mode))
@@ -643,7 +644,7 @@
   "Memoize a value if the key is a remote path."
   (if (and key
            (file-remote-p key))
-      (if-let ((current (assoc key (symbol-value cache))))
+      (if-let* ((current (assoc key (symbol-value cache))))
           (cdr current)
         (let ((current (apply orig-fn args)))
           (set cache (cons (cons key current) (symbol-value cache)))
@@ -740,7 +741,7 @@
   :defer 2
   :bind (("<f12>" . (lambda (&optional arg)
                       (interactive)
-                      (if-let ((w (get-window-with-predicate (lambda (w) (string-prefix-p "*eshell" (buffer-name (window-buffer w)))))))
+                      (if-let* ((w (get-window-with-predicate (lambda (w) (string-prefix-p "*eshell" (buffer-name (window-buffer w)))))))
                           (select-window w)
                         (let ((w (split-window (selected-window) -18)))
                           (select-window w)

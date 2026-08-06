@@ -102,10 +102,10 @@
       (if attach-address
           (list "-attach" attach-address)
         (append
-         (when-let ((classpath (plist-get paths :classpath)))
+         (when-let* ((classpath (plist-get paths :classpath)))
            (unless (string-empty-p classpath)
              (list "-classpath" classpath)))
-         (when-let ((sourcepath (plist-get paths :sourcepath)))
+         (when-let* ((sourcepath (plist-get paths :sourcepath)))
            (unless (string-empty-p sourcepath)
              (list "-sourcepath" sourcepath)))))
       (unless (string-empty-p extra-args)

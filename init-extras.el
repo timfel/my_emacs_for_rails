@@ -349,7 +349,7 @@
   :unless (memq system-type '(windows-nt android))
   :bind (("<f12>" . (lambda (&optional arg)
                       (interactive "P")
-                      (if-let ((w (get-window-with-predicate (lambda (w) (string-prefix-p "*vterm" (buffer-name (window-buffer w)))))))
+                      (if-let* ((w (get-window-with-predicate (lambda (w) (string-prefix-p "*vterm" (buffer-name (window-buffer w)))))))
                           (select-window w)
                         (let ((w (split-window (selected-window) -18)))
                           (select-window w)
@@ -522,7 +522,7 @@
   :bind (:map jira-detail-mode-map
               ("c" . (lambda (&optional prefix)
                        (interactive "P")
-                       (when-let ((key jira-detail--current-key))
+                       (when-let* ((key jira-detail--current-key))
                          (jira-actions-copy-issues-id-to-clipboard
                           (if prefix
                               key
@@ -532,7 +532,7 @@
          :map jira-issues-mode-map
               ("c" . (lambda (&optional prefix)
                        (interactive "P")
-                       (when-let ((key (jira-utils-marked-item)))
+                       (when-let* ((key (jira-utils-marked-item)))
                          (jira-actions-copy-issues-id-to-clipboard
                           (if prefix
                               key
@@ -548,7 +548,7 @@
 
   (with-eval-after-load 'org
     (defun timfel/org-store-jira-link (&optional _interactive?)
-      (when-let ((_ (or (derived-mode-p 'jira-detail-mode)
+      (when-let* ((_ (or (derived-mode-p 'jira-detail-mode)
                         (derived-mode-p 'jira-issues-mode)))
                  (key (concat "jira:" (jira-utils-marked-item))))
         (org-link-store-props :type "jira" :link key :description key)
