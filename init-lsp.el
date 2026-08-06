@@ -216,7 +216,6 @@
               my/setup-java-workspace-dir)
   :after (lsp-mode treemacs)
   :demand t
-  :mode ("\\.java.*\\.class" . java-mode)
   :custom
   (lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/snapshots/jdt-language-server-latest.tar.gz")
   (lsp-java-vmargs '("-XX:+UseParallelGC" "-XX:GCTimeRatio=4" "-XX:AdaptiveSizePolicyWeight=90" "-Dsun.zip.disableMemoryMapping=true"))
@@ -282,10 +281,12 @@
             (message (format "You may have to adapt %s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs to give the default VM the name that mx told you" lsp-java-workspace-dir))
             (find-file-noselect (format "%s/.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.jdt.launching.prefs" lsp-java-workspace-dir))))))
 
-  (add-hook 'java-mode-hook
-            (lambda ()
-              (my/setup-java-workspace-dir)
-              (if (lsp-find-workspace 'jdtls nil) (lsp)))))
+  (mapc (lambda (m)
+          (add-hook m
+                    (lambda ()
+                      (my/setup-java-workspace-dir)
+                      (if (lsp-find-workspace 'jdtls nil) (lsp)))))
+          '(java-mode-hook java-ts-mode-hook)))
 
 (use-package dap-mode
   :ensure t

@@ -35,13 +35,12 @@
   "Reload all stale unmodified Java buffers."
   (interactive)
   (dolist (buffer (buffer-list))
-    (let ((mode (with-current-buffer buffer major-mode)))
-      (when (and (eq mode 'java-mode)
-                 (not (buffer-modified-p buffer)))
-        (with-current-buffer buffer
-          (when (funcall buffer-stale-function)
-            (message "Reverting %s" (buffer-name))
-            (revert-buffer :ignore-auto :noconfirm)))))))
+    (with-current-buffer buffer
+      (when (and (derived-mode-p java-mode)
+                 (not (buffer-modified-p buffer))
+                 (funcall buffer-stale-function))
+        (message "Reverting %s" (buffer-name))
+        (revert-buffer :ignore-auto :noconfirm)))))
 
 ;;;###autoload
 (defun timfel/my/lsp/kill-old-java-buffers ()
@@ -49,8 +48,8 @@
   (interactive)
   (let ((recent-cnt 0))
     (dolist (buffer (buffer-list))
-      (let ((mode (with-current-buffer buffer major-mode)))
-        (when (eq mode 'java-mode)
+      (with-current-buffer buffer
+        (when (derived-mode-p 'java-mode)
           (setq recent-cnt (1+ recent-cnt))
           (when (and (not (buffer-modified-p buffer))
                      (> recent-cnt 5))
@@ -61,8 +60,8 @@
   "Kill all unmodified Java buffers except the current buffer."
   (interactive)
   (dolist (buffer (buffer-list))
-    (let ((mode (with-current-buffer buffer major-mode)))
-      (when (and (eq mode 'java-mode)
+    (with-current-buffer buffer
+      (when (and (derived-mode-p 'java-mode)
                  (not (buffer-modified-p buffer))
                  (not (eq (current-buffer) buffer)))
         (kill-buffer buffer)))))

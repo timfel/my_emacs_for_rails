@@ -50,18 +50,16 @@
 
 (use-package ruby-mode
   :mode ("\\.rb$" "\\.rjs$" "\\.rake$" "Rakefile$" "Gemfile$" "Vagrantfile$")
-  :hook ((ruby-mode . (lambda() (progn
-                                  (set (make-local-variable 'indent-tabs-mode) 'nil)
-                                  (set (make-local-variable 'tab-width) 2)))))
   :config
   (with-eval-after-load 'eglot
     (add-to-list 'eglot-server-programs '((ruby-mode ruby-ts-mode) "ruby-lsp")))
-  (defun ruby-accurate-end-of-block (&optional end)
-    "(tfel): Fixes an issue I had with ruby-mode."
-    (let (state
-          (end (or end (point-max))))
-      (while (and (setq state (apply 'ruby-parse-partial end state))
-                  (nth 2 state) (>= (nth 2 state) 0) (< (point) end))))))
+  ;; (defun ruby-accurate-end-of-block (&optional end)
+  ;;   "(tfel): Fixes an issue I had with ruby-mode."
+  ;;   (let (state
+  ;;         (end (or end (point-max))))
+  ;;     (while (and (setq state (apply 'ruby-parse-partial end state))
+  ;;                 (nth 2 state) (>= (nth 2 state) 0) (< (point) end)))))
+  )
 
 (use-package robe
   :ensure t
@@ -205,7 +203,8 @@
   :ensure t
   :functions (mmm-add-mode-ext-class)
   :commands (mmm-parse-buffer)
-  :hook (java-mode . (lambda () (mmm-parse-buffer)))
+  :hook ((java-mode . mmm-parse-buffer)
+         (java-ts-mode . mmm-parse-buffer))
   :config (progn
             (require 'mmm-auto)
             (setq mmm-global-mode 'maybe)
@@ -241,6 +240,7 @@
                 :back "```"
                 :face mmm-code-submode-face)))
             (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)
+            (mmm-add-mode-ext-class 'java-ts-mode "\\.java$" 'java-text-block)
             (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-javascript-block)
             (mmm-add-mode-ext-class 'markdown-ts-mode "\\.md$" 'md-javascript-block)
             (mmm-add-mode-ext-class 'markdown-mode "\\.md$" 'md-github-code-block)))
@@ -263,6 +263,7 @@
   :mode ("\\.jsonnet$"))
 
 (use-package cmake-mode
+  :if (< emacs-major-version 31)
   :ensure t
   :mode ("CMakeLists\\.txt$" "\\.cmake$")
   :commands cmake-mode)
@@ -582,3 +583,7 @@
   (after-init . global-mise-mode)
   :custom
   (mise-update-on-eshell-directory-change t))
+
+(use-package verb
+  :ensure t
+  :commands (verb-mode))

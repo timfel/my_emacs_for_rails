@@ -596,23 +596,9 @@
   :functions (c-update-modeline my/c-update-modeline)
   :hook ((cc-mode . timfel/infer-indentation-style)
          (java-mode . timfel/friendly-whitespace)
-         (java-mode . (lambda ()
-                        (set-fill-column 99)
-                        (c-set-offset 'substatement-open 0)
-                        (c-set-offset 'case-label '+)
-                        (c-set-offset 'arglist-close 0)
-                        (if (assoc 'inexpr-class c-offsets-alist)
-                            (c-set-offset 'inexpr-class 0))
-                        (c-set-offset 'arglist-cont-nonempty
-                                      (lambda (_syntax)
-                                        (save-excursion
-                                          (if (and (= (length c-syntactic-context) 2)
-                                                   (eq (caar c-syntactic-context) 'arglist-cont-nonempty)
-                                                   (or
-                                                    (eq (caadr c-syntactic-context) 'statement-block-intro)
-                                                    (eq (caadr c-syntactic-context) 'block-close)))
-                                              0
-                                            16)))))))
+         (java-ts-mode . timfel/friendly-whitespace)
+         (java-mode . timfel/java-indentation-setup)
+         (java-ts-mode . timfel/java-indentation-setup))
   :custom
   (c-basic-offset 4)
   :config

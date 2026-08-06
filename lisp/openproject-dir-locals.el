@@ -2,6 +2,24 @@
 
 (require 'files)
 
+
+(defun openproject-rails-console ()
+  (interactive)
+  (let ((inf-ruby-console-environment "development"))
+    (inf-ruby-console-auto)))
+
+(defun openproject-rspec-current ()
+  (interactive)
+  (let* ((file (buffer-file-name))
+         (root (locate-dominating-file file ".env")))
+    (unless root
+      (user-error "Could not find the OpenProject project root"))
+    (compile
+     (format
+      "docker compose exec -T backend-test bundle exec rspec %s"
+      (shell-quote-argument
+       (file-relative-name file root))))))
+
 (dir-locals-set-class-variables
  'openproject-docker
  '((nil
@@ -17,29 +35,16 @@
     (rspec-spec-command . "bin/compose rspec %s")
     (rspec-use-rake-when-possible . nil))
 
+   (ruby-ts-mode
+    (eval
+     . (progn
+         (local-set-key (kbd "C-c C-r") #'openproject-rails-console)
+         (local-set-key (kbd "C-c C-t") #'openproject-rspec-current))))
    (ruby-mode
     (eval
      . (progn
-         (defun openproject-rails-console ()
-           (interactive)
-           (let ((inf-ruby-console-environment "development"))
-             (inf-ruby-console-auto)))
-         (local-set-key (kbd "C-c C-r")
-                        #'openproject-rails-console)
-
-         (defun openproject-rspec-current ()
-           (interactive)
-           (let* ((file (buffer-file-name))
-                  (root (locate-dominating-file file ".env")))
-             (unless root
-               (user-error "Could not find the OpenProject project root"))
-             (compile
-              (format
-               "docker compose exec -T backend-test bundle exec rspec %s"
-               (shell-quote-argument
-                (file-relative-name file root))))))
-         (local-set-key (kbd "C-c C-t")
-                        #'openproject-rspec-current))))))
+         (local-set-key (kbd "C-c C-r") #'openproject-rails-console)
+         (local-set-key (kbd "C-c C-t") #'openproject-rspec-current))))))
 
 ;; Change this to your actual checkout.
 (dir-locals-set-directory-class
