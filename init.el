@@ -104,6 +104,8 @@
 ;;   Last bookmarks: `\\[bookmark-bmenu-list]`
 ;;   Agenda: 'C-c a a'
 ")
+  (kill-ring-deindent-mode 1)
+  (editorconfig-mode 1)
   (comment-multi-line t)
   (comment-style 'extra-line)
   (sentence-end-double-space nil)

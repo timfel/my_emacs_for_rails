@@ -342,10 +342,6 @@
   :defer t
   :bind (("C-S-d" . mc/mark-more-like-this-extended)))
 
-(use-package adaptive-wrap
-  :ensure t
-  :commands adaptive-wrap-prefix-mode)
-
 (use-package vterm
   :ensure t
   :defines (vterm-mode-map vterm--process vterm-copy-mode-map)
@@ -579,3 +575,10 @@
 (use-package codespaces
   :ensure t
   :commands (codespaces-setup))
+
+(use-package mise
+  :ensure t
+  :hook
+  (after-init . global-mise-mode)
+  :custom
+  (mise-update-on-eshell-directory-change t))
