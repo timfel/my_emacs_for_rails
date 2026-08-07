@@ -182,6 +182,9 @@
          ("C-c <right>" . org-shiftright)
          ("C-c <left>" . org-shiftleft)
          ("C-c M-RET" . org-insert-subheading))
+  :config
+  (defun timfel/org-buffers (&rest _)
+    (ibuffer t "*Org Buffers*" '((used-mode . org-mode))))
   :custom
   (org-image-actual-width (list 600))
   (org-log-done 'time)

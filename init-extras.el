@@ -111,8 +111,6 @@
   :defines (org-tree-slide-mode-map)
   :commands org-tree-slide-mode
   :config
-  (defun timfel/org-buffers (&rest _)
-    (ibuffer t "*Org Buffers*" '((used-mode . org-mode))))
   (setq org-tree-slide-header t)
   (setq org-tree-slide-slide-in-effect (display-graphic-p))
   (setq org-tree-slide-heading-emphasis nil)

@@ -35,7 +35,7 @@
        (plist-put (symbol-plist model)
                   :request-params
                   `(:reasoning (:effort ,effort
-                                :summary "concise"))))))
+                                :summary "detailed"))))))
 
   ;; currently:
   ;;
