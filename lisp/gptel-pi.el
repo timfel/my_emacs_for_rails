@@ -95,6 +95,13 @@
 ;; live Emacs state, not general project exploration.  Edit rejects empty or
 ;; non-unique old text.  Write is intended for new files or complete rewrites.
 ;;
+;; While Bash or eval is running, a purely visual tail overlay is shown at the
+;; end of the session buffer.  Bash's stdout and stderr process buffers are
+;; sampled periodically; the overlay is removed when the tool result arrives.
+;; It never inserts transcript text or marks the conversation modified.  Eval
+;; is synchronous, so it can show a waiting indicator but cannot expose
+;; intermediate output before evaluation returns.
+;;
 ;; Large read, Bash, and printed eval results are stored in Archive/Tool
 ;; outputs.  The active tool result contains a concise receipt and an ordinary
 ;; Org link to the complete output.  The archive is in the same buffer; no
@@ -200,6 +207,18 @@
 (defvar-local gptel-pi--context-warning-level 0)
 (defvar-local gptel-pi--context-update-timer nil)
 (defvar-local gptel-pi--context-branch nil)
+(defvar-local gptel-pi--tool-overlays nil
+  "Live, purely visual overlays for currently running tools.")
+
+(defcustom gptel-pi-tool-overlay-max-lines 12
+  "Maximum number of output lines shown in a running-tool overlay."
+  :type 'integer
+  :group 'gptel)
+
+(defcustom gptel-pi-tool-overlay-max-bytes 4096
+  "Maximum UTF-8 bytes shown in a running-tool overlay."
+  :type 'integer
+  :group 'gptel)
 
 (defconst gptel-pi-system-prompt "You are an expert coding assistant.
 You help users with coding tasks by reading files, executing commands, editing code, and writing new files.
@@ -558,6 +577,109 @@ output block."
     (puthash fingerprint count table)
     count))
 
+(defun gptel-pi--tool-overlay-key (name args)
+  "Return the display key for tool NAME and ARGS.
+
+The key deliberately ignores optional operational arguments such as Bash's
+ timeout: two calls for the same command should use the same visual identity."
+  (list name
+        (or (plist-get args :command)
+            (plist-get args :elisp)
+            (plist-get args :path)
+            (prin1-to-string (gptel-pi--normalize-fingerprint-value args)))))
+
+(defun gptel-pi--tool-overlay-output (overlay)
+  "Return the currently available output associated with OVERLAY."
+  (let ((stdout (overlay-get overlay 'gptel-pi-stdout-buffer))
+        (stderr (overlay-get overlay 'gptel-pi-stderr-buffer)))
+    (concat
+     (when (buffer-live-p stdout)
+       (with-current-buffer stdout (buffer-string)))
+     (when (buffer-live-p stderr)
+       (with-current-buffer stderr (buffer-string))))))
+
+(defun gptel-pi--tool-overlay-update (overlay)
+  "Update OVERLAY's visual tail without changing its buffer's text."
+  (when (and (overlayp overlay) (overlay-buffer overlay))
+    (let* ((name (overlay-get overlay 'gptel-pi-tool-name))
+           (args (overlay-get overlay 'gptel-pi-tool-args))
+           (summary (or (plist-get args :command)
+                        (plist-get args :elisp)
+                        (plist-get args :path)
+                        (prin1-to-string args)))
+           (output (gptel-pi--tool-overlay-output overlay))
+           (tail (if (string-empty-p output)
+                     "Waiting for output …"
+                   (plist-get
+                    (gptel-pi--truncate-result
+                     output 'tail gptel-pi-tool-overlay-max-bytes
+                     gptel-pi-tool-overlay-max-lines)
+                    :content))))
+      (overlay-put
+       overlay 'after-string
+       (concat
+        "\n"
+        (propertize
+         (format "⏳ %s: %s\n" name
+                 (truncate-string-to-width
+                  (replace-regexp-in-string "[\\n\\r]+" " " summary)
+                  100 nil nil "…"))
+         'face 'mode-line-emphasis)
+        (propertize tail 'face 'shadow)
+        (unless (string-suffix-p "\\n" tail) "\\n")))
+      ;; Keep the display at the end when gptel inserts its tool receipt.
+      (move-overlay overlay (point-max) (point-max) (current-buffer)))))
+
+(defun gptel-pi--tool-overlay-tick (overlay)
+  "Refresh OVERLAY while its asynchronous tool is running."
+  (when (and (overlayp overlay) (overlay-buffer overlay))
+    (with-current-buffer (overlay-buffer overlay)
+      (gptel-pi--tool-overlay-update overlay)
+      (redisplay t))))
+
+(defun gptel-pi--begin-tool-overlay (name args)
+  "Create a purely visual running-tool overlay for NAME and ARGS."
+  (when (and gptel-pi-session-p (derived-mode-p 'org-mode))
+    (let ((overlay (make-overlay (point-max) (point-max) nil t t)))
+      (overlay-put overlay 'gptel-pi-tool-key
+                   (gptel-pi--tool-overlay-key name args))
+      (overlay-put overlay 'gptel-pi-tool-name name)
+      (overlay-put overlay 'gptel-pi-tool-args args)
+      (push overlay gptel-pi--tool-overlays)
+      (gptel-pi--tool-overlay-update overlay)
+      ;; A synchronous eval cannot repaint while it is running.  Repaint now so
+      ;; that its waiting indicator is visible before the evaluator takes over.
+      (redisplay t)
+      (let ((timer (run-with-timer
+                    0.2 0.2 #'gptel-pi--tool-overlay-tick overlay)))
+        (overlay-put overlay 'gptel-pi-timer timer))
+      overlay)))
+
+(defun gptel-pi--find-tool-overlay (name args)
+  "Find the running overlay for tool NAME and ARGS in the current buffer."
+  (let ((key (gptel-pi--tool-overlay-key name args)))
+    (seq-find (lambda (overlay)
+                (and (overlay-buffer overlay)
+                     (equal key (overlay-get overlay 'gptel-pi-tool-key))))
+              gptel-pi--tool-overlays)))
+
+(defun gptel-pi--remove-tool-overlay (name args)
+  "Remove the running-tool overlay for NAME and ARGS."
+  (let ((overlay (gptel-pi--find-tool-overlay name args)))
+    (when overlay
+      (let ((timer (overlay-get overlay 'gptel-pi-timer)))
+        (when (timerp timer) (cancel-timer timer)))
+      (setq gptel-pi--tool-overlays (delq overlay gptel-pi--tool-overlays))
+      (delete-overlay overlay))))
+
+(defun gptel-pi--remove-tool-overlays ()
+  "Remove all running-tool overlays in the current buffer."
+  (dolist (overlay gptel-pi--tool-overlays)
+    (let ((timer (overlay-get overlay 'gptel-pi-timer)))
+      (when (timerp timer) (cancel-timer timer)))
+    (delete-overlay overlay))
+  (setq gptel-pi--tool-overlays nil))
+
 (defun gptel-pi--pre-tool-call (info)
   "Enforce the per-request tool budget using public hook INFO."
   (unless gptel-pi--tool-call-fingerprints
@@ -581,6 +703,8 @@ output block."
       (setq reason
             (format "gptel-pi stopped repeated call %s with identical arguments (%d times)"
                     name identical-count))))
+    (when (and (null reason) (member name '("bash" "eval")))
+      (gptel-pi--begin-tool-overlay name (plist-get info :args)))
     (when reason
       (setq gptel-pi--tools-stopped-p t)
       (force-mode-line-update)
@@ -600,6 +724,9 @@ output block."
 
 (defun gptel-pi--post-tool-call (info)
   "Stop after repeated identical failures described by hook INFO."
+  (when (member (plist-get info :name) '("bash" "eval"))
+    (gptel-pi--remove-tool-overlay (plist-get info :name)
+                                    (plist-get info :args)))
   (when (gptel-pi--failure-result-p (plist-get info :result))
     (unless gptel-pi--tool-error-fingerprints
       (setq gptel-pi--tool-error-fingerprints (make-hash-table :test #'equal)))
@@ -632,6 +759,7 @@ output block."
         gptel-pi--tool-error-fingerprints (make-hash-table :test #'equal)
         gptel-pi--tools-active-p nil
         gptel-pi--tools-stopped-p nil)
+  (gptel-pi--remove-tool-overlays)
   (force-mode-line-update))
 
 (defun gptel-pi--tool-mode-line ()
@@ -1022,17 +1150,15 @@ DIRECTION is either `head' or `tail'.  MAX-BYTES and MAX-LINES default to
          (name (string-replace "*" "" (buffer-name)))
          (stdout-buffer (generate-new-buffer (format "*%s bash-stdout*" name)))
          (stderr-buffer (generate-new-buffer (format "*%s bash-stderr*" name)))
-         (effective-timeout
-          (let ((seconds (or timeout 300)))
-            (when (> seconds 0) seconds)))
-         (timeout-argv
-          (when effective-timeout
-            (list "timeout" (format "%ss" effective-timeout))))
-         (prefix
-          (when (boundp 'agent-shell-command-prefix)
-            (if (functionp agent-shell-command-prefix)
-                (funcall agent-shell-command-prefix origin)
-              agent-shell-command-prefix)))
+         (overlay (gptel-pi--find-tool-overlay "bash" (list :command command)))
+         (effective-timeout (let ((seconds (or timeout 300)))
+                              (when (> seconds 0) seconds)))
+         (timeout-argv (when effective-timeout
+                         (list "timeout" (format "%ss" effective-timeout))))
+         (prefix (when (boundp 'agent-shell-command-prefix)
+                   (if (functionp agent-shell-command-prefix)
+                       (funcall agent-shell-command-prefix origin)
+                     agent-shell-command-prefix)))
          (argv (append prefix timeout-argv
                        (list shell-file-name shell-command-switch command)))
          (process (make-process :name "gptel-pi-bash"
@@ -1042,6 +1168,9 @@ DIRECTION is either `head' or `tail'.  MAX-BYTES and MAX-LINES default to
                                 :connection-type 'pipe
                                 :file-handler t
                                 :noquery t)))
+    (when overlay
+      (overlay-put overlay 'gptel-pi-stdout-buffer stdout-buffer)
+      (overlay-put overlay 'gptel-pi-stderr-buffer stderr-buffer))
     (process-put process 'callback callback)
     (process-put process 'origin origin)
     (process-put process 'command command)

@@ -322,6 +322,24 @@
                                 result))
         (should (string-match-p "\\\"a long result\\\"" (buffer-string)))))))
 
+(ert-deftest gptel-pi-tool-overlay-is-purely-visual ()
+  (with-temp-buffer
+    (org-mode)
+    (setq-local gptel-pi-session-p t)
+    (insert "existing")
+    (set-buffer-modified-p nil)
+    (let ((before (buffer-string))
+          (overlay (gptel-pi--begin-tool-overlay
+                    "bash" '(:command "printf hello"))))
+      (unwind-protect
+          (progn
+            (should (overlayp overlay))
+            (should (equal (buffer-string) before))
+            (should (string-match-p "Waiting for output"
+                                    (or (overlay-get overlay 'after-string) "")))
+            (should-not (buffer-modified-p)))
+        (gptel-pi--remove-tool-overlays)))))
+
 (ert-deftest gptel-pi-bash-captures-streams-and-nonzero-status ()
   (with-temp-buffer
     (let (done result)
