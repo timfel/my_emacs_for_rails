@@ -23,7 +23,6 @@
 
 (use-package agent-shell-bwrap
   :after agent-shell-utils
-  :demand t
   :config
   (agent-shell-bwrap-mode 1))
 
@@ -33,8 +32,6 @@
   (agent-shell-context-mode 1))
 
 (use-package agent-shell-fanout
-  :after agent-shell-utils
-  :demand t
   :functions (agent-shell-fanout-default-repositories
               timfel/agent-shell-fanout-graal-repositories)
   :custom
@@ -52,16 +49,14 @@
       (agent-shell-fanout-default-repositories repo-root)))
   (setq agent-shell-fanout-repositories-function
         #'timfel/agent-shell-fanout-graal-repositories)
-  :hook (agent-shell-mode . hack-dir-local-variables-non-file-buffer))
+  :hook
+  (agent-shell-mode . hack-dir-local-variables-non-file-buffer))
 
 (use-package agent-shell-ralph
-  :after agent-shell-utils
   :hook
   (agent-shell-mode . agent-shell-ralph-rate-limit-retry-mode))
 
 (use-package agent-shell-jira
-  :after agent-shell
-  :demand t
   :defines (jira-detail-mode-map jira-issues-mode-map)
   :bind (:map jira-detail-mode-map
          ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent)
@@ -70,7 +65,7 @@
 
 (use-package agent-shell-desktop
   :vc (:url "https://github.com/timfel/agent-shell-desktop.el" :branch "main" :rev :newest)
-  :after (agent-shell desktop)
+  :after (agent-shell)
   :hook
   (agent-shell-mode . (lambda ()
                         (when (and desktop-save-mode desktop-dirname desktop-file-modtime)
@@ -142,7 +137,6 @@
   (agent-shell-tramp-mode 1))
 
 (use-package agent-shell-dashboard
-  :after agent-shell-utils
   :custom
   (agent-shell-dashboard-worktree-search-directories
    (list user-emacs-directory "~/dev/graalpython" "~/dev/graal" "~/dev/graalos" "~/tmp" "~/tmp/workloads" "~/tmp/graalos-apps/"))
