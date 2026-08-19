@@ -268,24 +268,58 @@ Return a cons of its exit status and complete output."
       (add-hook 'kill-buffer-hook #'gptel-compile--finish nil t))
     (pop-to-buffer buffer)))
 
+(defun gptel-compile--stream-append (context chunk)
+  "Append streamed response CHUNK to the mutable state in CONTEXT."
+  (when-let* ((state (plist-get context :stream-state)))
+    ;; Keep chunks separate while they arrive.  Concatenating each chunk to a
+    ;; growing string makes long patches unnecessarily expensive.
+    (setcar state (cons chunk (car state)))))
+
+(defun gptel-compile--stream-finish (context)
+  "Return and reset the accumulated streamed response in CONTEXT."
+  (when-let* ((state (plist-get context :stream-state)))
+    (prog1 (mapconcat #'identity (nreverse (car state)) "")
+      (setcar state nil))))
+
 (defun gptel-compile--callback (response info)
-  "Handle a compile RESPONSE using request INFO."
-  (cond
-   ((stringp response)
-    (gptel-compile--show-patch response (plist-get info :context)))
-   ((or (eq response 'abort) (null response))
-    (message "gptel-compile failed: %s" (or (plist-get info :status) "request aborted")))
-   ((eq (car-safe response) 'tool-call)
-    ;; The dedicated FSM does not normally expose calls for confirmation, but
-    ;; accepting here keeps the request moving if another gptel extension does.
-    (dolist (call (cdr response))
-      (pcase-let ((`(,tool ,args ,continue) call))
-        (funcall continue
-                 (apply (gptel-tool-function tool)
-                        (gptel--map-tool-args tool args))))))
-   ;; Tool results and optional reasoning are not user-facing for this compact
-   ;; workflow.  The final string response is the patch.
-   (t nil)))
+  "Handle a compile RESPONSE using request INFO.
+
+When streaming is enabled, gptel calls this function once for every text
+chunk and once more with `t' when the response is complete.  Tool-call
+responses also end with `t', so only show the accumulated text when the
+current response did not contain a tool call."
+  (let ((context (plist-get info :context)))
+    (cond
+     ((stringp response)
+      (if (plist-get info :stream)
+          (gptel-compile--stream-append context response)
+        ;; Backends that do not support streaming return the complete response
+        ;; as one string and omit :stream from INFO.
+        (gptel-compile--show-patch response context)))
+     ((eq response t)
+      (if (plist-get info :tool-use)
+          ;; Discard any text emitted before a tool call.  The tool result
+          ;; callback will cause the next request to start with fresh state.
+          (gptel-compile--stream-finish context)
+        (gptel-compile--show-patch
+         (gptel-compile--stream-finish context) context)))
+     ((or (eq response 'abort) (null response))
+      (gptel-compile--stream-finish context)
+      (message "gptel-compile failed: %s" (or (plist-get info :status) "request aborted")))
+     ((eq (car-safe response) 'tool-result)
+      ;; A tool-result starts a new streamed response.  In particular, do not
+      ;; let a pre-tool textual fragment become part of the final patch.
+      (gptel-compile--stream-finish context))
+     ((eq (car-safe response) 'tool-call)
+      ;; The dedicated FSM does not normally expose calls for confirmation, but
+      ;; accepting here keeps the request moving if another gptel extension does.
+      (dolist (call (cdr response))
+        (pcase-let ((`(,tool ,args ,continue) call))
+          (funcall continue
+                   (apply (gptel-tool-function tool)
+                          (gptel--map-tool-args tool args))))))
+     ;; Optional reasoning is not user-facing for this compact workflow.
+     (t nil))))
 
 ;;;###autoload
 (defun gptel-compile (begin end)
@@ -299,7 +333,10 @@ Return a cons of its exit status and complete output."
          (root (project-root (project-current)))
          (pseudocode (buffer-substring-no-properties begin end))
          (source (gptel-compile--source-name buffer root))
+         ;; The state is a one-element list so asynchronous stream callbacks
+         ;; can update it without relying on rebinding the request context.
          (context (list :root root
+                        :stream-state (list nil)
                         :window-configuration (current-window-configuration)))
          ;; Keep this deliberately isolated from chat context and any configured
          ;; agent tools: a compile request gets precisely its one read tool.
@@ -310,11 +347,11 @@ Return a cons of its exit status and complete output."
                        (gptel-compile--make-grep-tool root)))
          (gptel-include-reasoning nil)
          (gptel-temperature 0.0)
-         (gptel-stream nil))
+         (gptel-stream t))
     (gptel-request
         (gptel-compile--request-prompt pseudocode source root)
       :buffer buffer
-      :stream nil
+      :stream t
       :system gptel-compile--system-prompt
       :context context
       :fsm (gptel-make-fsm :handlers gptel-compile--handlers)

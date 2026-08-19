@@ -58,7 +58,11 @@
 
 (use-package agent-shell-jira
   :defines (jira-detail-mode-map jira-issues-mode-map)
-  :bind (:map jira-detail-mode-map
+  :functions agent-shell-jira-return-dwim
+  :after agent-shell
+  :bind (:map agent-shell-mode-map
+         ("RET" . agent-shell-jira-return-dwim)
+         :map jira-detail-mode-map
          ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent)
          :map jira-issues-mode-map
          ("C-x a i" . agent-shell-jira-issues-investigate-marked-with-agent)))
@@ -82,19 +86,18 @@
               agent-shell-rename-buffer
               org-link-set-parameters
               org-link-store-props
-              shell-maker-submit
-              timfel/agent-shell-return-dwim)
+              shell-maker-submit)
   :commands agent-shell
   :pin melpa
   :bind (("C-x a s" . agent-shell)
          :map agent-shell-mode-map
-         ("RET" . timfel/agent-shell-return-dwim)
          ("C-c RET" . shell-maker-submit)
          ("C-x a R" . agent-shell-restart)
          ("C-x a r" . agent-shell-reload))
   :custom
   (agent-shell-inhibit-system-sleep nil)
   (agent-shell-thought-process-expand-by-default t)
+  (agent-shell-activity-group-expand-by-default t)
   (agent-shell-busy-indicator-frames 'dots-round)
   (agent-shell-header-style 'text)
   (agent-shell-buffer-name-format (lambda (_agent-name project-name) (format "%s agent" project-name)))

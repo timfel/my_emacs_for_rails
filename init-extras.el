@@ -286,7 +286,6 @@
 
 (use-package exec-path-from-shell
   :ensure t
-  :defer 3
   :custom
   (exec-path-from-shell-shell-name
    (if (eq system-type 'windows-nt) "powershell.exe" nil))
