@@ -10,6 +10,8 @@
     (add-to-list 'exec-path jdtls)
     (setenv "PATH" (string-join exec-path path-separator)))
   (add-to-list 'eglot-server-programs
+               '((ruby-mode ruby-ts-mode) "ruby-lsp"))
+  (add-to-list 'eglot-server-programs
                (cons '(java-mode java-ts-mode) #'eglot-jdtls)))
 
 (use-package eglot-jdb
