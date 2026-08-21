@@ -169,24 +169,23 @@
       (load-theme 'leuven-dark t)
     (load-theme 'leuven))
 
-  (set-fontset-font
-   t
-   'emoji
-   (cond
-    ((member "Apple Color Emoji" (font-family-list)) "Apple Color Emoji")
-    ((member "Noto Color Emoji" (font-family-list)) "Noto Color Emoji")
-    ((member "Noto Emoji" (font-family-list)) "Noto Emoji")
-    ((member "Segoe UI Emoji" (font-family-list)) "Segoe UI Emoji")  ; 🧗
-    ((member "Symbola" (font-family-list)) "Symbola")))
-  (set-fontset-font
-   t
-   'symbol
-   (cond
-    ((member "Segoe UI Symbol" (font-family-list)) "Segoe UI Symbol")
-    ((member "Apple Symbols" (font-family-list)) "Apple Symbols")
-    ((member "Symbola" (font-family-list)) "Symbola")))
-  (if (eq system-type 'windows-nt)
-      (set-fontset-font t '(#x1F300 . #x1F5FF) "Segoe UI Symbol"))  ; 🔁, Miscellaneous Symbols and Pictographs
+  ;; Use dedicated fallback fonts for Unicode symbols and emoji.  In
+  ;; particular, do not map the emoji pictograph range to Segoe UI Symbol:
+  ;; that font only covers part of the range and can mask better fallbacks.
+  (when-let ((emoji-font
+              (seq-find (lambda (font) (member font (font-family-list)))
+                        '("Apple Color Emoji"
+                          "Noto Color Emoji"
+                          "Noto Emoji"
+                          "Segoe UI Emoji"
+                          "Symbola"))))
+    (set-fontset-font t 'emoji emoji-font))
+  (when-let ((symbol-font
+              (seq-find (lambda (font) (member font (font-family-list)))
+                        '("Segoe UI Symbol"
+                          "Apple Symbols"
+                          "Symbola"))))
+    (set-fontset-font t 'symbol symbol-font))
 
 
   (defun timfel/set-frame-faces ()
