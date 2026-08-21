@@ -36,7 +36,7 @@
   (interactive)
   (dolist (buffer (buffer-list))
     (with-current-buffer buffer
-      (when (and (derived-mode-p java-mode)
+      (when (and (derived-mode-p 'java-mode)
                  (not (buffer-modified-p buffer))
                  (funcall buffer-stale-function))
         (message "Reverting %s" (buffer-name))

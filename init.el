@@ -217,7 +217,7 @@
               (lambda (text)
                 (setq last-copied-text (substring-no-properties text))
                 (if (and (fboundp #'clipetty-cut) (not window-system))
-                    (clipetty-cut (lambda (text)) last-copied-text)
+                    (clipetty-cut (lambda (_)) last-copied-text)
                   (when wl-copy-process
                     (ignore-errors
                       (kill-process wl-copy-process)))

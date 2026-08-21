@@ -330,12 +330,6 @@
             :branch "main"
             :ignored-files ("scripts/*" "test/*"))
   :if (eq system-type 'windows-nt)
-  :config
-  (run-with-idle-timer 2 nil
-   (lambda ()
-     (unless (executable-find "cc")
-       (when (executable-find "clang")
-         
   :defer t)
 
 (use-package rustic
