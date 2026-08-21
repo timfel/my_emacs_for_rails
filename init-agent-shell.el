@@ -127,6 +127,13 @@
               (copy-file src dst t t)))))))
 
   (setq
+   ;; pi-acp 0.0.33 defaults to pi.cmd on Windows.  The mise Pi package
+   ;; provides pi.exe instead, so spawning the default command only starts a
+   ;; short-lived cmd.exe and session/new fails when pi-acp writes to it.
+   agent-shell-pi-environment
+   (when (eq system-type 'windows-nt)
+     (agent-shell-make-environment-variables
+      "PI_ACP_PI_COMMAND" (or (executable-find "pi.exe") "pi.exe")))
    agent-shell-openai-authentication (agent-shell-openai-make-authentication :login t)
    agent-shell-cline-environment (agent-shell-make-environment-variables :inherit-env t)
    agent-shell-openai-codex-environment (agent-shell-make-environment-variables :inherit-env t)
