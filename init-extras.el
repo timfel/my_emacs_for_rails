@@ -286,6 +286,7 @@
 
 (use-package exec-path-from-shell
   :ensure t
+  :defer 2
   :custom
   (exec-path-from-shell-shell-name
    (if (eq system-type 'windows-nt) "powershell.exe" nil))
@@ -329,6 +330,12 @@
             :branch "main"
             :ignored-files ("scripts/*" "test/*"))
   :if (eq system-type 'windows-nt)
+  :config
+  (run-with-idle-timer 2 nil
+   (lambda ()
+     (unless (executable-find "cc")
+       (when (executable-find "clang")
+         
   :defer t)
 
 (use-package rustic

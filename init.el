@@ -112,8 +112,8 @@
   (use-short-answers t)
   (fill-column 79)
   (buffer-file-coding-system 'utf-8-unix)
-  (treesit-auto-install-grammar 'always) ; EMACS-31
-  (treesit-enabled-modes t)              ; EMACS-31
+  (treesit-auto-install-grammar (and (not (equal system-type 'windows-nt)) 'always))
+  (treesit-enabled-modes (not (equal system-type 'windows-nt)))
   :config
   (if (file-exists-p custom-file)
       (load custom-file))
