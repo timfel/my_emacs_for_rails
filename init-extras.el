@@ -185,9 +185,14 @@
          :map magit-mode-map
          ("C-x a s" . agent-shell))
   :ensure t
+  :preface
+  (setq magit-diff-specify-hunk-foreground nil)
   :custom
+  (magit-diff-use-indicator-faces t)
   (magit-auto-revert-tracked-only t)
   (magit-process-apply-ansi-colors t)
+  (magit-diff-fontify-hunk t)
+  (magit-diff-use-indicator-faces t)
   :config
   (defvar-keymap timfel/magit-ctl-x-a-map
     :doc "Prefix map for `C-x a' in Magit diff sections."
