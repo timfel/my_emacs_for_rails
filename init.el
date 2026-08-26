@@ -90,6 +90,9 @@
   (make-backup-files nil)
   (query-replace-highlight t)
   (search-highlight t)
+  (select-active-regions nil)
+  (select-enable-clipboard 't)
+  (select-enable-primary nil)
   (font-lock-maximum-decoration t)
   (require-final-newline t)
   (show-paren-style 'mixed)
@@ -208,30 +211,27 @@
                   (flycheck-disabled-checkers emacs-lisp-checkdoc))))
 
   (when (eq system-type 'gnu/linux)
-    (when (or (eq window-system 'pgtk)
-              (and (not window-system) (getenv "WAYLAND_DISPLAY")))
-      (declare-function clipetty-cut "clipetty" (orig-fun text))
-      (let ((last-copied-text)
-            (wl-copy-process))
-        (setq interprogram-cut-function
-              (lambda (text)
-                (setq last-copied-text (substring-no-properties text))
-                (if (and (fboundp #'clipetty-cut) (not window-system))
-                    (clipetty-cut (lambda (_)) last-copied-text)
-                  (when wl-copy-process
-                    (ignore-errors
-                      (kill-process wl-copy-process)))
-                  (setq wl-copy-process
-                        (make-process :name "wl-copy"
-                                      :buffer nil
-                                      :command `("wl-copy" "-f" "-t" "text/plain" ,last-copied-text)))))
-              interprogram-paste-function
-              (lambda ()
-                (let* ((raw (shell-command-to-string "wl-paste -n 2>/dev/null | tr -d '\r'"))
-                       (s (and raw (not (string-empty-p raw)) raw)))
-                  (if (and s last-copied-text (string= s last-copied-text))
-                      nil
-                    s))))))
+    (when (getenv "WAYLAND_DISPLAY")
+      ;; define a couple of methods to dispatch to when OSC-52 copy and/or
+      ;; paste is not supported, but we have a wayland display
+      (cl-defmethod gui-backend-get-selection
+        (type data-type
+              &context (window-system nil)
+              ((terminal-parameter nil 'xterm--get-selection) (eql nil)))
+        (let* ((raw (shell-command-to-string "wl-paste -n 2>/dev/null | tr -d '\r'")))
+          (when (and raw (not (string-empty-p raw))) raw)))
+      (setq wl-copy-process nil)
+      (cl-defmethod gui-backend-set-selection
+        (type data
+              &context (window-system nil)
+              ((terminal-parameter nil 'xterm--set-selection) (eql nil)))
+        (when wl-copy-process
+          (ignore-errors
+            (kill-process wl-copy-process)))
+        (setq wl-copy-process
+              (make-process :name "wl-copy"
+                            :buffer nil
+                            :command `("wl-copy" "-f" "-n" "-t" "text/plain" ,last-copied-text))))))
 
     (when-let* ((nvm "~/.nvm/versions/node/")
                 (_ (file-exists-p nvm)))

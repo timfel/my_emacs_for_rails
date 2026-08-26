@@ -19,7 +19,3 @@
   :vc (:url "https://github.com/cashmeredev/kitty-graphics.el" :branch "master" :rev :newest)
   :config
   (kitty-graphics-mode 1))
-
-(use-package clipetty
-  :ensure t
-  :unless (or (daemonp) (display-graphic-p)))

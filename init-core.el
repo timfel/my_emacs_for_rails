@@ -186,6 +186,8 @@
   (defun timfel/org-buffers (&rest _)
     (ibuffer t "*Org Buffers*" '((used-mode . org-mode))))
   :custom
+  (org-refile-use-outline-path 'file)
+  (org-archive-mark-done t)
   (org-image-actual-width (list 600))
   (org-log-done 'time)
   (org-export-backends '(ascii md html latex))
