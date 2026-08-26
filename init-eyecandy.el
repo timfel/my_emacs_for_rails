@@ -24,6 +24,8 @@
   :ensure t
   :hook (after-init . doom-modeline-mode)
   :custom
+  (doom-modeline-time t)
+  (doom-modeline-time-icon t)
   (doom-modeline-minor-modes t)
   (doom-modeline-bar-width 4)
   (doom-modeline-hud nil)

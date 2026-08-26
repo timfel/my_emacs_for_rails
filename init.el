@@ -138,6 +138,7 @@
   (tab-bar-history-mode 1)
   (undelete-frame-mode 1)
   (winner-mode 1)
+  (display-time-mode 1)
   (put 'narrow-to-region 'disabled nil)
   (put 'dired-find-alternate-file 'disabled nil)
   (setq-default indent-tabs-mode nil))
