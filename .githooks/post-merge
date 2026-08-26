@@ -40,7 +40,7 @@ if [ -z "$(printf %s "$FILES" | tr -d ' ')" ]; then
   exit 0
 fi
 
-"$EMACS_BIN" -Q --batch \
+"$EMACS_BIN" -q --batch \
   -l "$COMPILE_INIT" \
   -l "$HOOK_COMPILE" \
   --eval "(setq byte-compile-warnings '(not obsolete))" \

@@ -1,7 +1,7 @@
 ;;; compile-init.el --- minimal init for batch byte-compilation  -*- lexical-binding: t; -*-
 
 ;; Keep this file small and side-effect free: it exists to make `require' work
-;; during `emacs -Q --batch' byte-compilation.
+;; during `emacs -q --batch' byte-compilation.
 
 (setq user-emacs-directory
       (file-name-as-directory

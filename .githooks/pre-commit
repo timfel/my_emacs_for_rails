@@ -50,7 +50,7 @@ fi
 
 for f in $FILES; do
     echo "Checking $f"
-    "$EMACS_BIN" -Q --batch \
+    "$EMACS_BIN" -q --batch \
       -l "$COMPILE_INIT" \
       -l "$HOOK_COMPILE" \
       --eval "(setq byte-compile-warnings t
@@ -59,7 +59,7 @@ for f in $FILES; do
       $f
 done
 
-# "$EMACS_BIN" -Q --batch \
+# "$EMACS_BIN" -q --batch \
 #   -l "$COMPILE_INIT" \
 #   -l "$HOOK_COMPILE" \
 #   --eval "(setq byte-compile-warnings t
