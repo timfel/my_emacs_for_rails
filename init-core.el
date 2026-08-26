@@ -779,6 +779,57 @@
                           (set-window-dedicated-p (selected-window) nil)
                           (pop-to-buffer-same-window nil)))))))
 
+(use-package term
+  :unless (memq system-type '(windows-nt android))
+  :bind (("<f12>" . (lambda (&optional arg)
+                    (interactive "P")
+                    (if-let* ((w (get-window-with-predicate (lambda (w) (string-prefix-p "*terminal" (buffer-name (window-buffer w)))))))
+                        (select-window w)
+                      (let ((w (split-window (selected-window) -18)))
+                        (select-window w)
+                        (let ((buf (seq-find (lambda (b) (string-prefix-p "*terminal" (or (buffer-name b) ""))) (buffer-list))))
+                          (if (and (not arg) buf)
+                              (switch-to-buffer buf)
+                            (term "bash")
+                            (add-hook 'kill-buffer-hook #'delete-window 0 t)))
+                        (set-window-dedicated-p w t)))))
+         :map term-raw-map
+         ("C-c C-l" . #'term-line-mode)
+         ("C-c <left>" . (lambda () (interactive)
+                           (let* ((bl (seq-sort (lambda (a b) (string-lessp (buffer-name a) (buffer-name b))) (buffer-list)))
+                                  (before (seq-take-while (lambda (b) (not (eq b (current-buffer)))) bl))
+                                  (after (seq-difference bl before)))
+                             (set-window-dedicated-p (selected-window) nil)
+                             (set-window-buffer (selected-window)
+                                                (seq-find (lambda (b) (string-prefix-p "*terminal" (or (buffer-name b) ""))) (seq-reverse before)
+                                                          (seq-find (lambda (b) (string-prefix-p "*terminal" (or (buffer-name b) ""))) (seq-reverse after))))
+                             (set-window-dedicated-p (selected-window) t))))
+         ("C-c <right>" . (lambda () (interactive)
+                            (let* ((bl (seq-sort (lambda (a b) (string-lessp (buffer-name a) (buffer-name b))) (buffer-list)))
+                                   (before (seq-concatenate 'list (seq-take-while (lambda (b) (not (eq b (current-buffer)))) bl) (list (current-buffer))))
+                                   (after (seq-difference bl before)))
+                              (set-window-dedicated-p (selected-window) nil)
+                              (set-window-buffer (selected-window)
+                                                 (seq-find (lambda (b) (string-prefix-p "*terminal" (or (buffer-name b) ""))) after
+                                                           (seq-find (lambda (b) (string-prefix-p "*terminal" (or (buffer-name b) ""))) before)))
+                              (set-window-dedicated-p (selected-window) t))))
+         ("<f12>" . (lambda () (interactive)
+                      (let ((parent (window-parent)))
+                        (if parent
+                            (delete-window)
+                          (set-window-dedicated-p (selected-window) nil)
+                          (pop-to-buffer-same-window nil)))))
+         :map term-mode-map
+         ("C-c C-l" . #'term-char-mode)
+         ("<f12>" . (lambda () (interactive)
+                      (let ((parent (window-parent)))
+                        (if parent
+                            (delete-window)
+                          (set-window-dedicated-p (selected-window) nil)
+                          (pop-to-buffer-same-window nil))))))
+  :custom
+  (term-buffer-maximum-size 40000))
+
 (use-package repeat
   :hook
   (after-init . repeat-mode)

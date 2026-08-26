@@ -347,6 +347,7 @@
   :bind (("C-S-d" . mc/mark-more-like-this-extended)))
 
 (use-package vterm
+  :disabled
   :ensure t
   :defines (vterm-mode-map vterm--process vterm-copy-mode-map)
   :commands (vterm)
