@@ -573,6 +573,8 @@
                                        "^nn\\.a[0-9]+\\|\\.log\\|(ftp)\\|^tags\\|^TAGS"
                                        "\\|\\.emacs.*\\|\\.diary\\|\\.newsrc-dribble\\|\\.bbdb"
                                        "\\)$"))
+  :hook
+  (desktop-save-mode . (lambda () (run-with-idle-timer 4 nil #'desktop-read)))
   :config
   ;; (desktop-save-mode)
   (add-to-list 'desktop-globals-to-save 'file-name-history)
