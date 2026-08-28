@@ -158,7 +158,7 @@
 ;; lisp files in my .emacs.d
 (load (locate-user-emacs-file "./init-lisp.el"))
 ;; lsp mode and associated packages
-(load (locate-user-emacs-file "./init-lsp.el"))
+;; (load (locate-user-emacs-file "./init-lsp.el"))
 ;; extra packages around eglot
 (load (locate-user-emacs-file "./init-eglot.el"))
 

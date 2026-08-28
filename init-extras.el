@@ -412,7 +412,32 @@
 
 (use-package dape
   :ensure t
-  :commands dape)
+  :commands dape
+  :config
+  ;; put require "debug"; binding.break for the starting point in a test block,
+  ;; then run M-x dape and select rdbg-rails-test
+  (cl-flet* ((merge-plists (&rest plists)
+               (let ((rtn (copy-sequence (pop plists)))
+                     p v ls)
+                 (while plists
+                   (setq ls (pop plists))
+                   (while ls
+                     (setq p (pop ls) v (pop ls))
+                     (setq rtn (plist-put rtn p v))))
+                 rtn))
+             (dape-override-config (configs provider override)
+               (let* ((provider-config (assoc provider configs))
+                      (config-plist (cdr provider-config)))
+                 (if provider-config
+                     (merge-plists config-plist override)
+                   (error "Provider %s not found in configs" provider)))))
+    (let* ((config (dape-override-config
+                    dape-configs
+                    'rdbg
+                    '(-c (format "RAILS_ENV=test bundle exec bin/rails test %s:%d"
+                                 (dape-buffer-default)
+                                 (line-number-at-pos))))))
+      (cl-pushnew `(rdbg-rails-test . ,config) dape-configs))))
 
 (use-package yasnippet
   :ensure t
