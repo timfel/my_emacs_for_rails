@@ -172,21 +172,20 @@
   ;; Use dedicated fallback fonts for Unicode symbols and emoji.  In
   ;; particular, do not map the emoji pictograph range to Segoe UI Symbol:
   ;; that font only covers part of the range and can mask better fallbacks.
-  (when-let ((emoji-font
-              (seq-find (lambda (font) (member font (font-family-list)))
-                        '("Apple Color Emoji"
-                          "Noto Color Emoji"
-                          "Noto Emoji"
-                          "Segoe UI Emoji"
-                          "Symbola"))))
+  (when-let* ((emoji-font
+               (seq-find (lambda (font) (member font (font-family-list)))
+                         '("Apple Color Emoji"
+                           "Noto Color Emoji"
+                           "Noto Emoji"
+                           "Segoe UI Emoji"
+                           "Symbola"))))
     (set-fontset-font t 'emoji emoji-font))
-  (when-let ((symbol-font
-              (seq-find (lambda (font) (member font (font-family-list)))
-                        '("Segoe UI Symbol"
-                          "Apple Symbols"
-                          "Symbola"))))
+  (when-let* ((symbol-font
+               (seq-find (lambda (font) (member font (font-family-list)))
+                         '("Segoe UI Symbol"
+                           "Apple Symbols"
+                           "Symbola"))))
     (set-fontset-font t 'symbol symbol-font))
-
 
   (defun timfel/set-frame-faces ()
     (cond

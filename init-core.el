@@ -759,7 +759,9 @@
                 (if (memq system-type '(windows-nt android))
                     (eshell (not (null arg)))
                   (with-current-buffer (get-buffer-create eshell-buffer-name)
+		    (declare-function term-mode "term.el")
                     (term-mode)
+		    (declare-function term-exec "term.el")
                     (term-exec (current-buffer) eshell-buffer-name "bash" nil nil)
                     (term-char-mode)
                     (current-buffer))))))
@@ -772,7 +774,6 @@
   (interactive)
   (let* ((keys (this-command-keys-vector))
          (last-key (aref keys (1- (length keys))))
-         (message (format "%s" last-key))
          (sorter (if (eq last-key 'left) #'string-greaterp #'string-lessp))
          (blfiltered (seq-filter (lambda (b) (string-prefix-p "*side-term" (or (buffer-name b) ""))) (buffer-list)))
          (bl (seq-sort (lambda (a b) (funcall sorter (buffer-name a) (buffer-name b))) blfiltered))
@@ -798,6 +799,7 @@
 
 (use-package term
   :unless (memq system-type '(windows-nt android))
+  :commands (term-line-mode term-char-mode)
   :bind (("<f12>" . #'timfel/side-shell-toggle)
          :map term-raw-map
          ("C-c C-l" . #'term-line-mode)

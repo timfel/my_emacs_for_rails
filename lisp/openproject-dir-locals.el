@@ -2,6 +2,7 @@
 
 (require 'files)
 
+(defvar inf-ruby-console-environment)
 
 (defun openproject-rails-console ()
   (interactive)
