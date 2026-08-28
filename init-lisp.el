@@ -4,6 +4,7 @@
 (add-to-list 'load-path (locate-user-emacs-file "lisp"))
 
 (use-package timfel
+  :demand
   :config
   (ignore-errors
     (require 'orcl))
