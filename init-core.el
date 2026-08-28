@@ -768,7 +768,7 @@
                     (current-buffer))))))
           ;; put it in the side window, make that window now dedicated to that buffer
           (pop-to-buffer-same-window buf)
-          (add-hook 'kill-buffer-hook (lambda () (hide)))
+          (add-hook 'kill-buffer-hook (lambda () (hide)) 0 t)
           (set-window-dedicated-p w t))))))
 
 (defun timfel/side-shell-select ()
@@ -918,7 +918,7 @@
   :commands (speedbar-window)
   :custom
   (speedbar-window-default-width 25)
-  (speedbar-window-max-width 25)
+  (speedbar-window-max-width 40)
   :bind
   (("<f6>" . #'speedbar-window)))
 
