@@ -4,6 +4,7 @@
 (use-package eglot-jdtls
   :after eglot
   :demand t
+  :commands (eglot-jdtls-clear-workspace-and-cache)
   :functions (eglot-jdtls)
   :config
   (add-to-list 'eglot-server-programs
