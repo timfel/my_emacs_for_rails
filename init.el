@@ -218,8 +218,10 @@
         (type data-type
               &context (window-system nil)
               ((terminal-parameter nil 'xterm--get-selection) (eql nil)))
-        (let* ((raw (shell-command-to-string "wl-paste -n 2>/dev/null | tr -d '\r'")))
-          (when (and raw (not (string-empty-p raw))) raw)))
+	(if (and (eq type 'CLIPBOARD) (eq data-type 'STRING))
+            (let* ((raw (shell-command-to-string "wl-paste -n 2>/dev/null | tr -d '\r'")))
+              (when (and raw (not (string-empty-p raw))) raw))))
+      (defvar wl-copy-process)
       (setq wl-copy-process nil)
       (cl-defmethod gui-backend-set-selection
         (type data
@@ -227,11 +229,12 @@
               ((terminal-parameter nil 'xterm--set-selection) (eql nil)))
         (when wl-copy-process
           (ignore-errors
-            (kill-process wl-copy-process)))
-        (setq wl-copy-process
-              (make-process :name "wl-copy"
-                            :buffer nil
-                            :command `("wl-copy" "-f" "-n" "-t" "text/plain" ,last-copied-text))))))
+	    (kill-process wl-copy-process)))
+	(if (eq type 'STRING)
+            (setq wl-copy-process
+		  (make-process :name "wl-copy"
+				:buffer nil
+				:command `("wl-copy" "-f" "-n" "-t" "text/plain" ,data)))))))
 
     (when-let* ((nvm "~/.nvm/versions/node/")
                 (_ (file-exists-p nvm)))
@@ -250,7 +253,7 @@
 
     (when-let* ((eclipse (expand-file-name "~/dev/eclipse/eclipse"))
                 (_ (and (file-exists-p eclipse) (not (getenv "ECLIPSE_EXE")))))
-      (setenv "ECLIPSE_EXE" eclipse)))
+      (setenv "ECLIPSE_EXE" eclipse))
 
   (server-start nil t)
 
