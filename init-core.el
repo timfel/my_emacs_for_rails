@@ -731,6 +731,8 @@
 
 (defun timfel/side-shell-toggle (&optional arg)
   (interactive "P")
+  (if (memq system-type '(windows-nt android))
+      (require 'eshell))
   (cl-flet ((hide ()
               (let ((parent (window-parent)))
                 (if parent
@@ -783,6 +785,7 @@
 
 (use-package eshell
   :if (memq system-type '(windows-nt android))
+  :commands (eshell)
   :bind (("<f12>" . #'timfel/side-shell-toggle)))
 
 (use-package esh-mode
@@ -907,8 +910,8 @@
 
 (use-package speedbar
   :if (>= emacs-major-version 31)
-  :functions (speedbar-window)
-  :custom ;; all EMACS-31
+  :commands (speedbar-window)
+  :custom
   (speedbar-window-default-width 25)
   (speedbar-window-max-width 25)
   :bind
@@ -919,12 +922,12 @@
   :custom
   (ibuffer-human-readable-size t))
 
-;; (use-package tty-tip
-;;   :if (>= emacs-major-version 31)
-;;   :ensure nil
-;;   :functions (tty-tip-mode)
-;;   :config
-;;   (tty-tip-mode))
+(use-package tty-tip
+  :if (and (>= emacs-major-version 31) (not (display-graphic-p)))
+  :ensure nil
+  :functions (tty-tip-mode)
+  :config
+  (tty-tip-mode))
 
 (use-package apropos
   :defer t

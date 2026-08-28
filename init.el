@@ -15,7 +15,7 @@
         ("gnu" . 5)
         ("melpa-stable" . 1)
         ("cselpa" . 0)))
-(setq package-install-upgrade-built-in t)
+(setq package-install-upgrade-built-in nil)
 (package-initialize)
 
 (require 'use-package)
