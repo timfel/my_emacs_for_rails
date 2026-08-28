@@ -732,7 +732,8 @@
 (defun timfel/side-shell-toggle (&optional arg)
   (interactive "P")
   (if (memq system-type '(windows-nt android))
-      (require 'eshell))
+      (require 'eshell)
+    (require 'term))
   (cl-flet ((hide ()
               (let ((parent (window-parent)))
                 (if parent
