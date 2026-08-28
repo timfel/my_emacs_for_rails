@@ -832,6 +832,8 @@
   (eglot-documentation-renderer 'markdown-ts-view-mode) ;; EMACS-31
   (eglot-code-action-indications nil)                   ;; EMACS-31
   :config
+  (add-to-list 'eglot-server-programs
+               '((ruby-mode ruby-ts-mode) "ruby-lsp"))
   (advice-add
    'eglot-workspace-folders :filter-return
    (lambda (folders)
