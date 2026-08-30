@@ -747,6 +747,7 @@
   :bind (("C-," . eglot-code-actions)
          ("C-S-t" . xref-find-apropos))
   :custom
+  (eglot-connect-timeout 120)
   (eglot-documentation-renderer 'markdown-ts-view-mode)
   (eglot-code-action-indications nil)
   (eglot-extend-to-xref t)
