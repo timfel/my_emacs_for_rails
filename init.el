@@ -101,6 +101,7 @@
   (view-lossage-auto-refresh t) ; EMACS-31: live-updating C-h l, great for teaching/debugging
   (initial-scratch-message ";; Welcome to your emacs.
 ;; Some useful expressions:
+;;   Get all fonts: (all-the-icons-install-fonts) (nerd-icons-install-fonts)
 ;;   Resume desktop
 ;;     (call-interactively (quote desktop-change-dir))
 ;;     (desktop-save-mode 1)

@@ -5,6 +5,10 @@
   :unless (memq system-type '(android windows-nt))
   :ensure t)
 
+(use-package nerd-icons
+  :unless (memq system-type '(android windows-nt))
+  :ensure t)
+
 (use-package all-the-icons-completion
   :unless (memq system-type '(android windows-nt))
   :after all-the-icons
