@@ -2,7 +2,6 @@
 (require 'use-package)
 
 (use-package eglot-jdtls
-  :after eglot
   :demand t
   :commands (eglot-jdtls-clear-workspace-and-cache)
   :functions (eglot-jdtls)
