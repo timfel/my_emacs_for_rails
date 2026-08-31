@@ -109,6 +109,7 @@
   (agent-shell-show-usage-at-turn-end t)
   (agent-shell-text-file-capabilities t)
   :config
+  (fset 'timfel-agent-start #'agent-shell)
   (keymap-unset agent-shell-mode-map "p")
   (keymap-unset agent-shell-mode-map "n")
 

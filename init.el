@@ -145,8 +145,10 @@
 
 ;; builtin packages i customize and use
 (load (locate-user-emacs-file "./init-core.el"))
-;; agent-shell and packages around that
-(load (locate-user-emacs-file "./init-agent-shell.el"))
+;; agent frontend. `agent-shell' uses ACP, `agent-tui' uses term
+(if nil
+    (load (locate-user-emacs-file "./init-agent-shell.el"))
+  (load (locate-user-emacs-file "./init-agent-tui.el")))
 ;; packages that make things prettier, but not really more functional
 (load (locate-user-emacs-file "./init-eyecandy.el"))
 ;; packages that make emacs more usable in the terminal

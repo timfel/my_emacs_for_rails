@@ -183,7 +183,7 @@
   :unless (memq system-type '(windows-nt android))
   :bind (("C-x C-z" . magit-status)
          :map magit-mode-map
-         ("C-x a s" . agent-shell))
+         ("C-x a s" . timfel-agent-start))
   :ensure t
   :preface
   (setq magit-diff-specify-hunk-foreground nil)
@@ -196,7 +196,7 @@
   :config
   (defvar-keymap timfel/magit-ctl-x-a-map
     :doc "Prefix map for `C-x a' in Magit diff sections."
-    "s" #'agent-shell
+    "s" #'timfel-agent-start
     "a" #'magit-add-change-log-entry
     "4 a" #'magit-add-change-log-entry-other-window)
   (keymap-set magit-diff-section-map "C-x a" timfel/magit-ctl-x-a-map)
