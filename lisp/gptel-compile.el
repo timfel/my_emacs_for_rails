@@ -30,6 +30,8 @@
 (require 'project)
 (require 'subr-x)
 
+(declare-function deadgrep "deadgrep" (search-term &optional directory))
+
 (defgroup gptel-compile nil
   "Compile pseudocode into project patches with gptel."
   :group 'gptel)
@@ -48,7 +50,8 @@ Make every edit required by the pseudocode, including edits to related files.
 Your final response MUST be one complete, applicable unified diff and nothing
 else: no explanation, markdown fence, or progress report.  Use git-style paths
 relative to the project root (--- a/path and +++ b/path), including /dev/null
-when adding or deleting a file.  Do not abbreviate hunks."
+when adding or deleting a file.  Do not abbreviate hunks.  Ensure every hunk
+header has exact old and new line counts, and terminate the diff with a newline."
   "System prompt used by `gptel-compile'.")
 
 (defvar gptel-compile-patch-mode-map
@@ -119,17 +122,26 @@ request is active cannot broaden the tool's access."
 (defun gptel-compile--grep (cb pattern root)
   (defvar deadgrep-display-buffer-function)
   (defvar deadgrep-finished-hook)
-  (let* ((results)
-         (buffer)
-         (deadgrep-display-buffer-function (lambda (buf) (setq buffer buf)))
-         (prev-deadgrep-finished-hook deadgrep-finished-hook))
-    (setq deadgrep-finished-hook (lambda ()
-                                   (setq deadgrep-finished-hook prev-deadgrep-finished-hook)
-                                   (setq results (with-current-buffer buffer
-                                                   (buffer-substring-no-properties (point-min) (point-max))))
-                                   (kill-buffer buffer)
-                                   (funcall cb results)))
-    (deadgrep pattern root)))
+  (let (buffer finish)
+    ;; `deadgrep' runs asynchronously.  Install the completion callback as a
+    ;; buffer-local hook after it has created the result buffer; a dynamic
+    ;; binding of `deadgrep-finished-hook' would be gone by the time the
+    ;; process sentinel runs (and also cannot support concurrent searches).
+    (let ((deadgrep-display-buffer-function (lambda (buf) (setq buffer buf))))
+      (deadgrep pattern root))
+    (if (not (buffer-live-p buffer))
+        (funcall cb "Error: deadgrep did not create a result buffer")
+      (setq finish
+            (lambda ()
+              (when (buffer-live-p buffer)
+                (let ((results (with-current-buffer buffer
+                                 (buffer-substring-no-properties (point-min) (point-max)))))
+                  (with-current-buffer buffer
+                    (remove-hook 'deadgrep-finished-hook finish t))
+                  (kill-buffer buffer)
+                  (funcall cb results)))))
+      (with-current-buffer buffer
+        (add-hook 'deadgrep-finished-hook finish nil t)))))
 
 (defun gptel-compile--make-grep-tool (root)
   "Return the grep tool permitted for a request rooted at ROOT."
@@ -207,15 +219,21 @@ request is active cannot broaden the tool's access."
         (revert-buffer t t)))))
 
 (defun gptel-compile--call-patch (patch root &rest arguments)
-  "Run patch on PATCH below ROOT with ARGUMENTS.
-Return a cons of its exit status and complete output."
+  "Run git apply on PATCH below ROOT with ARGUMENTS.
+Return a cons of its exit status and complete output.
+
+`--recount' is used by the caller because LLM-generated hunks sometimes have
+incorrect line counts."
   (let ((output (generate-new-buffer " *gptel-compile-patch-output*"))
         (default-directory root))
     (unwind-protect
         (with-temp-buffer
           (insert patch)
+          ;; `git apply' rejects a patch whose final line is not terminated.
+          (unless (bolp)
+            (insert "\n"))
           (cons (apply #'call-process-region
-                       (point-min) (point-max) "patch" nil output nil arguments)
+                       (point-min) (point-max) "git" nil output nil arguments)
                 (with-current-buffer output (buffer-string))))
       (kill-buffer output))))
 
@@ -225,16 +243,15 @@ Return a cons of its exit status and complete output."
   (interactive)
   (unless (derived-mode-p 'gptel-compile-patch-mode)
     (user-error "This is not a gptel-compile patch buffer"))
-  (unless (executable-find "patch")
-    (user-error "Cannot apply patch: `patch' executable not found"))
+  (unless (executable-find "git")
+    (user-error "Cannot apply patch: `git' executable not found"))
   (let* ((patch (buffer-substring-no-properties (point-min) (point-max)))
          (root gptel-compile--root)
-         (dry-run (gptel-compile--call-patch patch root "--batch" "--forward"
-                                              "--dry-run" "-p1")))
+         (dry-run (gptel-compile--call-patch patch root "apply" "--check" "--recount")))
     (if (not (zerop (car dry-run)))
         (message "Patch does not apply: %s"
                  (string-trim (truncate-string-to-width (cdr dry-run) 300 nil nil "…")))
-      (let ((result (gptel-compile--call-patch patch root "--batch" "--forward" "-p1")))
+      (let ((result (gptel-compile--call-patch patch root "apply" "--recount")))
         (if (not (zerop (car result)))
             (message "Patch failed: %s"
                      (string-trim (truncate-string-to-width (cdr result) 300 nil nil "…")))
@@ -260,6 +277,8 @@ Return a cons of its exit status and complete output."
   (let ((buffer (generate-new-buffer "*gptel-compile patch*")))
     (with-current-buffer buffer
       (insert patch)
+      (unless (bolp)
+        (insert "\n"))
       (goto-char (point-min))
       (gptel-compile-patch-mode)
       (setq-local gptel-compile--root (plist-get context :root)
