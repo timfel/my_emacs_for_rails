@@ -369,6 +369,7 @@
         read-buffer-completion-ignore-case t
         read-file-name-completion-ignore-case t)
   (icomplete-mode t)
+  (icomplete-vertical-mode t)
   ;; If I were to use normal ido-mode, disable icomplete in the minibuffer
   ;; (remove-hook 'minibuffer-setup-hook #'icomplete-minibuffer-setup)
   ;; i like completion to be local
