@@ -747,8 +747,9 @@
   :bind (("C-," . eglot-code-actions)
          ("C-S-t" . xref-find-apropos))
   :custom
-  (eglot-documentation-renderer 'markdown-ts-view-mode) ;; EMACS-31
-  (eglot-code-action-indications nil)                   ;; EMACS-31
+  (eglot-documentation-renderer 'markdown-ts-view-mode)
+  (eglot-code-action-indications nil)
+  (eglot-extend-to-xref t)
   :config
   (add-to-list 'eglot-server-programs
                '((ruby-mode ruby-ts-mode) "ruby-lsp"))

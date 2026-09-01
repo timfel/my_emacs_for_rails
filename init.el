@@ -146,7 +146,7 @@
 ;; builtin packages i customize and use
 (load (locate-user-emacs-file "./init-core.el"))
 ;; agent frontend. `agent-shell' uses ACP, `agent-tui' uses term
-(if nil
+(if t
     (load (locate-user-emacs-file "./init-agent-shell.el"))
   (load (locate-user-emacs-file "./init-agent-tui.el")))
 ;; packages that make things prettier, but not really more functional
@@ -169,7 +169,7 @@
   :config
   (if (eq system-type 'android)
       (load-theme 'leuven-dark t)
-    (load-theme 'leuven))
+    (load-theme 'modus-operandi-tinted))
 
   ;; Use dedicated fallback fonts for Unicode symbols and emoji.  In
   ;; particular, do not map the emoji pictograph range to Segoe UI Symbol:
