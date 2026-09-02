@@ -408,6 +408,11 @@
          ("<f12>" . #'timfel/side-shell-toggle)
          :map ghostel-char-mode-map
          ("<f12>" . #'timfel/side-shell-toggle))
+  :config
+  (when (and (eq system-type 'windows-nt)
+             (eq (type-of ghostel-shell) 'string)
+             (string-suffix-p "cmdproxy.exe" ghostel-shell))
+    (setq ghostel-shell (list ghostel-shell "/C" "powershell")))
   :custom
   (ghostel-max-scrollback (* 50 1024 1024)))
 

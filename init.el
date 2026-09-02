@@ -145,6 +145,8 @@
 
 ;; builtin packages i customize and use
 (load (locate-user-emacs-file "./init-core.el"))
+;; lisp files in my .emacs.d
+(load (locate-user-emacs-file "./init-lisp.el"))
 ;; agent frontend. `agent-shell' uses ACP, `agent-tui' uses term
 (if t
     (load (locate-user-emacs-file "./init-agent-shell.el"))
@@ -157,8 +159,6 @@
 (load (locate-user-emacs-file "./init-extras.el"))
 ;; gptel and my config files around it
 (load (locate-user-emacs-file "./init-gptel.el"))
-;; lisp files in my .emacs.d
-(load (locate-user-emacs-file "./init-lisp.el"))
 ;; lsp mode and associated packages
 ;; (load (locate-user-emacs-file "./init-lsp.el"))
 ;; extra packages around eglot
