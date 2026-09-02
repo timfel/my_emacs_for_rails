@@ -409,7 +409,7 @@
          :map ghostel-char-mode-map
          ("<f12>" . #'timfel/side-shell-toggle))
   :custom
-  (ghostel-max-scrollback 40000))
+  (ghostel-max-scrollback (* 50 1024 1024)))
 
 (use-package dape
   :ensure t
