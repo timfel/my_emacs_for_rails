@@ -84,6 +84,7 @@
               agent-shell-make-goose-authentication
               agent-shell-opencode-make-authentication
               agent-shell-rename-buffer
+              agent-shell-subscribe-to
               org-link-set-parameters
               org-link-store-props
               shell-maker-submit)
@@ -94,6 +95,19 @@
          ("C-c RET" . shell-maker-submit)
          ("C-x a R" . agent-shell-restart)
          ("C-x a r" . agent-shell-reload))
+  :hook
+  (agent-shell-mode . (lambda ()
+                        (agent-shell-subscribe-to
+                         :shell-buffer (current-buffer)
+                         :event 'turn-complete
+                         :on-event (lambda (event)
+                                     (when (and (equal (map-elt event :event) 'turn-complete)
+                                                (equal (map-nested-elt event '(:data :stop-reason)) "end_turn")
+                                                (bound-and-true-p show-help-function))
+                                       (funcall show-help-function
+                                                (format "Agent shell %s finished in %s."
+                                                        (buffer-name)
+                                                        default-directory)))))))
   :custom
   (agent-shell-inhibit-system-sleep nil)
   (agent-shell-thought-process-expand-by-default t)
