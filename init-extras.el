@@ -615,6 +615,7 @@
 
 (use-package mise
   :ensure t
+  :unless (eq system-type 'android)
   :hook
   (after-init . global-mise-mode)
   :custom
