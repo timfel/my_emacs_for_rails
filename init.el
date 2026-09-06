@@ -149,9 +149,9 @@
 ;; lisp files in my .emacs.d
 (load (locate-user-emacs-file "./init-lisp.el"))
 ;; agent frontend. `agent-shell' uses ACP, `agent-tui' uses term
-(if t
-    (load (locate-user-emacs-file "./init-agent-shell.el"))
-  (load (locate-user-emacs-file "./init-agent-tui.el")))
+(unless (eq system-type 'android)
+  (load (locate-user-emacs-file "./init-agent-shell.el")))
+;; (load (locate-user-emacs-file "./init-agent-tui.el")))
 ;; packages that make things prettier, but not really more functional
 (load (locate-user-emacs-file "./init-eyecandy.el"))
 ;; packages that make emacs more usable in the terminal
@@ -168,9 +168,7 @@
 (use-package custom
   :functions (timfel/set-frame-faces)
   :config
-  (if (eq system-type 'android)
-      (load-theme 'leuven-dark t)
-    (load-theme 'modus-operandi-tinted))
+  (load-theme 'modus-operandi-tinted)
 
   ;; Use dedicated fallback fonts for Unicode symbols and emoji.  In
   ;; particular, do not map the emoji pictograph range to Segoe UI Symbol:

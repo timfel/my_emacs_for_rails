@@ -19,6 +19,7 @@
   ;; AltGr on the no-name phone keyboard I use sends KEYCODE_*, and there is no
   ;; Meta key, so let's make it usable
   (define-key key-translation-map (kbd "<KEYCODE_SPACE>") (kbd "ESC"))
+  (define-key key-translation-map (kbd "<KEYCODE_S>") (kbd "ß"))
   (define-key key-translation-map (kbd "<KEYCODE_Q>") (kbd "ä"))
   (define-key key-translation-map (kbd "<KEYCODE_P>") (kbd "ö"))
   (define-key key-translation-map (kbd "<KEYCODE_Y>") (kbd "ü"))

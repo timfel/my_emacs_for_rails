@@ -7,6 +7,7 @@
   :pin melpa)
 
 (use-package wsl-interop
+  :unless (eq system-type 'android)
   :vc (:url "https://github.com/timfel/wsl-interop.el" :branch "main" :rev :newest)
   :commands (wsl-p
              wsl-powershell-command wsl-powershell-command-to-string
