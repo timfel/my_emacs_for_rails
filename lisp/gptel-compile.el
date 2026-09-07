@@ -39,6 +39,16 @@
   :type 'integer
   :group 'gptel-compile)
 
+(defcustom gptel-compile-max-tool-bytes (* 50 1024)
+  "Maximum UTF-8 bytes returned directly by a compile tool."
+  :type 'integer
+  :group 'gptel-compile)
+
+(defcustom gptel-compile-max-tool-lines 2000
+  "Maximum complete lines returned directly by a compile tool."
+  :type 'integer
+  :group 'gptel-compile)
+
 (defconst gptel-compile--system-prompt
   "You are an expert programmer compiling pseudocode into a complete project change.
 You may inspect project files with the read tool before deciding on the change.
@@ -95,6 +105,44 @@ request is active cannot broaden the tool's access."
             (buffer-string)))))
     (error (format "Error reading %s: %s" filename (error-message-string err)))))
 
+(defun gptel-compile--truncate-tool-output (text)
+  "Limit TEXT to complete lines and the compile tool output budget.
+
+The truncation marker is included in the budget, so the returned string never
+exceeds `gptel-compile-max-tool-bytes'."
+  (let* ((max-bytes gptel-compile-max-tool-bytes)
+         (max-lines gptel-compile-max-tool-lines)
+         (total-bytes (string-bytes text))
+         segments)
+    (with-temp-buffer
+      (insert text)
+      (goto-char (point-min))
+      (while (< (point) (point-max))
+        (let ((start (point)))
+          (forward-line 1)
+          (push (buffer-substring-no-properties start (point)) segments))))
+    (setq segments (nreverse segments))
+    (if (and (<= total-bytes max-bytes)
+             (<= (length segments) max-lines))
+        text
+      (let* ((notice (format
+                      "\n[Output truncated to at most %d bytes/%d lines; use narrower tool queries.]"
+                      max-bytes max-lines))
+             (available (max 0 (- max-bytes (string-bytes notice))))
+             (kept nil)
+             (bytes 0)
+             (lines 0))
+        (while (and segments (< lines max-lines))
+          (let* ((segment (car segments))
+                 (segment-bytes (string-bytes segment)))
+            (if (> (+ bytes segment-bytes) available)
+                (setq segments nil)
+              (push segment kept)
+              (setq bytes (+ bytes segment-bytes)
+                    lines (1+ lines)
+                    segments (cdr segments)))))
+        (concat (apply #'concat (nreverse kept)) notice)))))
+
 (defun gptel-compile--make-read-tool (root)
   "Return the read tool permitted for a request rooted at ROOT."
   (let ((reads 0))
@@ -107,15 +155,36 @@ request is active cannot broaden the tool's access."
                    gptel-compile-max-toolcalls)
          (cl-incf reads)
          (let ((result (gptel-compile--read-file root filename)))
-           (if (= reads gptel-compile-max-toolcalls)
-               (concat result "\n\nToolcall budget exhausted. Reply now with the unified diff.")
-             result))))
+           (gptel-compile--truncate-tool-output
+            (if (= reads gptel-compile-max-toolcalls)
+                (concat result "\n\nToolcall budget exhausted. Reply now with the unified diff.")
+              result)))))
      :description
      "Read a text file in this project. Paths outside the project are rejected."
      :args (list '(:name "filename" :type string :description "Filename to read."))
      :category "compile"
      :confirm nil
      :include nil)))
+
+(defun gptel-compile--grep-finish (process cb output)
+  "Call CB with the bounded output from finished grep PROCESS."
+  (when (memq (process-status process) '(exit signal))
+    (let* ((status (process-exit-status process))
+           (results (if (buffer-live-p output)
+                        (with-current-buffer output (buffer-string))
+                      ""))
+           (result
+            (cond
+             ((= status 0) results)
+             ((= status 1) (if (string-empty-p results) "No matches." results))
+             (t (format "Error: grep exited with status %d%s"
+                        status
+                        (if (string-empty-p results)
+                            ""
+                          (concat ": " (string-trim results))))))))
+      (when (buffer-live-p output)
+        (kill-buffer output))
+      (funcall cb (gptel-compile--truncate-tool-output result)))))
 
 (defun gptel-compile--grep (cb pattern root)
   "Asynchronously grep for PATTERN below ROOT and call CB with the result.
@@ -140,26 +209,7 @@ not appropriate for a background tool call."
            :noquery t
            :sentinel
            (lambda (process _event)
-             (when (memq (process-status process) '(exit signal))
-               (let* ((status (process-exit-status process))
-                      (results (if (buffer-live-p output)
-                                   (with-current-buffer output
-                                     (buffer-string))
-                                 "")))
-                 (when (buffer-live-p output)
-                   (kill-buffer output))
-                 (funcall
-                  cb
-                  (cond
-                   ((= status 0) results)
-                   ((= status 1) (if (string-empty-p results)
-                                       "No matches."
-                                     results))
-                   (t (format "Error: grep exited with status %d%s"
-                              status
-                              (if (string-empty-p results)
-                                  ""
-                                (concat ": " (string-trim results)))))))))))
+             (gptel-compile--grep-finish process cb output)))
         (error
          (kill-buffer output)
          (funcall cb (format "Error starting grep: %s"
@@ -354,6 +404,22 @@ incorrect line counts."
         (message "gptel-compile: thinking… %s"
                  (truncate-string-to-width text 300 nil nil "…"))))))
 
+(defun gptel-compile--request-error-message (info)
+  "Return a user-facing error message from request INFO, or nil."
+  (let* ((error-data (plist-get info :error))
+         (status (plist-get info :status))
+         (details (downcase (format "%S %s" error-data status))))
+    (when (or error-data
+              (string-match-p "context_length_exceeded\\|context window" details))
+      (cond
+       ((string-match-p "context_length_exceeded\\|context window" details)
+        "the model context window was exceeded; reduce the selected text or tool output and retry")
+       ((and (listp error-data) (plist-get error-data :message))
+        (format "%s" (plist-get error-data :message)))
+       ((stringp error-data) error-data)
+       (error-data (format "%S" error-data))
+       (t (or status "request failed"))))))
+
 (defun gptel-compile--callback (response info)
   "Handle a compile RESPONSE using request INFO.
 
@@ -361,8 +427,13 @@ When streaming is enabled, gptel calls this function once for every text
 chunk and once more with `t' when the response is complete.  Reasoning and
 tool progress are echoed in the minibuffer; only the final text is shown as a
 patch."
-  (let ((context (plist-get info :context)))
-    (cond
+  (let* ((context (plist-get info :context))
+         (error-message (gptel-compile--request-error-message info)))
+    (if error-message
+        (progn
+          (gptel-compile--stream-finish context)
+          (message "gptel-compile failed: %s" error-message))
+      (cond
      ((stringp response)
       (if (plist-get info :stream)
           (gptel-compile--stream-append context response)
@@ -398,8 +469,8 @@ patch."
           (funcall continue
                    (apply (gptel-tool-function tool)
                           (gptel--map-tool-args tool args))))))
-     ;; Ignore other callback metadata.
-     (t nil))))
+       ;; Ignore other callback metadata.
+       (t nil)))))
 
 ;;;###autoload
 (defun gptel-compile (begin end)
