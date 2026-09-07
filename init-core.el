@@ -93,8 +93,10 @@
                             ((pred (memq 'vc-dir-mode))
                              (if (and (not (executable-find "git"))
                                       (file-equal-p default-directory "~/.emacs.d"))
-                                 (let ((tgt (car (file-expand-wildcards "/content/storage/com.termux.documents/*/.emacs.d/"))))
-                                   (copy-directory "~/.emacs.d/" tgt t nil t))
+                                 (let ((tgt (car (file-expand-wildcards "/content/storage/com.termux.documents/*/.emacs.d"))))
+                                   (require 'eshell)
+                                   (declare-function eshell/cp "em-unix")
+                                   (eshell/cp "-f" "-r" tgt "~/"))
                                (vc-pull)))
 
                             ((pred (memq 'org-social-ui-mode)) ;; org-social timeline
@@ -121,8 +123,12 @@
                           ((pred (memq 'vc-dir-mode))
                            (if (and (not (executable-find "git"))
                                     (file-equal-p default-directory "~/.emacs.d"))
-                               (let ((tgt (car (file-expand-wildcards "/content/storage/com.termux.documents/*/.emacs.d/"))))
-                                 (copy-directory tgt "~/.emacs.d/" t nil t))
+                               (let ((tgt (car (file-expand-wildcards "/content/storage/com.termux.documents/*/"))))
+                                 (require 'eshell)
+                                 (declare-function eshell/rm "em-unix")
+                                 (declare-function eshell/cp "em-unix")
+                                 (eshell/rm "-r" "-f" "~/.emacs.d/.git")
+                                 (eshell/cp "-f" "-r" "~/.emacs.d" tgt))
                              (vc-push)))
 
                           ((pred (memq 'org-social-mode)) ;; cancel org social post
