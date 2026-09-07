@@ -30,8 +30,6 @@
 (require 'project)
 (require 'subr-x)
 
-(declare-function deadgrep "deadgrep" (search-term &optional directory))
-
 (defgroup gptel-compile nil
   "Compile pseudocode into project patches with gptel."
   :group 'gptel)
@@ -120,28 +118,52 @@ request is active cannot broaden the tool's access."
      :include nil)))
 
 (defun gptel-compile--grep (cb pattern root)
-  (defvar deadgrep-display-buffer-function)
-  (defvar deadgrep-finished-hook)
-  (let (buffer finish)
-    ;; `deadgrep' runs asynchronously.  Install the completion callback as a
-    ;; buffer-local hook after it has created the result buffer; a dynamic
-    ;; binding of `deadgrep-finished-hook' would be gone by the time the
-    ;; process sentinel runs (and also cannot support concurrent searches).
-    (let ((deadgrep-display-buffer-function (lambda (buf) (setq buffer buf))))
-      (deadgrep pattern root))
-    (if (not (buffer-live-p buffer))
-        (funcall cb "Error: deadgrep did not create a result buffer")
-      (setq finish
-            (lambda ()
-              (when (buffer-live-p buffer)
-                (let ((results (with-current-buffer buffer
-                                 (buffer-substring-no-properties (point-min) (point-max)))))
-                  (with-current-buffer buffer
-                    (remove-hook 'deadgrep-finished-hook finish t))
-                  (kill-buffer buffer)
-                  (funcall cb results)))))
-      (with-current-buffer buffer
-        (add-hook 'deadgrep-finished-hook finish nil t)))))
+  "Asynchronously grep for PATTERN below ROOT and call CB with the result.
+
+Use a private process buffer rather than `deadgrep'.  `deadgrep' maintains a
+small global pool of result buffers and may prompt while evicting one; that is
+not appropriate for a background tool call."
+  (let ((default-directory root)
+        (output (generate-new-buffer " *gptel-compile-grep*"))
+        (executable (executable-find "grep")))
+    (if (not executable)
+        (progn
+          (kill-buffer output)
+          (funcall cb "Error: `grep' executable not found"))
+      (condition-case err
+          (make-process
+           :name "gptel-compile-grep"
+           :buffer output
+           :command (list executable "-r" "-n" "-H" "-F" "-I"
+                          "--exclude-dir=.git" "-e" pattern ".")
+           :coding 'utf-8-unix
+           :noquery t
+           :sentinel
+           (lambda (process _event)
+             (when (memq (process-status process) '(exit signal))
+               (let* ((status (process-exit-status process))
+                      (results (if (buffer-live-p output)
+                                   (with-current-buffer output
+                                     (buffer-string))
+                                 "")))
+                 (when (buffer-live-p output)
+                   (kill-buffer output))
+                 (funcall
+                  cb
+                  (cond
+                   ((= status 0) results)
+                   ((= status 1) (if (string-empty-p results)
+                                       "No matches."
+                                     results))
+                   (t (format "Error: grep exited with status %d%s"
+                              status
+                              (if (string-empty-p results)
+                                  ""
+                                (concat ": " (string-trim results)))))))))))
+        (error
+         (kill-buffer output)
+         (funcall cb (format "Error starting grep: %s"
+                             (error-message-string err))))))))
 
 (defun gptel-compile--make-grep-tool (root)
   "Return the grep tool permitted for a request rooted at ROOT."
@@ -152,11 +174,10 @@ request is active cannot broaden the tool's access."
      :function
      (lambda (cb pattern)
        (if (>= greps gptel-compile-max-toolcalls)
-           (format "Error: the %d grep budget is exhausted." gptel-compile-max-toolcalls)
+           (funcall cb (format "Error: the %d grep budget is exhausted."
+                               gptel-compile-max-toolcalls))
          (cl-incf greps)
-         (let ((result (gptel-compile--grep cb pattern root)))
-           (if (= greps gptel-compile-max-toolcalls) (concat result "\n\nGrep budget exhausted.")
-             result))))
+         (gptel-compile--grep cb pattern root)))
      :description
      "Grep for a pattern in this project."
      :args (list '(:name "pattern" :type string :description "Pattern to grep for"))

@@ -72,7 +72,7 @@
               (y-or-n-p "Browse with EWW? "))
          (apply #'eww-browse-url url args)
        (cond
-        ((eq system-type 'windows-nt) 
+        ((eq system-type 'windows-nt)
          (apply #'browse-url-default-browser url args))
         ((eq system-type 'android)
          (apply #'browse-url-default-android-browser url args))
