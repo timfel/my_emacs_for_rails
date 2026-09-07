@@ -321,13 +321,46 @@ incorrect line counts."
     (prog1 (mapconcat #'identity (nreverse (car state)) "")
       (setcar state nil))))
 
+(defun gptel-compile--format-tool-arguments (arguments)
+  "Return a short display form for tool ARGUMENTS."
+  (truncate-string-to-width (string-trim (prin1-to-string arguments))
+                            240 nil nil "…"))
+
+(defun gptel-compile--echo-tool-call (name arguments)
+  "Echo a tool call with NAME and ARGUMENTS in the echo area."
+  (message "gptel-compile: using %s %s"
+           name (gptel-compile--format-tool-arguments arguments)))
+
+(defun gptel-compile--echo-tool-use (tool-use)
+  "Echo backend-shaped TOOL-USE calls."
+  (dolist (call tool-use)
+    (unless (plist-get call :result)
+      (gptel-compile--echo-tool-call
+       (plist-get call :name)
+       (plist-get call :args)))))
+
+(defun gptel-compile--echo-tool-results (tool-results)
+  "Echo completed TOOL-RESULTS in the echo area."
+  (dolist (result tool-results)
+    (message "gptel-compile: %s finished" (gptel-tool-name (car result)))))
+
+(defun gptel-compile--echo-reasoning (text)
+  "Echo reasoning TEXT in the echo area without retaining it in the patch."
+  (if (eq text t)
+      (message "gptel-compile: thinking done")
+    (when (stringp text)
+      (setq text (string-trim text))
+      (unless (string-empty-p text)
+        (message "gptel-compile: thinking… %s"
+                 (truncate-string-to-width text 300 nil nil "…"))))))
+
 (defun gptel-compile--callback (response info)
   "Handle a compile RESPONSE using request INFO.
 
 When streaming is enabled, gptel calls this function once for every text
-chunk and once more with `t' when the response is complete.  Tool-call
-responses also end with `t', so only show the accumulated text when the
-current response did not contain a tool call."
+chunk and once more with `t' when the response is complete.  Reasoning and
+tool progress are echoed in the minibuffer; only the final text is shown as a
+patch."
   (let ((context (plist-get info :context)))
     (cond
      ((stringp response)
@@ -338,15 +371,21 @@ current response did not contain a tool call."
         (gptel-compile--show-patch response context)))
      ((eq response t)
       (if (plist-get info :tool-use)
-          ;; Discard any text emitted before a tool call.  The tool result
-          ;; callback will cause the next request to start with fresh state.
-          (gptel-compile--stream-finish context)
+          (progn
+            (gptel-compile--echo-tool-use (plist-get info :tool-use))
+            ;; Discard any text emitted before a tool call.  The tool result
+            ;; callback will cause the next request to start with fresh state.
+            (gptel-compile--stream-finish context))
+        (message "gptel-compile: final response received")
         (gptel-compile--show-patch
          (gptel-compile--stream-finish context) context)))
      ((or (eq response 'abort) (null response))
       (gptel-compile--stream-finish context)
       (message "gptel-compile failed: %s" (or (plist-get info :status) "request aborted")))
+     ((eq (car-safe response) 'reasoning)
+      (gptel-compile--echo-reasoning (cdr response)))
      ((eq (car-safe response) 'tool-result)
+      (gptel-compile--echo-tool-results (cdr response))
       ;; A tool-result starts a new streamed response.  In particular, do not
       ;; let a pre-tool textual fragment become part of the final patch.
       (gptel-compile--stream-finish context))
@@ -355,10 +394,11 @@ current response did not contain a tool call."
       ;; accepting here keeps the request moving if another gptel extension does.
       (dolist (call (cdr response))
         (pcase-let ((`(,tool ,args ,continue) call))
+          (gptel-compile--echo-tool-call (gptel-tool-name tool) args)
           (funcall continue
                    (apply (gptel-tool-function tool)
                           (gptel--map-tool-args tool args))))))
-     ;; Optional reasoning is not user-facing for this compact workflow.
+     ;; Ignore other callback metadata.
      (t nil))))
 
 ;;;###autoload
@@ -388,6 +428,7 @@ current response did not contain a tool call."
          (gptel-include-reasoning nil)
          (gptel-temperature 0.0)
          (gptel-stream t))
+    (message "gptel-compile: starting request")
     (gptel-request
         (gptel-compile--request-prompt pseudocode source root)
       :buffer buffer
