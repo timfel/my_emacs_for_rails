@@ -14,6 +14,7 @@
   (tool-bar-position 'top)
   (tool-bar-always-show-default t)
   (tool-bar-button-margin 32)
+  (touch-screen-display-keyboard t)
   :config
 
   ;; AltGr on the no-name phone keyboard I use sends KEYCODE_*, and there is no
@@ -67,6 +68,8 @@
                                (goto-char (point-max))))
                      'oc)
   (tool-bar-add-item "info" 'gptel 'gptel)
+  (tool-bar-add-item "zoom-in" (lambda () (interactive) (global-text-scale-adjust +4)) 'zoomin)
+  (tool-bar-add-item "zoom-out" (lambda () (interactive) (global-text-scale-adjust -4)) 'zoomout)
   :bind
   (("<volume-down>" . (lambda ()
                         (interactive)
@@ -88,7 +91,11 @@
                                    (text-scale-set +2)))
 
                             ((pred (memq 'vc-dir-mode))
-                             (vc-pull))
+                             (if (and (not (executable-find "git"))
+                                      (file-equal-p default-directory "~/.emacs.d"))
+                                 (let ((tgt (car (file-expand-wildcards "/content/storage/com.termux.documents/*/.emacs.d/"))))
+                                   (copy-directory "~/.emacs.d/" tgt t nil t))
+                               (vc-pull)))
 
                             ((pred (memq 'org-social-ui-mode)) ;; org-social timeline
                              (with-auto-default (org-social-new-post))
@@ -112,7 +119,11 @@
                            (goto-char (point-max)))
 
                           ((pred (memq 'vc-dir-mode))
-                           (vc-push))
+                           (if (and (not (executable-find "git"))
+                                    (file-equal-p default-directory "~/.emacs.d"))
+                               (let ((tgt (car (file-expand-wildcards "/content/storage/com.termux.documents/*/.emacs.d/"))))
+                                 (copy-directory tgt "~/.emacs.d/" t nil t))
+                             (vc-push)))
 
                           ((pred (memq 'org-social-mode)) ;; cancel org social post
                            (kill-buffer))

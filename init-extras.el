@@ -87,6 +87,7 @@
 
 (use-package docker-compose-mode
   :ensure t
+  :unless (eq system-type 'android)
   :commands (docker-compose-mode))
 
 (use-package web-mode
