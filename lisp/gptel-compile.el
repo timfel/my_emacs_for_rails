@@ -59,7 +59,8 @@ Your final response MUST be one complete, applicable unified diff and nothing
 else: no explanation, markdown fence, or progress report.  Use git-style paths
 relative to the project root (--- a/path and +++ b/path), including /dev/null
 when adding or deleting a file.  Do not abbreviate hunks.  Ensure every hunk
-header has exact old and new line counts, and terminate the diff with a newline."
+header has exact old and new line counts, terminate the diff with a newline,
+and do not add a standalone `---' separator after the final hunk."
   "System prompt used by `gptel-compile'.")
 
 (defvar gptel-compile-patch-mode-map
@@ -289,48 +290,88 @@ not appropriate for a background tool call."
                   ((file-in-directory-p true-file root)))
         (revert-buffer t t)))))
 
-(defun gptel-compile--call-patch (patch root &rest arguments)
-  "Run git apply on PATCH below ROOT with ARGUMENTS.
-Return a cons of its exit status and complete output.
+(defun gptel-compile--normalize-patch (patch)
+  "Remove common LLM wrappers and return a terminated PATCH."
+  (setq patch (string-trim patch))
+  (setq patch (replace-regexp-in-string
+               "\\`[ \t]*```[^\n]*\n" "" patch))
+  (setq patch (replace-regexp-in-string
+               "\n[ \t]*```[ \t]*\\'" "" patch))
+  ;; A bare trailing `---' is sometimes emitted as a separator, but is not
+  ;; valid unified-diff content and makes `git apply' reject the whole patch.
+  (setq patch (replace-regexp-in-string "\n---[ \t]*\\'" "" patch))
+  (concat (string-trim-right patch) "\n"))
 
-`--recount' is used by the caller because LLM-generated hunks sometimes have
-incorrect line counts."
+(defun gptel-compile--call-patch (patch root program &rest arguments)
+  "Run PROGRAM on PATCH below ROOT with ARGUMENTS.
+Return a cons of its exit status and complete output."
   (let ((output (generate-new-buffer " *gptel-compile-patch-output*"))
         (default-directory root))
     (unwind-protect
         (with-temp-buffer
           (insert patch)
-          ;; `git apply' rejects a patch whose final line is not terminated.
+          ;; Both `git apply' and `patch' prefer a terminated final line.
           (unless (bolp)
             (insert "\n"))
           (cons (apply #'call-process-region
-                       (point-min) (point-max) "git" nil output nil arguments)
+                       (point-min) (point-max) program nil output nil arguments)
                 (with-current-buffer output (buffer-string))))
       (kill-buffer output))))
 
 ;;;###autoload
 (defun gptel-compile-apply ()
-  "Apply the editable patch in the current `gptel-compile' patch buffer."
+  "Apply the editable patch in the current `gptel-compile' patch buffer.
+
+Prefer strict `git apply'.  If its exact-context check fails, use GNU
+`patch' as a fallback because it can apply an otherwise valid hunk at a safe
+line offset in a file that changed while the model was working."
   (interactive)
   (unless (derived-mode-p 'gptel-compile-patch-mode)
     (user-error "This is not a gptel-compile patch buffer"))
-  (unless (executable-find "git")
-    (user-error "Cannot apply patch: `git' executable not found"))
-  (let* ((patch (buffer-substring-no-properties (point-min) (point-max)))
-         (root gptel-compile--root)
-         (dry-run (gptel-compile--call-patch patch root "apply" "--check" "--recount")))
-    (if (not (zerop (car dry-run)))
-        (message "Patch does not apply: %s"
-                 (string-trim (truncate-string-to-width (cdr dry-run) 300 nil nil "…")))
-      (let ((result (gptel-compile--call-patch patch root "apply" "--recount")))
-        (if (not (zerop (car result)))
-            (message "Patch failed: %s"
-                     (string-trim (truncate-string-to-width (cdr result) 300 nil nil "…")))
-          (gptel-compile--revert-project-buffers root)
-          (let ((buffer (current-buffer)))
-            (gptel-compile--finish buffer)
-            (kill-buffer buffer))
-          (message "Applied gptel-compile patch."))))))
+  (let ((git (executable-find "git"))
+        (patch-program (executable-find "patch")))
+    (unless (or git patch-program)
+      (user-error "Cannot apply patch: neither `git' nor `patch' is available"))
+    (let* ((patch (gptel-compile--normalize-patch
+                   (buffer-substring-no-properties (point-min) (point-max))))
+           (root gptel-compile--root)
+           (git-check (and git
+                           (gptel-compile--call-patch
+                            patch root git "apply" "--check" "--recount")))
+           (git-ok (and git-check (zerop (car git-check))))
+           (fallback-check
+            (and (not git-ok) patch-program
+                 (gptel-compile--call-patch
+                  patch root patch-program "--batch" "--forward" "--dry-run" "-p1")))
+           (fallback-ok (and fallback-check (zerop (car fallback-check))))
+           (program (cond (git-ok git)
+                          (fallback-ok patch-program)))
+           (arguments (if git-ok
+                          '("apply" "--recount")
+                        '("--batch" "--forward" "-p1"))))
+      (if (not program)
+          (let* ((failure (or fallback-check git-check))
+                 (output (if failure
+                             (string-trim
+                              (truncate-string-to-width
+                               (cdr failure) 300 nil nil "…"))
+                           "no patch application method succeeded")))
+            (message "Patch does not apply: %s" output))
+        (let ((result (apply #'gptel-compile--call-patch
+                             patch root program arguments)))
+          (if (not (zerop (car result)))
+              (message "Patch failed: %s"
+                       (string-trim
+                        (truncate-string-to-width
+                         (cdr result) 300 nil nil "…")))
+            (gptel-compile--revert-project-buffers root)
+            (let ((buffer (current-buffer)))
+              (gptel-compile--finish buffer)
+              (kill-buffer buffer))
+            (message "Applied gptel-compile patch%s."
+                     (if git-ok
+                         ""
+                       " with context matching"))))))))
 
 ;;;###autoload
 (defun gptel-compile-reject ()
@@ -347,9 +388,7 @@ incorrect line counts."
   "Show PATCH in an editable diff buffer using request CONTEXT."
   (let ((buffer (generate-new-buffer "*gptel-compile patch*")))
     (with-current-buffer buffer
-      (insert patch)
-      (unless (bolp)
-        (insert "\n"))
+      (insert (gptel-compile--normalize-patch patch))
       (goto-char (point-min))
       (gptel-compile-patch-mode)
       (setq-local gptel-compile--root (plist-get context :root)
