@@ -34,6 +34,7 @@
   (doom-modeline-bar-width 4)
   (doom-modeline-hud nil)
   (doom-modeline-vcs-max-length 28)
+  (doom-modeline-vcs-icon nil)
   (doom-modeline-lsp t)
   (doom-modeline-buffer-file-name-style 'truncate-all)
   :custom-face

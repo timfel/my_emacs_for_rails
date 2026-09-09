@@ -206,10 +206,10 @@
 
 (use-package mmm-mode
   :ensure t
+  :demand t
+  :after (java-ts-mode typescript-ts-mode js)
   :functions (mmm-add-mode-ext-class)
   :commands (mmm-parse-buffer)
-  :hook ((java-mode . mmm-parse-buffer)
-         (java-ts-mode . mmm-parse-buffer))
   :config (progn
             (require 'mmm-auto)
             (setq mmm-global-mode 'maybe)
